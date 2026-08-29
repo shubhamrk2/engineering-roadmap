@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheet 13 &mdash; Projects &mdash; BadgeDesk Roadmap</title>
+<link rel="stylesheet" href="assets/css/sheet.css">
+</head>
+<body data-sheet="13">
+<a class="skip" href="#main">Skip to sheet</a>
+<div class="wrap">
+<nav class="rail" aria-label="Sheet index"></nav>
+
+<main id="main">
+
+<header class="sheethead">
+  <div>
+    <div class="no">Sheet 13 &middot; Prove it &middot; Weeks 02&ndash;12</div>
+    <h1>Pro&shy;jects<span>.</span></h1>
+    <p class="lede">Nine builds that stack into one system. The principle behind the whole set: <b>one
+    product, grown deliberately, beats nine tutorials abandoned at the demo stage.</b> A single system you
+    have run, broken, fixed and deployed gives you an answer to every interview question on this drawing
+    set &mdash; and nine half-finished clones give you none.</p>
+  </div>
+  <div class="specs">
+    <div><span>Weeks</span><span>02 &ndash; 12</span></div>
+    <div><span>Builds</span><span>9</span></div>
+    <div><span>Deployed</span><span>At least 1</span></div>
+    <div><span>Written up</span><span>All of them</span></div>
+    <div><span>Product</span><span>BadgeDesk</span></div>
+  </div>
+</header>
+
+<div class="sheetbody">
+
+<!-- ===================================================================== -->
+<h2 id="ladder">The build ladder</h2>
+<p class="sub">Each project adds one layer and reuses everything below it. By Week 12 you are not
+presenting a portfolio of exercises; you are presenting one system and can talk about any layer of it.</p>
+
+<figure class="dwg dwg--hero">
+<svg viewBox="0 0 1200 520" role="img" aria-label="Nine projects stacked over twelve weeks: three CLI validators in different languages, the Next.js web application, the FastAPI core service, the GraphQL gateway and webhook receiver, the data layer work, cloud deployment with Terraform and CI/CD, event-driven provisioning with Kafka, the RAG policy assistant, and finally the capstone write-up.">
+  <defs>
+    <marker id="s13-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s13-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+  </defs>
+
+  <text class="mm" x="30" y="36">WEEK</text>
+  <text class="mm" x="120" y="36">PROJECT</text>
+  <text class="mm" x="560" y="36">WHAT IT PROVES</text>
+  <text class="mm" x="1000" y="36">SHEET</text>
+  <line class="ln" x1="30" y1="46" x2="1170" y2="46"/>
+
+  <text class="m b" x="30" y="76">01&ndash;02</text>
+  <rect class="box-c" x="120" y="56" width="400" height="34" rx="2"/>
+  <text class="m" x="134" y="79">1 &middot; csv-validator, three times over</text>
+  <text class="mm" x="560" y="79">ONE SPEC IN PYTHON, TYPESCRIPT AND JAVA</text>
+  <text class="mm c" x="1000" y="79">02</text>
+
+  <text class="m b" x="30" y="122">03&ndash;04</text>
+  <rect class="box-c" x="120" y="102" width="400" height="34" rx="2"/>
+  <text class="m" x="134" y="125">2 &middot; BadgeDesk web</text>
+  <text class="mm" x="560" y="125">NEXT.JS, SERVER COMPONENTS, ACCESSIBLE FORMS</text>
+  <text class="mm c" x="1000" y="125">03</text>
+
+  <text class="m b" x="30" y="168">05&ndash;06</text>
+  <rect class="box-c" x="120" y="148" width="400" height="34" rx="2"/>
+  <text class="m" x="134" y="171">3 &middot; core service</text>
+  <text class="mm" x="560" y="171">FASTAPI, POSTGRES, IDEMPOTENT REST</text>
+  <text class="mm c" x="1000" y="171">04 &middot; 05</text>
+
+  <text class="m b" x="30" y="214">06</text>
+  <rect class="box-c" x="120" y="194" width="400" height="34" rx="2"/>
+  <text class="m" x="134" y="217">4 &middot; gateway + notifier + webhook receiver</text>
+  <text class="mm" x="560" y="217">GRAPHQL, EXPRESS, HMAC VERIFICATION</text>
+  <text class="mm c" x="1000" y="217">05</text>
+
+  <text class="m b" x="30" y="260">07</text>
+  <rect class="box-c" x="120" y="240" width="400" height="34" rx="2"/>
+  <text class="m" x="134" y="263">5 &middot; make it fast</text>
+  <text class="mm" x="560" y="263">INDEXES, QUERY PLANS, CACHING, MONGO EVENTS</text>
+  <text class="mm c" x="1000" y="263">06</text>
+
+  <text class="m b" x="30" y="306">08&ndash;10</text>
+  <rect class="box-a" x="120" y="286" width="400" height="34" rx="2"/>
+  <text class="m b" x="134" y="309">6 &middot; ship it &mdash; AWS, Terraform, CI/CD</text>
+  <text class="mm b" x="560" y="309">THE PROJECT THAT CHANGES HOW YOU INTERVIEW</text>
+  <text class="mm c" x="1000" y="309">07 &middot; 09 &middot; 10</text>
+
+  <text class="m b" x="30" y="352">11</text>
+  <rect class="box-c" x="120" y="332" width="400" height="34" rx="2"/>
+  <text class="m" x="134" y="355">7 &middot; event-driven provisioning</text>
+  <text class="mm" x="560" y="355">KAFKA, OUTBOX, IDEMPOTENT CONSUMERS</text>
+  <text class="mm c" x="1000" y="355">11</text>
+
+  <text class="m b" x="30" y="398">11</text>
+  <rect class="box-c" x="120" y="378" width="400" height="34" rx="2"/>
+  <text class="m" x="134" y="401">8 &middot; policy assistant</text>
+  <text class="mm" x="560" y="401">RAG, PGVECTOR, RERANKING, EVALUATION</text>
+  <text class="mm c" x="1000" y="401">12</text>
+
+  <text class="m b" x="30" y="444">12</text>
+  <rect class="box-a" x="120" y="424" width="400" height="34" rx="2"/>
+  <text class="m b" x="134" y="447">9 &middot; the write-up and the demo</text>
+  <text class="mm b" x="560" y="447">THE PART THAT ACTUALLY GETS YOU INTERVIEWS</text>
+  <text class="mm c" x="1000" y="447">13 &middot; 14</text>
+
+  <path class="flow" d="M100,73 V107" marker-end="url(#s13-ac)"/>
+  <path class="flow" d="M100,119 V153" marker-end="url(#s13-ac)"/>
+  <path class="flow" d="M100,165 V199" marker-end="url(#s13-ac)"/>
+  <path class="flow" d="M100,211 V245" marker-end="url(#s13-ac)"/>
+  <path class="flow" d="M100,257 V291" marker-end="url(#s13-ac)"/>
+  <path class="flow-b" d="M100,303 V337" marker-end="url(#s13-ab)"/>
+  <path class="flow" d="M100,349 V383" marker-end="url(#s13-ac)"/>
+  <path class="flow" d="M100,395 V429" marker-end="url(#s13-ac)"/>
+
+  <line class="ln dash" x1="20" y1="470" x2="1180" y2="470"/>
+  <text class="mm" x="30" y="492">EVERY PROJECT KEEPS RUNNING. NOTHING IS THROWN AWAY. WHEN PROJECT 6 DEPLOYS, IT DEPLOYS PROJECTS 2 TO 5 &mdash; WHICH IS EXACTLY WHY THINGS BREAK, AND WHY THAT IS THE MOST VALUABLE WEEK.</text>
+  <text class="mm b" x="30" y="512">IF YOU FALL BEHIND, CUT SCOPE INSIDE A PROJECT. DO NOT SKIP A PROJECT &mdash; THE LADDER ONLY WORKS BECAUSE EACH RUNG RESTS ON THE ONE BELOW.</text>
+
+  <circle class="bub" cx="90" cy="303" r="13"/><text class="bubt" x="90" y="307">1</text>
+  <circle class="bub" cx="90" cy="441" r="13"/><text class="bubt" x="90" y="445">2</text>
+</svg>
+<figcaption>Drawing 13-A &mdash; the build ladder. <b>Brass</b> = the two projects that matter most for
+getting hired.</figcaption>
+</figure>
+
+<div class="notes">
+  <div class="n"><b>1</b><div><b>Project 6 is the one that changes your interviews.</b> Almost every
+  candidate has built a CRUD application. Very few have provisioned the network it runs on, written the
+  pipeline that deploys it, and torn it all down and rebuilt it from code. That is the difference between
+  &ldquo;I have used AWS&rdquo; and &ldquo;here is my VPC, and here is why the database has no route to the
+  internet&rdquo;.</div></div>
+  <div class="n"><b>2</b><div><b>Project 9 is not optional padding.</b> Nobody clones your repository. They
+  read the README, look at one diagram, and decide in ninety seconds whether to talk to you. An excellent
+  system with no write-up is invisible; a modest system explained clearly gets the call.</div></div>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Rules for every project</span>
+  <p><b>Ship it before you polish it.</b> Working and ugly beats elegant and unfinished, every time.
+  <b>Write the README as you go</b>, not at the end when you have forgotten why you chose things.
+  <b>Commit small and often</b>, with messages that explain why. <b>Write down every problem that took you
+  more than an hour</b> &mdash; those notes become your behavioural answers on
+  <a href="interview.html">Sheet 14</a>. And <b>timebox</b>: a project that overruns by a week costs you the
+  next project, not just the time.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="p1">Project 1 &mdash; one spec, three languages</h2>
+<p class="sub">Weeks 01&ndash;02. The fastest way to actually learn a language is to solve the same problem
+in it that you already solved in another.</p>
+
+<div class="code" data-lang="text">
+<header><b>the specification &mdash; identical for all three implementations</b></header>
+<pre><code>badgedesk-validate  --input access-requests.csv  --sites sites.json  --out report.json
+
+Reads a CSV of bulk access requests and validates each row.
+
+Columns:  employee_id, site_id, starts_on, ends_on, reason
+
+Rules:
+  R1  employee_id matches ^e_\d{5}$
+  R2  site_id exists in sites.json
+  R3  starts_on and ends_on are ISO dates, and ends_on >= starts_on
+  R4  the window is at most 365 days
+  R5  reason is between 20 and 500 characters
+  R6  no duplicate (employee_id, site_id) pair with an overlapping window
+       - within the file, AND against an existing-requests file
+
+Output: JSON with per-row results, an error code and message per failure,
+        and a summary. Exit code 0 if all rows valid, 1 otherwise.
+
+Must:   stream the file rather than loading it into memory - it must handle
+        a 500 MB input on a laptop with 8 GB of RAM
+        report ALL errors on a row, not just the first
+        be covered by tests, including the overlap edge cases</code></pre>
+</div>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 320" role="img" aria-label="The same validator implemented three ways: Python with dataclasses and generators, TypeScript with discriminated unions and Zod, and Java with records and streams, each highlighting what that language teaches.">
+  <text class="mm c" x="30" y="34">PYTHON &mdash; WEEK 01</text>
+  <rect class="box-c" x="30" y="50" width="360" height="180" rx="3"/>
+  <text class="m" x="46" y="76">@dataclass(frozen=True)</text>
+  <text class="m" x="46" y="98">class Row: employee_id: str; site_id: str</text>
+  <text class="m" x="46" y="126">def rows(path) -&gt; Iterator[Row]:</text>
+  <text class="m" x="46" y="148">&nbsp;&nbsp;&nbsp;&nbsp;yield from ...      # streaming</text>
+  <text class="mm" x="46" y="176">TEACHES: DATACLASSES &middot; GENERATORS AND LAZY</text>
+  <text class="mm" x="46" y="194">EVALUATION &middot; pathlib &middot; TYPE HINTS THAT MYPY</text>
+  <text class="mm" x="46" y="212">ACTUALLY CHECKS &middot; pytest FIXTURES AND</text>
+  <text class="mm" x="46" y="230">PARAMETRISATION &middot; PACKAGING WITH uv</text>
+
+  <text class="mm c" x="420" y="34">TYPESCRIPT &mdash; WEEK 02</text>
+  <rect class="box-c" x="420" y="50" width="360" height="180" rx="3"/>
+  <text class="m" x="436" y="76">type Result =</text>
+  <text class="m" x="436" y="98">&nbsp;&nbsp;| { ok: true;  row: Row }</text>
+  <text class="m" x="436" y="120">&nbsp;&nbsp;| { ok: false; errors: Issue[] }</text>
+  <text class="m" x="436" y="148">const Row = z.object({ ... })   // runtime</text>
+  <text class="mm" x="436" y="176">TEACHES: DISCRIMINATED UNIONS &middot; THE</text>
+  <text class="mm" x="436" y="194">COMPILE-TIME VS RUNTIME BOUNDARY &middot; ZOD AT</text>
+  <text class="mm" x="436" y="212">THE EDGE &middot; NODE STREAMS &middot; strict MODE &middot;</text>
+  <text class="mm" x="436" y="230">WHY unknown IS BETTER THAN any</text>
+
+  <text class="mm c" x="810" y="34">JAVA &mdash; WEEK 02</text>
+  <rect class="box-c" x="810" y="50" width="360" height="180" rx="3"/>
+  <text class="m" x="826" y="76">record Row(String employeeId,</text>
+  <text class="m" x="826" y="98">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String siteId) {}</text>
+  <text class="m" x="826" y="126">rows.stream().map(this::validate)</text>
+  <text class="m" x="826" y="148">&nbsp;&nbsp;&nbsp;&nbsp;.collect(toList());</text>
+  <text class="mm" x="826" y="176">TEACHES: RECORDS &middot; THE STREAM API &middot;</text>
+  <text class="mm" x="826" y="194">CHECKED EXCEPTIONS &middot; Optional &middot; MAVEN</text>
+  <text class="mm" x="826" y="212">AND THE JVM BUILD PIPELINE &middot; JUNIT 5 &middot;</text>
+  <text class="mm" x="826" y="230">STRONG STATIC TYPING WITHOUT INFERENCE</text>
+
+  <line class="ln dash" x1="20" y1="252" x2="1180" y2="252"/>
+  <text class="mm" x="30" y="274">WHY THIS WORKS: THE PROBLEM IS ALREADY SOLVED IN YOUR HEAD, SO ALL YOUR ATTENTION GOES ON THE LANGUAGE. YOU FEEL EXACTLY WHERE EACH ONE IS PLEASANT AND WHERE IT FIGHTS YOU.</text>
+  <text class="mm b" x="30" y="298">DELIVERABLE: THREE BINARIES PRODUCING BYTE-IDENTICAL JSON FOR THE SAME INPUT, ONE SHARED FIXTURE SET, AND A SHORT README COMPARING THE THREE EXPERIENCES. THAT README IS AN INTERVIEW ANSWER.</text>
+</svg>
+<figcaption>Drawing 13-B &mdash; one specification, three implementations.</figcaption>
+</figure>
+
+<!-- ===================================================================== -->
+<h2 id="p2">Projects 2 to 5 &mdash; building the product</h2>
+
+<div class="grid g2">
+  <div class="card"><span class="cm">Weeks 03&ndash;04 &middot; <a href="frontend.html">Sheet 03</a></span>
+    <b class="ct">Project 2 &mdash; BadgeDesk web</b>
+    <p>Next.js App Router. Request list, request detail, new-request form, approve action. Server
+    components fetch; only the button and the filter bar are client components. Filter and page number live
+    in the URL. Tailwind for styling.</p>
+    <p><b>Done when:</b> a manager can list, filter, open and approve a request using only a keyboard; the
+    back button works; and it is usable at 360&nbsp;px wide. Data comes from a mocked module with real
+    TypeScript types &mdash; Project 3 replaces the implementation, not the types.</p>
+    <p><b>Stretch:</b> optimistic UI on approve, with rollback on failure.</p></div>
+
+  <div class="card"><span class="cm">Weeks 05&ndash;06 &middot; <a href="backend.html">Sheets 04</a>, <a href="apis.html">05</a></span>
+    <b class="ct">Project 3 &mdash; core service</b>
+    <p>FastAPI over PostgreSQL. Full CRUD for access requests, the approve and reject transitions, Pydantic
+    validation mirroring every client-side rule, cursor pagination, RFC 9457 errors with a trace id, and
+    <code>Idempotency-Key</code> backed by Redis.</p>
+    <p><b>Done when:</b> the OpenAPI schema generates the TypeScript types the web app compiles against,
+    firing the same request twice creates one record, and the integration tests run against a real Postgres
+    in Docker.</p>
+    <p><b>Stretch:</b> row-level security so a site admin can only see their own site.</p></div>
+
+  <div class="card"><span class="cm">Week 06 &middot; <a href="apis.html">Sheet 05</a></span>
+    <b class="ct">Project 4 &mdash; gateway, notifier, webhooks</b>
+    <p>A NestJS GraphQL gateway in front of core, with a per-request DataLoader, a depth limit and
+    complexity scoring. An Express notifier. An inbound webhook receiver with HMAC verification, a
+    timestamp window and delivery-id deduplication.</p>
+    <p><b>Done when:</b> you can demonstrate the N+1 problem with query logging on, then show it fixed; and
+    a tampered webhook body is rejected while a replayed delivery returns 2xx without acting twice.</p>
+    <p><b>Stretch:</b> outbound webhooks to a fake partner, with retry, jitter and a dead letter store.</p></div>
+
+  <div class="card"><span class="cm">Week 07 &middot; <a href="databases.html">Sheet 06</a></span>
+    <b class="ct">Project 5 &mdash; make it fast</b>
+    <p>Seed a million access requests. Find the slow queries, read the plans, add the right composite
+    indexes, and record before-and-after <code>EXPLAIN ANALYZE</code> output. Add cache-aside for the site
+    directory with jittered TTL and stampede protection. Store door events in MongoDB and write the
+    aggregation pipeline.</p>
+    <p><b>Done when:</b> the request list p99 is under 50&nbsp;ms at a million rows, and you have a written
+    record of each optimisation with its measured effect.</p>
+    <p><b>Stretch:</b> reproduce a deadlock deliberately, then fix it with consistent lock ordering.</p></div>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">In production &mdash; the habit worth building here</span>
+  <p>Project 5 is the first time you will have numbers. Keep a <code>PERFORMANCE.md</code> in the repository
+  with a row per change: what was slow, what you measured, what you changed, what it became. It costs five
+  minutes per entry and it turns &ldquo;I optimised some queries&rdquo; into &ldquo;the request list was
+  813&nbsp;ms because it was sequentially scanning ten million rows to keep forty-three thousand; a
+  composite index on site, status and created-at took it to 0.14&nbsp;ms&rdquo;. Interviewers remember the
+  second answer.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="p6">Project 6 &mdash; ship it</h2>
+<p class="sub">Weeks 08&ndash;10. The highest-value fortnight on the entire drawing set.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 400" role="img" aria-label="Project 6 broken into a weekend-by-weekend sequence: containerise every service, write the Terraform network and data layers, deploy with ECS behind a load balancer, add the CI/CD pipeline, then add observability and a deliberate failure exercise, with a teardown after each session.">
+  <defs><marker id="s13c-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  <marker id="s13c-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker></defs>
+
+  <rect class="box-c" x="30" y="60" width="210" height="66" rx="3"/>
+  <text class="t mid" x="135" y="84">A &middot; Containerise</text>
+  <text class="mm mid" x="135" y="102">MULTI-STAGE, NON-ROOT</text>
+  <text class="mm mid" x="135" y="118">EVERY SERVICE UNDER 200 MB</text>
+
+  <rect class="box-c" x="278" y="60" width="210" height="66" rx="3"/>
+  <text class="t mid" x="383" y="84">B &middot; Terraform network</text>
+  <text class="mm mid" x="383" y="102">VPC, 3 TIERS, 2 AZs</text>
+  <text class="mm mid" x="383" y="118">S3 BACKEND + LOCKING</text>
+
+  <rect class="box-c" x="526" y="60" width="210" height="66" rx="3"/>
+  <text class="t mid" x="631" y="84">C &middot; Terraform data</text>
+  <text class="mm mid" x="631" y="102">RDS, ELASTICACHE, SECRETS</text>
+  <text class="mm mid" x="631" y="118">ISOLATED SUBNETS</text>
+
+  <rect class="box-c" x="774" y="60" width="210" height="66" rx="3"/>
+  <text class="t mid" x="879" y="84">D &middot; Deploy</text>
+  <text class="mm mid" x="879" y="102">ECS FARGATE + ALB + ACM</text>
+  <text class="mm mid" x="879" y="118">HTTPS, REAL DOMAIN</text>
+
+  <rect class="box-c" x="278" y="176" width="210" height="66" rx="3"/>
+  <text class="t mid" x="383" y="200">E &middot; Pipeline</text>
+  <text class="mm mid" x="383" y="218">ACTIONS + OIDC, NO KEYS</text>
+  <text class="mm mid" x="383" y="234">TEST, BUILD, SCAN, DEPLOY</text>
+
+  <rect class="box-c" x="526" y="176" width="210" height="66" rx="3"/>
+  <text class="t mid" x="631" y="200">F &middot; Observability</text>
+  <text class="mm mid" x="631" y="218">STRUCTURED LOGS + TRACE ID</text>
+  <text class="mm mid" x="631" y="234">FOUR GOLDEN SIGNAL ALARMS</text>
+
+  <rect class="box-a" x="774" y="176" width="210" height="66" rx="3"/>
+  <text class="t b mid" x="879" y="200">G &middot; Break it on purpose</text>
+  <text class="mm mid" x="879" y="218">KILL A TASK &middot; FAIL OVER RDS</text>
+  <text class="mm mid" x="879" y="234">FILL THE DISK &middot; WRITE IT UP</text>
+
+  <path class="flow" d="M244,93 H274" marker-end="url(#s13c-ac)"/>
+  <path class="flow" d="M492,93 H522" marker-end="url(#s13c-ac)"/>
+  <path class="flow" d="M740,93 H770" marker-end="url(#s13c-ac)"/>
+  <path class="flow" d="M879,130 V152 H383 V172" marker-end="url(#s13c-ac)"/>
+  <path class="flow" d="M492,209 H522" marker-end="url(#s13c-ac)"/>
+  <path class="flow" d="M740,209 H770" marker-end="url(#s13c-ac)"/>
+
+  <rect class="box-r" x="30" y="176" width="210" height="66" rx="3"/>
+  <text class="t r mid" x="135" y="200">EVERY SESSION ENDS</text>
+  <text class="mm mid" x="135" y="218">terraform destroy</text>
+  <text class="mm mid" x="135" y="234">THEN CHECK THE FORECAST</text>
+  <path class="flow-r" d="M274,209 H244" marker-end="url(#s13c-ar)"/>
+
+  <line class="ln dash" x1="20" y1="268" x2="1180" y2="268"/>
+  <text class="mm b" x="30" y="292">STEP G IS THE ONE PEOPLE SKIP, AND IT IS THE ONE THAT PRODUCES INTERVIEW MATERIAL. DELIBERATELY BREAK THINGS AND WRITE DOWN WHAT HAPPENED:</text>
+  <text class="mm" x="30" y="316">KILL A FARGATE TASK MID-REQUEST &mdash; DID ANY REQUEST FAIL? &middot; REBOOT RDS WITH FAILOVER &mdash; DID THE CONNECTION POOL RECOVER WITHOUT A REDEPLOY? &middot; PUSH A BROKEN IMAGE</text>
+  <text class="mm" x="30" y="336">&mdash; DID THE HEALTH CHECK STOP IT REACHING USERS? &middot; REVOKE A SECURITY GROUP RULE &mdash; HOW LONG BEFORE AN ALARM TOLD YOU, AND WHAT DID THE LOGS ACTUALLY SAY?</text>
+  <text class="mm c" x="30" y="364">EACH ONE IS A THIRTY-MINUTE EXPERIMENT AND A PARAGRAPH IN YOUR README. TOGETHER THEY ARE THE DIFFERENCE BETWEEN &ldquo;I DEPLOYED IT&rdquo; AND &ldquo;I KNOW HOW IT FAILS&rdquo;,</text>
+  <text class="mm c" x="30" y="384">WHICH IS PRECISELY THE DISTINCTION A SENIOR INTERVIEW IS TRYING TO FIND.</text>
+</svg>
+<figcaption>Drawing 13-C &mdash; Project 6, weekend by weekend. <b>Red</b> = the teardown that keeps it
+affordable. <b>Brass</b> = the step that produces your best stories.</figcaption>
+</figure>
+
+<!-- ===================================================================== -->
+<h2 id="p7">Projects 7 and 8 &mdash; the senior differentiators</h2>
+
+<div class="grid g2">
+  <div class="card"><span class="cm">Week 11 &middot; <a href="messaging.html">Sheet 11</a></span>
+    <b class="ct">Project 7 &mdash; event-driven provisioning</b>
+    <p>Replace the synchronous vendor call with Kafka. <code>core</code> writes an outbox row inside the
+    approval transaction; a relay publishes <code>access.approved</code>; a consumer group calls the fake
+    CCure API with retry and backoff and publishes <code>access.provisioned</code>. Failures go to a dead
+    letter topic.</p>
+    <p><b>Done when:</b> you can stop the vendor entirely and the system keeps accepting approvals, then
+    drains the backlog when it returns; and replaying a message twice provisions once.</p>
+    <p><b>Why it matters:</b> the transactional outbox is a genuine senior-level pattern, and being able to
+    explain why you cannot write to a database and a queue atomically separates candidates
+    immediately.</p></div>
+
+  <div class="card"><span class="cm">Week 11 &middot; <a href="ai.html">Sheet 12</a></span>
+    <b class="ct">Project 8 &mdash; the policy assistant</b>
+    <p>RAG over invented access-policy documents. Chunk on headings, embed into <code>pgvector</code>,
+    hybrid search with rank fusion, cross-encoder reranking, citations verified against what you actually
+    sent. A golden set of thirty questions scored on every change.</p>
+    <p><b>Done when:</b> you can show a question that vector search alone gets wrong and hybrid search gets
+    right, with recall@5 measured before and after; and an injected instruction in a document fails to make
+    the assistant leak anything.</p>
+    <p><b>Why it matters:</b> almost every AI project in a portfolio is a thin wrapper around a chat API.
+    Retrieval measurement and an evaluation suite are what make this engineering.</p></div>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="p9">Project 9 &mdash; the write-up</h2>
+<p class="sub">Week 12. Ninety seconds of a reader's attention is all you get. Design for that.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 380" role="img" aria-label="The anatomy of a README that gets read: a one-line description, a screenshot or diagram, what it does and why it exists, the architecture diagram, how to run it in one command, the engineering decisions with trade-offs, what was measured, and what you would do differently.">
+  <text class="mm c" x="30" y="34">WHAT A READER SEES, IN ORDER &mdash; AND HOW LONG THEY SPEND ON IT</text>
+
+  <rect class="box-c" x="30" y="52" width="700" height="40" rx="3"/>
+  <text class="m" x="46" y="78">1 &middot; ONE LINE: what it is, who it is for, what it runs on</text>
+  <text class="mm b" x="760" y="78">5 SECONDS &mdash; DECIDES WHETHER THEY SCROLL</text>
+
+  <rect class="box-c" x="30" y="100" width="700" height="40" rx="3"/>
+  <text class="m" x="46" y="126">2 &middot; A SCREENSHOT, or the architecture diagram if there is no UI</text>
+  <text class="mm b" x="760" y="126">10 SECONDS &mdash; THE ONLY THING MOST PEOPLE LOOK AT</text>
+
+  <rect class="box-c" x="30" y="148" width="700" height="40" rx="3"/>
+  <text class="m" x="46" y="174">3 &middot; THE PROBLEM: two paragraphs on why this system exists</text>
+  <text class="mm" x="760" y="174">20 SECONDS</text>
+
+  <rect class="box-a" x="30" y="196" width="700" height="40" rx="3"/>
+  <text class="m b" x="46" y="222">4 &middot; ARCHITECTURE DIAGRAM with a numbered walk-through of one request</text>
+  <text class="mm b" x="760" y="222">THE PART THAT GETS YOU THE CALL</text>
+
+  <rect class="box-c" x="30" y="244" width="700" height="40" rx="3"/>
+  <text class="m" x="46" y="270">5 &middot; RUN IT: git clone, cp .env.example .env, docker compose up</text>
+  <text class="mm r" x="760" y="270">IF IT IS MORE THAN THREE COMMANDS, NOBODY RUNS IT</text>
+
+  <rect class="box-a" x="30" y="292" width="700" height="40" rx="3"/>
+  <text class="m b" x="46" y="318">6 &middot; DECISIONS: what you chose, what you rejected, and why</text>
+  <text class="mm b" x="760" y="318">WHAT AN INTERVIEWER READS BEFORE THE CALL</text>
+
+  <rect class="box-c" x="30" y="340" width="700" height="34" rx="3"/>
+  <text class="m" x="46" y="362">7 &middot; MEASURED: numbers &nbsp;&middot;&nbsp; 8 &middot; WHAT I WOULD DO DIFFERENTLY</text>
+  <text class="mm" x="760" y="362">HONESTY READS AS SENIORITY</text>
+</svg>
+<figcaption>Drawing 13-D &mdash; README anatomy. <b>Brass</b> = the two sections that do the real work.</figcaption>
+</figure>
+
+<div class="code" data-lang="markdown">
+<header><b>the decisions section &mdash; the format that works</b></header>
+<pre><code>## Engineering decisions
+
+### GraphQL at the edge, REST between services
+The web and mobile clients need different shapes of the same data, and the
+alternative was a growing set of `?include=` parameters that were becoming a
+query language by accident. Internally there are two known callers who want
+HTTP caching, plain URLs in logs and `curl` during an incident, so REST stays.
+
+**Rejected:** GraphQL everywhere. It would have cost the caching and tooling
+we get free from REST, for no benefit at two internal callers.
+**Would revisit if:** a third and fourth internal consumer appeared with
+genuinely different data needs.
+
+### Transactional outbox instead of publishing directly to Kafka
+You cannot write to Postgres and Kafka atomically. Publishing first risks an
+event for an approval that then rolls back; committing first risks an approval
+that is never provisioned. The outbox commits the event with the approval and a
+relay publishes it, which makes delivery at-least-once - so every consumer is
+idempotent on the event id.
+
+**Rejected:** two-phase commit, which is operationally miserable, and
+"publish then commit and hope", which loses approvals silently.
+**Cost:** roughly 200ms of extra latency and one more moving part to monitor.</code></pre>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Deliverable</th><th>Where</th><th>Effort</th><th>Why it earns its place</th></tr></thead>
+<tbody>
+<tr><td>Repository README with a diagram</td><td>GitHub</td><td>1 day</td><td>The only artefact that is reliably read</td></tr>
+<tr><td>A running deployed instance</td><td>A real URL</td><td>Half a day</td><td>Turns a claim into a demonstration. Even a small always-free tier host is enough.</td></tr>
+<tr><td>A three-minute screen recording</td><td>Linked in the README</td><td>2 hours</td><td>Someone who will not clone your repo will watch three minutes</td></tr>
+<tr><td><code>ARCHITECTURE.md</code></td><td>Repository</td><td>Half a day</td><td>Where the request walk-through and the failure modes live</td></tr>
+<tr><td><code>PERFORMANCE.md</code></td><td>Repository</td><td>Ongoing</td><td>Numbers, before and after, for every optimisation</td></tr>
+<tr><td>One written post</td><td>Anywhere public</td><td>1 day</td><td>&ldquo;What I learnt deploying a multi-service system solo&rdquo;. Recruiters find these.</td></tr>
+<tr><td>CV bullets with numbers</td><td>Your CV</td><td>2 hours</td><td>&ldquo;Cut p99 from 813&nbsp;ms to 0.14&nbsp;ms&rdquo; beats &ldquo;optimised database performance&rdquo;</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; presenting your work</div>
+  <a class="r" href="https://urldefense.com/v3/__https://github.com/matiassingers/awesome-readme__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5KOPGCdJ$" target="_blank" rel="noopener"><span>Awesome README<i>A curated list of READMEs worth imitating. Pick two and copy their structure shamelessly.</i></span><span class="dur">30 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://c4model.com/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5DR3l5OB$" target="_blank" rel="noopener"><span>The C4 model<i>Context, container, component, code. A simple, defensible way to draw architecture that interviewers recognise immediately.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://adr.github.io/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5GEFMxUb$" target="_blank" rel="noopener"><span>Architecture Decision Records<i>The formal version of the decisions section above. Worth adopting even for a personal project.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=how*to*present*your*side*project*in*a*software*engineering*interview__;KysrKysrKysrKw!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5NJy7-XW$" target="_blank" rel="noopener"><span>Presenting a project in an interview<i>Practise the ninety-second version out loud until it is boring to you.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://excalidraw.com/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5CgbGlPP$" target="_blank" rel="noopener"><span>Excalidraw<i>For the architecture diagram. Clear beats beautiful; export a PNG into the README.</i></span><span class="dur">tool</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="alternatives">If you want variety</h2>
+<p class="sub">BadgeDesk is the recommended path because depth beats breadth. But if you genuinely need a
+second domain for a specific role, these use the same stack against a different problem.</p>
+
+<div class="grid g3">
+  <div class="card"><span class="cm">Data-heavy</span><b class="ct">Log analytics pipeline</b>
+    <p>Ingest logs over Kafka, aggregate in a consumer, store rollups in Postgres and raw events in S3,
+    query with a FastAPI service, chart in Next.js. Exercises messaging, time-series schema design,
+    partitioning and cost-aware storage tiering.</p></div>
+  <div class="card"><span class="cm">Real-time</span><b class="ct">Collaborative shift planner</b>
+    <p>WebSockets, presence, optimistic UI with conflict resolution, Redis pub/sub for fan-out across
+    instances. Exercises the hardest part of frontend state and the stateful-service scaling problem.</p></div>
+  <div class="card"><span class="cm">Integration-heavy</span><b class="ct">Vendor sync service</b>
+    <p>Pull from three fake external APIs with different auth schemes, rate limits and pagination styles;
+    reconcile into one model; expose webhooks outbound. Exercises resilience patterns, backoff, circuit
+    breaking and reconciliation.</p></div>
+</div>
+
+<p><b>Choose at most one</b>, and only after Project 6 is deployed. A second system before the first one
+ships is how portfolios end up as a collection of promising starts.</p>
+
+<!-- ===================================================================== -->
+<h2 id="connect">How the subtopics connect</h2>
+<p class="sub">Every sheet on this drawing set, mapped to the project where you actually use it. If a
+sheet has no project, you have read it rather than learnt it.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 400" role="img" aria-label="A matrix mapping each sheet of the drawing set to the projects that exercise it, showing that every topic is used in at least one build and that the deployment project touches the most sheets.">
+  <text class="mm" x="30" y="34">SHEET</text>
+  <text class="mm mid" x="470" y="34">P1</text>
+  <text class="mm mid" x="540" y="34">P2</text>
+  <text class="mm mid" x="610" y="34">P3</text>
+  <text class="mm mid" x="680" y="34">P4</text>
+  <text class="mm mid" x="750" y="34">P5</text>
+  <text class="mm mid" x="820" y="34">P6</text>
+  <text class="mm mid" x="890" y="34">P7</text>
+  <text class="mm mid" x="960" y="34">P8</text>
+  <text class="mm mid" x="1030" y="34">P9</text>
+  <line class="ln" x1="30" y1="44" x2="1170" y2="44"/>
+
+  <text class="m" x="30" y="70">01 Machine Setup</text>
+  <text class="t c mid" x="470" y="70">&bull;</text><text class="t c mid" x="540" y="70">&bull;</text><text class="t c mid" x="610" y="70">&bull;</text><text class="t c mid" x="680" y="70">&bull;</text><text class="t c mid" x="750" y="70">&bull;</text><text class="t c mid" x="820" y="70">&bull;</text><text class="t c mid" x="890" y="70">&bull;</text><text class="t c mid" x="960" y="70">&bull;</text>
+
+  <text class="m" x="30" y="102">02 Languages</text>
+  <text class="t b mid" x="470" y="102">CORE</text>
+  <text class="t c mid" x="610" y="102">&bull;</text><text class="t c mid" x="680" y="102">&bull;</text><text class="t c mid" x="890" y="102">&bull;</text><text class="t c mid" x="960" y="102">&bull;</text>
+
+  <text class="m" x="30" y="134">03 Frontend</text>
+  <text class="t b mid" x="540" y="134">CORE</text>
+  <text class="t c mid" x="1030" y="134">&bull;</text>
+
+  <text class="m" x="30" y="166">04 Backend</text>
+  <text class="t b mid" x="610" y="166">CORE</text>
+  <text class="t c mid" x="680" y="166">&bull;</text><text class="t c mid" x="890" y="166">&bull;</text><text class="t c mid" x="960" y="166">&bull;</text>
+
+  <text class="m" x="30" y="198">05 APIs</text>
+  <text class="t c mid" x="610" y="198">&bull;</text><text class="t b mid" x="680" y="198">CORE</text>
+
+  <text class="m" x="30" y="230">06 Databases</text>
+  <text class="t c mid" x="610" y="230">&bull;</text><text class="t b mid" x="750" y="230">CORE</text><text class="t c mid" x="890" y="230">&bull;</text><text class="t c mid" x="960" y="230">&bull;</text>
+
+  <text class="m" x="30" y="262">07 AWS &nbsp;&middot;&nbsp; 08 Azure</text>
+  <text class="t b mid" x="820" y="262">CORE</text>
+
+  <text class="m" x="30" y="294">09 DevOps &nbsp;&middot;&nbsp; 10 Terraform</text>
+  <text class="t c mid" x="610" y="294">&bull;</text><text class="t b mid" x="820" y="294">CORE</text><text class="t c mid" x="890" y="294">&bull;</text>
+
+  <text class="m" x="30" y="326">11 Messaging</text>
+  <text class="t c mid" x="680" y="326">&bull;</text><text class="t b mid" x="890" y="326">CORE</text>
+
+  <text class="m" x="30" y="358">12 AI Engineering</text>
+  <text class="t b mid" x="960" y="358">CORE</text>
+
+  <line class="ln dash" x1="20" y1="374" x2="1180" y2="374"/>
+  <text class="mm b" x="30" y="396">READ IT DOWN A COLUMN AND YOU HAVE THE SHEETS TO REVISE BEFORE BUILDING. READ IT ACROSS A ROW AND YOU HAVE EVERY PLACE YOU CAN POINT TO WHEN ASKED &ldquo;WHERE HAVE YOU USED THIS?&rdquo;</text>
+</svg>
+<figcaption>Drawing 13-E &mdash; sheets against projects. <b>Brass</b> = the project that owns the topic.
+<b>Cyan</b> = where it reappears.</figcaption>
+</figure>
+
+<!-- ===================================================================== -->
+<h2 id="drill">Drill book</h2>
+<p class="sub">The project conversation opens most interviews. These are the questions that follow
+&ldquo;tell me about something you have built&rdquo;.</p>
+
+<div class="drill">
+  <div class="dh">Talking about your work</div>
+  <details><summary>Tell me about a project you are proud of.</summary>
+    <div class="ans"><p>Ninety seconds, in this order: the problem and who had it, the shape of the solution
+    in two sentences, the one interesting engineering decision, and one number. &ldquo;BadgeDesk manages
+    building access requests across three sites. It is a Next.js front end over a FastAPI service and a
+    NestJS GraphQL gateway, on ECS behind an ALB, all in Terraform. The interesting part was making
+    provisioning asynchronous through Kafka with a transactional outbox, because the vendor API was slow
+    and unreliable and we could not let their latency become our timeouts. The request list went from 813
+    milliseconds to 0.14 after indexing.&rdquo; Then stop and let them choose where to dig.</p></div></details>
+  <details><summary>What was the hardest problem you hit?</summary>
+    <div class="ans"><p>Pick something genuinely technical with a real diagnosis, not &ldquo;time
+    management&rdquo;. Structure it as symptom, investigation, root cause, fix, prevention &mdash; the
+    investigation is the part they are assessing. Duplicate access requests appearing under poor mobile
+    connectivity, traced by correlating client retries with server logs, root cause being a non-idempotent
+    <code>POST</code>, fixed with client-generated idempotency keys in Redis, prevented by making it a
+    requirement in the API guidelines and a test in the suite.</p></div></details>
+  <details><summary>What would you do differently?</summary>
+    <div class="ans"><p>Answer honestly and specifically, because a candidate with no criticisms of their
+    own work has not looked hard. &ldquo;I introduced MongoDB for the door events when a
+    <code>jsonb</code> column in Postgres would have handled the volume and removed a whole database from
+    the estate. I chose it partly to learn it, which is fine for a personal project and would have been the
+    wrong call at work.&rdquo; That answer demonstrates judgement about judgement, which is what a senior
+    interview is looking for.</p></div></details>
+  <details><summary>How do you know it works?</summary>
+    <div class="ans"><p>Layered: unit tests for the validation and business rules, integration tests against
+    a real Postgres and Redis in Docker so the tests exercise the actual queries, contract checks that the
+    generated OpenAPI schema still matches, smoke tests against staging after every deploy, and alarms on
+    the four golden signals in production. Plus the deliberate failure exercises &mdash; I killed a task
+    mid-request and confirmed no request was dropped, and rebooted RDS with failover to check the pool
+    reconnected without a redeploy.</p></div></details>
+  <details><summary>How would you scale it to a hundred times the traffic?</summary>
+    <div class="ans"><p>Measure first, because the bottleneck is rarely where you guess. Then in likely
+    order: read replicas and more aggressive caching for the read path, which dominates; more Fargate tasks
+    behind the existing load balancer, since the services are stateless; more Kafka partitions and consumer
+    instances for provisioning throughput; and only then partitioning the access-request table by site or
+    by date. The part that would actually break first is the connection pool arithmetic, and the part that
+    would cost the most is CloudWatch Logs ingestion.</p></div></details>
+  <details><summary>You built this alone. How do we know you can work in a team?</summary>
+    <div class="ans"><p>Point at the artefacts that only exist for other people: the README and architecture
+    document written for a reader, decision records with the rejected options and the trade-offs, small
+    reviewable commits, branch protection with required checks, and an API contract defined before either
+    side was written. Then give a concrete example from your actual job of a disagreement resolved and what
+    you changed your mind about. The project shows habits; the job story shows collaboration.</p></div></details>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="signoff">Sign-off</h2>
+<p class="sub">One system, running, deployed and explained.</p>
+
+<div class="signoff">
+  <div class="sh"><span>Weeks 02&ndash;12</span><span>Sheet 13</span></div>
+  <label><input type="checkbox"><span>Project 1: the validator in Python, TypeScript and Java, producing identical output from shared fixtures.</span></label>
+  <label><input type="checkbox"><span>Project 2: the web application, keyboard-usable, responsive, with filter state in the URL.</span></label>
+  <label><input type="checkbox"><span>Project 3: the core service with idempotent writes, cursor pagination and generated client types.</span></label>
+  <label><input type="checkbox"><span>Project 4: GraphQL gateway with a DataLoader, plus a webhook receiver that rejects tampered payloads.</span></label>
+  <label><input type="checkbox"><span>Project 5: a million rows, indexed, cached, with before-and-after numbers recorded.</span></label>
+  <label><input type="checkbox"><span>Project 6: deployed to AWS from Terraform, through a pipeline, with alarms &mdash; and destroyed and rebuilt from scratch at least twice.</span></label>
+  <label><input type="checkbox"><span>Project 6: at least four deliberate failure experiments run and written up.</span></label>
+  <label><input type="checkbox"><span>Project 7: provisioning moved onto Kafka with a transactional outbox and idempotent consumers.</span></label>
+  <label><input type="checkbox"><span>Project 8: RAG assistant with hybrid retrieval, reranking and a scored golden set.</span></label>
+  <label><input type="checkbox"><span>Project 9: README with an architecture diagram, a one-command start, and a decisions section.</span></label>
+  <label><input type="checkbox"><span>A three-minute recorded demo linked from the README.</span></label>
+  <label><input type="checkbox"><span>The ninety-second project pitch delivered out loud, from memory, without notes.</span></label>
+</div>
+
+</div><!-- /sheetbody -->
+</main>
+
+<aside class="toc" aria-label="Contents"></aside>
+</div>
+
+<script src="assets/js/nav-data.js"></script>
+<script src="assets/js/sheet.js"></script>
+</body>
+</html>

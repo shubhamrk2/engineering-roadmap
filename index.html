@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheet 00 — The Plan — BadgeDesk Roadmap</title>
+<meta name="description" content="A 12-week engineering drawing set: Python, JS/TS, Java, React, Next.js, FastAPI, Node, APIs, Postgres, Mongo, Redis, AWS, Azure, Docker, Kubernetes, Terraform, Kafka and LLM engineering.">
+<link rel="stylesheet" href="assets/css/sheet.css">
+</head>
+<body data-sheet="00">
+<a class="skip" href="#main">Skip to sheet</a>
+<div class="wrap">
+<nav class="rail" aria-label="Sheet index"></nav>
+
+<main id="main">
+
+<header class="sheethead">
+  <div>
+    <div class="no">Sheet 00 &middot; Preflight &middot; Rev 1</div>
+    <h1>The<br>Plan<span>.</span></h1>
+    <p class="lede">Fifteen sheets, twelve weeks, one system. Every code sample, diagram and project on
+    this set is a slice of <b>BadgeDesk</b> &mdash; a corporate badge and site-access platform. You will not
+    learn twenty disconnected technologies; you will build one product twenty different ways until the
+    connections are obvious enough to draw on a whiteboard under pressure.</p>
+  </div>
+  <div class="specs">
+    <div><span>Duration</span><span>12 weeks</span></div>
+    <div><span>Load</span><span>14&ndash;18 h / wk</span></div>
+    <div><span>Sheets</span><span>15</span></div>
+    <div><span>Projects</span><span>7</span></div>
+    <div><span>Target</span><span>SE&nbsp;III</span></div>
+  </div>
+</header>
+
+<div class="sheetbody">
+
+<!-- ===================================================================== -->
+<h2 id="how">How to read this set</h2>
+<p class="sub">Six conventions. Learn them once and every sheet after this reads the same way.</p>
+
+<div class="grid g3">
+  <div class="card"><span class="cm">Convention 01</span><b class="ct">Colour means something</b>
+    <p><span style="color:var(--cyan)">Cyan</span> is a synchronous request or a data read &mdash; something waits for it.
+    <span style="color:var(--brass)">Brass</span> is asynchronous: an event, a job, the thing you act on.
+    <span style="color:var(--redpencil)">Red pencil</span> is the failure path and the trap that ends interviews.</p></div>
+  <div class="card"><span class="cm">Convention 02</span><b class="ct">Numbered callouts</b>
+    <p>Circled numbers in a drawing map one-to-one onto the numbered notes directly beneath it. Read the
+    drawing, then the notes, then the drawing again.</p></div>
+  <div class="card"><span class="cm">Convention 03</span><b class="ct">One system throughout</b>
+    <p>Every example belongs to BadgeDesk. When Sheet 06 indexes a table, it is the same table Sheet 04
+    queries and Sheet 07 backs up.</p></div>
+  <div class="card"><span class="cm">Convention 04</span><b class="ct">Ask / Trap / Ship panels</b>
+    <p><b>Interviewers ask</b> is what gets asked out loud. <b>Red pencil</b> is the mistake that costs you the round.
+    <b>In production</b> is what the answer looks like when real money is on it.</p></div>
+  <div class="card"><span class="cm">Convention 05</span><b class="ct">Sign-off boxes</b>
+    <p>Tick a box and it is saved in this browser. The title block bottom-right tracks the whole set.
+    Do not tick until you have typed the code yourself.</p></div>
+  <div class="card"><span class="cm">Convention 06</span><b class="ct">Keyboard</b>
+    <p><kbd>/</kbd> searches the sheet index. <kbd>[</kbd> and <kbd>]</kbd> move to the previous and next
+    sheet. Every code block has a copy button.</p></div>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why one product instead of twenty tutorials</span>
+  <p>The gap between SE2 and SE3 is almost never syntax. It is whether you can hold a whole system in your
+  head and reason about what breaks when one piece is slow, down or lying to you. Tutorials teach pieces.
+  This set teaches one system from six angles, which is the same skill an interviewer is probing when they
+  ask &ldquo;so what happens if the badge vendor takes thirty seconds to respond?&rdquo;</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="system">The system you are building</h2>
+<p class="sub">BadgeDesk: an employee requests access to a building, a manager approves it, a badge gets
+provisioned in the physical access-control system, and a nightly job proves the two sides still agree.
+Small enough to finish, big enough to need every technology on your list.</p>
+
+<figure class="dwg dwg--hero">
+<svg viewBox="0 0 1200 700" role="img" aria-label="BadgeDesk system architecture: browser to Next.js to NestJS gateway to FastAPI core, backed by PostgreSQL, Redis and MongoDB inside a VPC, publishing to Kafka, consumed by four workers that call external systems, all running on a platform of Terraform, GitHub Actions, Docker, EKS and CloudWatch.">
+  <defs>
+    <marker id="ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <!-- VPC zone -->
+  <rect class="zone" x="364" y="52" width="528" height="200" rx="4"/>
+  <text class="mm c" x="374" y="44">AWS VPC &middot; PRIVATE SUBNETS &middot; SHEET 07</text>
+  <text class="mm" x="36" y="44">PUBLIC INTERNET</text>
+
+  <!-- row A: synchronous request path -->
+  <rect class="box" x="30" y="74" width="130" height="54" rx="3"/>
+  <text class="t" x="95" y="99" text-anchor="middle">Employee</text>
+  <text class="mm mid" x="95" y="115">BROWSER</text>
+
+  <rect class="box-c" x="196" y="74" width="158" height="54" rx="3"/>
+  <text class="t" x="275" y="97" text-anchor="middle">Next.js web</text>
+  <text class="mm mid" x="275" y="113">REACT &middot; SSR &middot; SHEET 03</text>
+
+  <rect class="box-c" x="390" y="74" width="168" height="54" rx="3"/>
+  <text class="t" x="474" y="97" text-anchor="middle">NestJS gateway</text>
+  <text class="mm mid" x="474" y="113">GRAPHQL BFF &middot; SHEET 05</text>
+
+  <rect class="box-c" x="594" y="74" width="168" height="54" rx="3"/>
+  <text class="t" x="678" y="97" text-anchor="middle">FastAPI core</text>
+  <text class="mm mid" x="678" y="113">PYTHON &middot; SHEET 04</text>
+
+  <rect class="box" x="952" y="74" width="218" height="54" rx="3"/>
+  <text class="t" x="1061" y="97" text-anchor="middle">Entra ID / AWS IAM</text>
+  <text class="mm mid" x="1061" y="113">WHO YOU ARE &middot; SHEETS 07 &amp; 08</text>
+
+  <path class="flow" d="M164,101 H190" marker-end="url(#ac)"/>
+  <path class="flow" d="M358,101 H384" marker-end="url(#ac)"/>
+  <path class="flow" d="M562,101 H588" marker-end="url(#ac)"/>
+  <path class="flow dash" d="M766,101 H946" marker-end="url(#ac)"/>
+
+  <!-- row B: data tier -->
+  <rect class="box" x="376" y="182" width="150" height="54" rx="3"/>
+  <text class="t" x="451" y="205" text-anchor="middle">PostgreSQL</text>
+  <text class="mm mid" x="451" y="221">SOURCE OF TRUTH</text>
+
+  <rect class="box" x="552" y="182" width="150" height="54" rx="3"/>
+  <text class="t" x="627" y="205" text-anchor="middle">Redis</text>
+  <text class="mm mid" x="627" y="221">CACHE &middot; LOCKS</text>
+
+  <rect class="box" x="728" y="182" width="150" height="54" rx="3"/>
+  <text class="t" x="803" y="205" text-anchor="middle">MongoDB</text>
+  <text class="mm mid" x="803" y="221">AUDIT DOCUMENTS</text>
+
+  <path class="flow" d="M678,128 V160 H451 V176" marker-end="url(#ac)"/>
+  <path class="flow" d="M678,160 H627 V176" marker-end="url(#ac)"/>
+  <path class="flow" d="M678,160 H803 V176" marker-end="url(#ac)"/>
+  <text class="mm end" x="672" y="155">SHEET 06</text>
+
+  <!-- Kafka -->
+  <rect class="box-a" x="120" y="292" width="800" height="46" rx="3"/>
+  <text class="t b" x="150" y="321">Kafka</text>
+  <text class="m" x="220" y="321">badge.requests &nbsp;&middot;&nbsp; badge.provisioned &nbsp;&middot;&nbsp; access.events</text>
+  <text class="mm end" x="906" y="321">SHEET 11</text>
+  <path class="flow-b" d="M720,132 V146 H934 V315 H930" marker-end="url(#ab)"/>
+  <text class="mm b" x="800" y="140">publish, then return 202 immediately</text>
+
+  <!-- consumers -->
+  <rect class="box" x="120" y="382" width="178" height="58" rx="3"/>
+  <text class="t" x="209" y="405" text-anchor="middle">provisioning-worker</text>
+  <text class="mm mid" x="209" y="421">PYTHON CONSUMER</text>
+
+  <rect class="box" x="326" y="382" width="178" height="58" rx="3"/>
+  <text class="t" x="415" y="405" text-anchor="middle">notifier</text>
+  <text class="mm mid" x="415" y="421">NODE + EXPRESS</text>
+
+  <rect class="box" x="532" y="382" width="178" height="58" rx="3"/>
+  <text class="t" x="621" y="405" text-anchor="middle">audit-reconciler</text>
+  <text class="mm mid" x="621" y="421">AWS LAMBDA &middot; NIGHTLY</text>
+
+  <rect class="box" x="738" y="382" width="178" height="58" rx="3"/>
+  <text class="t" x="827" y="405" text-anchor="middle">policy-indexer</text>
+  <text class="mm mid" x="827" y="421">EMBEDDINGS &middot; SHEET 12</text>
+
+  <path class="flow-b" d="M209,342 V376" marker-end="url(#ab)"/>
+  <path class="flow-b" d="M415,342 V376" marker-end="url(#ab)"/>
+  <path class="flow-b" d="M621,342 V376" marker-end="url(#ab)"/>
+  <path class="flow-b" d="M827,342 V376" marker-end="url(#ab)"/>
+
+  <!-- dead letter -->
+  <rect class="box-r" x="952" y="382" width="218" height="58" rx="3"/>
+  <text class="t r" x="1061" y="405" text-anchor="middle">badge.requests.dlq</text>
+  <text class="mm mid" x="1061" y="421">POISON MESSAGES</text>
+  <path class="flow-r dash" d="M209,444 V464 H940 V411 H946" marker-end="url(#ar)"/>
+  <text class="mm r" x="360" y="459">after 3 failed retries</text>
+
+  <!-- external -->
+  <rect class="box" x="120" y="486" width="178" height="54" rx="3"/>
+  <text class="t" x="209" y="509" text-anchor="middle">Access-control API</text>
+  <text class="mm mid" x="209" y="525">VENDOR &middot; SLOW &middot; FLAKY</text>
+
+  <rect class="box" x="326" y="486" width="178" height="54" rx="3"/>
+  <text class="t" x="415" y="509" text-anchor="middle">Mail / Teams</text>
+  <text class="mm mid" x="415" y="525">OUTBOUND WEBHOOKS</text>
+
+  <rect class="box" x="532" y="486" width="178" height="54" rx="3"/>
+  <text class="t" x="621" y="509" text-anchor="middle">S3</text>
+  <text class="mm mid" x="621" y="525">PHOTOS &middot; AUDIT EXPORTS</text>
+
+  <rect class="box" x="738" y="486" width="178" height="54" rx="3"/>
+  <text class="t" x="827" y="509" text-anchor="middle">pgvector + LLM</text>
+  <text class="mm mid" x="827" y="525">&ldquo;ASK BADGEDESK&rdquo; RAG</text>
+
+  <path class="flow" d="M209,444 V480" marker-end="url(#ac)"/>
+  <path class="flow" d="M415,444 V480" marker-end="url(#ac)"/>
+  <path class="flow" d="M621,444 V480" marker-end="url(#ac)"/>
+  <path class="flow" d="M827,444 V480" marker-end="url(#ac)"/>
+
+  <!-- platform band -->
+  <rect class="zone" x="30" y="560" width="1140" height="118" rx="4"/>
+  <text class="mm c" x="44" y="580">PLATFORM &mdash; EVERYTHING ABOVE RUNS ON THIS &middot; SHEETS 09 &amp; 10</text>
+
+  <rect class="box" x="54" y="598" width="186" height="52" rx="3"/>
+  <text class="t" x="147" y="620" text-anchor="middle">Terraform</text>
+  <text class="mm mid" x="147" y="636">CREATES THE ACCOUNT</text>
+
+  <rect class="box" x="268" y="598" width="186" height="52" rx="3"/>
+  <text class="t" x="361" y="620" text-anchor="middle">GitHub Actions</text>
+  <text class="mm mid" x="361" y="636">TEST &middot; BUILD &middot; DEPLOY</text>
+
+  <rect class="box" x="482" y="598" width="186" height="52" rx="3"/>
+  <text class="t" x="575" y="620" text-anchor="middle">Docker image</text>
+  <text class="mm mid" x="575" y="636">ONE ARTEFACT PER COMMIT</text>
+
+  <rect class="box" x="696" y="598" width="186" height="52" rx="3"/>
+  <text class="t" x="789" y="620" text-anchor="middle">EKS / Kubernetes</text>
+  <text class="mm mid" x="789" y="636">RUNS THE PODS</text>
+
+  <rect class="box" x="910" y="598" width="186" height="52" rx="3"/>
+  <text class="t" x="1003" y="620" text-anchor="middle">CloudWatch</text>
+  <text class="mm mid" x="1003" y="636">LOGS &middot; METRICS &middot; ALARMS</text>
+
+  <path class="flow" d="M458,624 H476" marker-end="url(#ac)"/>
+  <path class="flow" d="M672,624 H690" marker-end="url(#ac)"/>
+  <path class="flow" d="M886,624 H904" marker-end="url(#ac)"/>
+  <path class="flow-b dash" d="M147,654 V666 H789 V656" marker-end="url(#ab)"/>
+  <path class="flow-b dash" d="M789,594 V556" marker-end="url(#ab)"/>
+
+  <!-- callouts -->
+  <circle class="bub" cx="178" cy="34" r="13"/><text class="bubt" x="178" y="38">1</text>
+  <path class="lead" d="M178,47 V95"/>
+  <circle class="bub" cx="920" cy="34" r="13"/><text class="bubt" x="920" y="38">2</text>
+  <path class="lead" d="M908,42 L892,54"/>
+  <circle class="bub" cx="338" cy="209" r="13"/><text class="bubt" x="338" y="213">3</text>
+  <path class="lead" d="M351,209 H372"/>
+  <circle class="bub" cx="86" cy="315" r="13"/><text class="bubt" x="86" y="319">4</text>
+  <path class="lead" d="M99,315 H116"/>
+  <circle class="bub" cx="1015" cy="513" r="13"/><text class="bubt" x="1015" y="517">5</text>
+  <path class="lead" d="M1002,513 H920"/>
+  <circle class="bub" cx="18" cy="619" r="13"/><text class="bubt" x="18" y="623">6</text>
+  <path class="lead" d="M31,619 H50"/>
+</svg>
+<figcaption>Drawing 00-A &mdash; BadgeDesk, whole system. <b>Cyan</b> = synchronous, someone is waiting.
+<b>Brass</b> = asynchronous, fire and forget. <b>Red</b> = the failure path.</figcaption>
+</figure>
+
+<div class="notes">
+  <div class="n"><b>1</b><div><b>The synchronous spine.</b> A browser hits Next.js, which renders on the server
+  and calls a NestJS gateway, which calls the FastAPI core. Four hops, one user waiting. Every millisecond
+  here is a millisecond the employee stares at a spinner &mdash; which is exactly why the slow work is pushed
+  off this path at callout 4.</div></div>
+  <div class="n"><b>2</b><div><b>The trust boundary.</b> The dashed rectangle is a VPC: the gateway, the core
+  and all three databases have no public IP. Only the load balancer in front of Next.js does. Identity is
+  external &mdash; Entra ID says who the human is, IAM says what the machine may touch. Sheets 07 and 08.</div></div>
+  <div class="n"><b>3</b><div><b>Three databases, three different jobs.</b> Postgres holds facts that must be
+  correct and related (a request belongs to an employee, an approval belongs to a request). Redis holds
+  facts you can afford to lose (cached site policy, rate-limit counters, idempotency keys). Mongo holds
+  documents whose shape changes per vendor (raw audit events). Picking the wrong one of these three is
+  the single most common design-interview failure. Sheet 06.</div></div>
+  <div class="n"><b>4</b><div><b>The seam.</b> Provisioning a badge means calling a vendor system that is
+  slow and sometimes down. So the API does not call it. The API writes a row, publishes an event to Kafka
+  and returns <code>202 Accepted</code> in 40&nbsp;ms. Workers do the slow part, retry, and give up into a
+  dead-letter topic after three attempts. This one decision is what &ldquo;designing for failure&rdquo; means. Sheet 11.</div></div>
+  <div class="n"><b>5</b><div><b>The outside world.</b> Four consumers, four different integration shapes: a
+  flaky vendor REST API, outbound webhooks, object storage, and an LLM with a vector index over the access-policy
+  documents. Sheets 05, 07 and 12.</div></div>
+  <div class="n"><b>6</b><div><b>The platform.</b> Terraform creates the AWS account contents. GitHub Actions
+  tests each commit, builds one Docker image and rolls it onto EKS. CloudWatch tells you when it went wrong.
+  Nothing above this band exists without this band. Sheets 09 and 10.</div></div>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p>&ldquo;Walk me through what happens when a user clicks Request Access.&rdquo; If you can narrate
+  Drawing 00-A end to end &mdash; naming the protocol at each hop, what is stored where, what happens when
+  the vendor is down, and how you would know &mdash; you have just passed most of a system-design round.
+  Come back and re-narrate this drawing at the end of every week.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="schedule">The twelve weeks</h2>
+<p class="sub">Sequenced so that each week can only be built on the one before it. Do not reorder &mdash;
+Week 08 assumes you have a containerised app from Week 06 to actually deploy.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Week</th><th>Sheet</th><th>What you learn</th><th>What you ship by Sunday</th><th>Hours</th></tr></thead>
+<tbody>
+<tr><td>00</td><td>01</td><td>Both machines set up: runtimes, editor, Docker, Git, cloud CLIs</td><td>A <code>hello</code> service running in a container on both laptops</td><td>4&ndash;6</td></tr>
+<tr><td>01</td><td>02</td><td>Python core and JavaScript core: types, functions, collections, async</td><td>A CLI that parses a CSV of badge requests and validates it</td><td>14&ndash;16</td></tr>
+<tr><td>02</td><td>02</td><td>TypeScript on top of JS, then a Java tour; the four-language comparison</td><td>The same CSV validator in TS and Java</td><td>14&ndash;16</td></tr>
+<tr><td>03</td><td>03</td><td>HTML semantics, CSS box model and flex/grid, Tailwind, React fundamentals</td><td>The request form as a React app with client-side validation</td><td>16&ndash;18</td></tr>
+<tr><td>04</td><td>03</td><td>React state and effects done properly, then Next.js App Router and server components</td><td>BadgeDesk web: list, detail and approve screens, mocked data</td><td>16&ndash;18</td></tr>
+<tr><td>05</td><td>04 + 05</td><td>FastAPI, Pydantic, dependency injection, auth; REST design and status codes</td><td>A real API the Week 04 frontend talks to</td><td>16&ndash;18</td></tr>
+<tr><td>06</td><td>04 + 05</td><td>Node and Express, then NestJS; GraphQL schema and resolvers; webhooks</td><td>The gateway service, plus a signed inbound webhook receiver</td><td>16&ndash;18</td></tr>
+<tr><td>07</td><td>06</td><td>Relational modelling, SQL, indexes, transactions; Mongo; Redis patterns</td><td>Real schema, migrations, seeded data, one query you made 50&times; faster</td><td>16&ndash;18</td></tr>
+<tr><td>08</td><td>07</td><td>IAM, VPC, EC2, S3, RDS &mdash; the four you must be able to draw</td><td>BadgeDesk running on EC2 with RDS Postgres, in your own VPC</td><td>16&ndash;18</td></tr>
+<tr><td>09</td><td>07 + 08</td><td>Lambda, EKS, CloudWatch; then the Azure equivalents side by side</td><td>The nightly audit as a Lambda, alarms wired up</td><td>16&ndash;18</td></tr>
+<tr><td>10</td><td>09 + 10</td><td>Git properly, GitHub Actions, Docker, Kubernetes, CI/CD; Terraform</td><td>Push to main &rarr; tests &rarr; image &rarr; deployed. Infra in Terraform.</td><td>18&ndash;20</td></tr>
+<tr><td>11</td><td>11 + 12</td><td>Kafka and RabbitMQ; LLM APIs, prompting, RAG and vector search</td><td>The event seam from callout 4, plus &ldquo;Ask BadgeDesk&rdquo;</td><td>16&ndash;18</td></tr>
+<tr><td>12</td><td>13 + 14</td><td>No new technology. Integration, system design, and interview reps.</td><td>Whole system deployed, README, 6 mock interviews done</td><td>16&ndash;18</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="rhythm">The weekly rhythm</h3>
+<p>Sixteen hours a week is the target. Spread it like this, because the distribution matters more than the
+total &mdash; recall is built by returning to material, not by staring at it longer.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 250" role="img" aria-label="Weekly schedule: 90 minutes on weekday evenings for learn, build and drill, and longer weekend blocks for integration and review.">
+  <defs><marker id="ac2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker></defs>
+  <line class="ln" x1="30" y1="196" x2="1170" y2="196"/>
+  <g>
+    <rect class="box-c" x="30" y="70" width="150" height="110" rx="3"/>
+    <text class="t mid" x="105" y="96">Mon &middot; Tue</text>
+    <text class="m mid" x="105" y="118">90 min each</text>
+    <text class="mm mid" x="105" y="140">READ THE SHEET</text>
+    <text class="mm mid" x="105" y="156">TYPE EVERY SAMPLE</text>
+    <text class="mm mid" x="105" y="172">NO COPY-PASTE</text>
+  </g>
+  <g>
+    <rect class="box-c" x="222" y="70" width="150" height="110" rx="3"/>
+    <text class="t mid" x="297" y="96">Wed &middot; Thu</text>
+    <text class="m mid" x="297" y="118">90 min each</text>
+    <text class="mm mid" x="297" y="140">BUILD THE WEEK&rsquo;S</text>
+    <text class="mm mid" x="297" y="156">SLICE OF BADGEDESK</text>
+    <text class="mm mid" x="297" y="172">BREAK IT ON PURPOSE</text>
+  </g>
+  <g>
+    <rect class="box" x="414" y="70" width="150" height="110" rx="3"/>
+    <text class="t mid" x="489" y="96">Fri</text>
+    <text class="m mid" x="489" y="118">45 min</text>
+    <text class="mm mid" x="489" y="140">DRILL BOOK ONLY</text>
+    <text class="mm mid" x="489" y="156">ANSWER OUT LOUD</text>
+    <text class="mm mid" x="489" y="172">SHEET 14</text>
+  </g>
+  <g>
+    <rect class="box-a" x="606" y="70" width="230" height="110" rx="3"/>
+    <text class="t mid" x="721" y="96">Saturday</text>
+    <text class="m mid" x="721" y="118">3&ndash;4 hours, one block</text>
+    <text class="mm mid" x="721" y="140">INTEGRATE THE WEEK INTO THE</text>
+    <text class="mm mid" x="721" y="156">RUNNING SYSTEM &middot; COMMIT &middot; PUSH</text>
+    <text class="mm mid" x="721" y="172">THIS IS WHERE LEARNING STICKS</text>
+  </g>
+  <g>
+    <rect class="box" x="878" y="70" width="150" height="110" rx="3"/>
+    <text class="t mid" x="953" y="96">Sunday</text>
+    <text class="m mid" x="953" y="118">60 min</text>
+    <text class="mm mid" x="953" y="140">RE-NARRATE 00-A</text>
+    <text class="mm mid" x="953" y="156">FROM MEMORY</text>
+    <text class="mm mid" x="953" y="172">TICK THE SIGN-OFFS</text>
+  </g>
+  <g>
+    <rect class="box" x="1070" y="70" width="100" height="110" rx="3"/>
+    <text class="t mid" x="1120" y="106">Rest</text>
+    <text class="mm mid" x="1120" y="128">ONE EVENING</text>
+    <text class="mm mid" x="1120" y="144">OFF, ALWAYS</text>
+  </g>
+  <text class="mm" x="30" y="222">TOTAL 15&ndash;16 H &middot; THE SATURDAY BLOCK IS NON-NEGOTIABLE &mdash; IT IS THE ONLY SESSION LONG ENOUGH TO HIT REAL INTEGRATION PROBLEMS</text>
+</svg>
+<figcaption>Drawing 00-B &mdash; weekly operating rhythm. <b>Brass</b> marks the session that does the most work.</figcaption>
+</figure>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil</span>
+  <p>The failure mode for this plan is not laziness, it is <b>tutorial drift</b>: watching a 9-hour course at
+  1.75&times;, feeling productive, and retaining nothing. Video is for unblocking, not for learning. The rule
+  for every sheet: <b>you may not watch a video until you have tried the thing and got stuck.</b> The resource
+  lists exist to rescue you, not to schedule you.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="bar">Where the SE3 bar actually is</h2>
+<p class="sub">Interviewers are not checking whether you know a framework. They are checking which column
+you answer from. Use this to decide when a topic is done.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Area</th><th>SE2 answer (not enough)</th><th>SE3 answer (the bar)</th></tr></thead>
+<tbody>
+<tr><td>Languages</td><td>&ldquo;I use Python and JavaScript.&rdquo;</td><td>Explains why a Python service uses async for I/O but threads do nothing for CPU work, and why TypeScript's types vanish at runtime.</td></tr>
+<tr><td>Frontend</td><td>&ldquo;I use React with <code>useEffect</code>.&rdquo;</td><td>Knows which state is server state and which is client state, and can say what a server component costs you.</td></tr>
+<tr><td>Backend</td><td>&ldquo;I built REST endpoints.&rdquo;</td><td>Designs for retries: idempotency keys, timeouts, the difference between 400, 409, 422 and 503.</td></tr>
+<tr><td>Databases</td><td>&ldquo;I write SQL and I add indexes.&rdquo;</td><td>Reads an <code>EXPLAIN ANALYZE</code>, picks a composite index's column order deliberately, knows what isolation level protects what.</td></tr>
+<tr><td>Cloud</td><td>&ldquo;I deployed to EC2.&rdquo;</td><td>Draws the VPC: public and private subnets, NAT, security groups, and gives the RDS instance a role instead of a password in an env var.</td></tr>
+<tr><td>DevOps</td><td>&ldquo;I have a GitHub Actions file.&rdquo;</td><td>Can explain how a rollback works, why the image is built once and promoted, and what a readiness probe is for.</td></tr>
+<tr><td>Messaging</td><td>&ldquo;I used Kafka.&rdquo;</td><td>Explains partitioning by key for ordering, consumer groups for scale, and what at-least-once delivery forces the consumer to do.</td></tr>
+<tr><td>AI</td><td>&ldquo;I called the OpenAI API.&rdquo;</td><td>Explains chunking, why retrieval quality dominates model choice, and how to evaluate whether a change made it better.</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="laptops">Two laptops, one workflow</h2>
+<p class="sub">A corporate laptop will fight you: no admin rights, a TLS-inspecting proxy, blocked package
+registries, Docker Desktop licensing. Plan around it instead of discovering it in Week 8.</p>
+
+<div class="vs">
+  <div>
+    <div class="vh">Personal laptop &mdash; the build machine</div>
+    <div class="vb">
+      <p>Full admin. Install everything natively plus WSL2. Docker Desktop, Node, Python, Java, AWS and
+      Azure CLIs, Terraform, a local Kafka in Compose, a real cloud account with a billing alarm.</p>
+      <p><b>Do here:</b> anything that needs Docker, Kubernetes, Kafka, cloud deploys, the Saturday block.</p>
+    </div>
+  </div>
+  <div>
+    <div class="vh">Corporate laptop &mdash; the practice machine</div>
+    <div class="vb">
+      <p>Assume no admin. Use user-scope installs (winget in user mode, <code>nvm-windows</code> portable,
+      Python from the Store, portable JDK), configure the proxy CA for npm and pip, and use Podman or
+      Rancher Desktop if Docker Desktop is not licensed.</p>
+      <p><b>Do here:</b> reading sheets, katas, SQL against a local Postgres, LeetCode-style drills, the
+      Friday drill session. Never store personal cloud credentials here.</p>
+    </div>
+  </div>
+</div>
+<p>Keep the two in sync with one Git repository and a <code>.env.example</code> file. Full command-by-command
+instructions, including the proxy and no-admin workarounds, are on <a href="setup.html">Sheet 01 &mdash; Machine Setup</a>.</p>
+
+<!-- ===================================================================== -->
+<h2 id="videos">How to use the resource lists</h2>
+<p class="sub">Every sheet ends each subtopic with a short list. They are chosen for density, not popularity.</p>
+
+<div class="grid g3">
+  <div class="card"><span class="cm">Rule 01</span><b class="ct">One primary, one rescue</b>
+    <p>Pick a single primary source per topic and finish it. Everything else on the list is for when you are
+    stuck on one specific thing.</p></div>
+  <div class="card"><span class="cm">Rule 02</span><b class="ct">Watch at 1&times; with your hands on the keys</b>
+    <p>If you are not typing, you are watching television. Pause every time the instructor runs something and
+    run it yourself first.</p></div>
+  <div class="card"><span class="cm">Rule 03</span><b class="ct">Docs beat video for reference</b>
+    <p>Video is good for &ldquo;why&rdquo; and for a first pass. For &ldquo;what are the arguments to this
+    function&rdquo;, the official docs are faster and correct.</p></div>
+</div>
+
+<div class="res">
+  <div class="rh">Channels worth subscribing to before you start</div>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@ByteByteGo__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5I97tz61$" target="_blank" rel="noopener"><span>ByteByteGo<i>System design concepts in 5&ndash;10 minutes, well drawn. Watch one per week all twelve weeks.</i></span><span class="dur">weekly</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@hnasr__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5BLEvZzq$" target="_blank" rel="noopener"><span>Hussein Nasser<i>Backend engineering from first principles &mdash; databases, networking, protocols. The best free source for the &ldquo;why&rdquo; behind Sheets 05 and 06.</i></span><span class="dur">deep</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@Fireship__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Cc14g7u$" target="_blank" rel="noopener"><span>Fireship<i>100-second overviews. Perfect for deciding whether a technology matters before you invest a week.</i></span><span class="dur">2 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@freecodecamp__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5H_KcrWS$" target="_blank" rel="noopener"><span>freeCodeCamp<i>Full-length courses for every language on this set. Use as the primary source when you want one long structured run.</i></span><span class="dur">long</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@TechWorldwithNana__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5CyCI6xD$" target="_blank" rel="noopener"><span>TechWorld with Nana<i>Docker, Kubernetes, Terraform, CI/CD. The clearest DevOps explanations on YouTube.</i></span><span class="dur">long</span></a>
+</div>
+<p class="eyebrow" style="margin-top:14px">Note on links: individual video links across this set point at a YouTube
+search for the exact channel and title, so they keep working when creators re-upload or reorganise playlists.</p>
+
+<!-- ===================================================================== -->
+<h2 id="progress">Progress</h2>
+<p class="sub">Live from this browser's storage. Tick sign-off boxes as you finish each sheet.</p>
+
+<div class="grid g4">
+  <div class="card"><span class="cm">Sheet 01 &middot; Setup</span><b class="ct" data-progress-sheet="01">—</b></div>
+  <div class="card"><span class="cm">Sheet 02 &middot; Languages</span><b class="ct" data-progress-sheet="02">—</b></div>
+  <div class="card"><span class="cm">Sheet 03 &middot; Frontend</span><b class="ct" data-progress-sheet="03">—</b></div>
+  <div class="card"><span class="cm">Sheet 04 &middot; Backend</span><b class="ct" data-progress-sheet="04">—</b></div>
+  <div class="card"><span class="cm">Sheet 05 &middot; APIs</span><b class="ct" data-progress-sheet="05">—</b></div>
+  <div class="card"><span class="cm">Sheet 06 &middot; Databases</span><b class="ct" data-progress-sheet="06">—</b></div>
+  <div class="card"><span class="cm">Sheet 07 &middot; AWS</span><b class="ct" data-progress-sheet="07">—</b></div>
+  <div class="card"><span class="cm">Sheet 08 &middot; Azure</span><b class="ct" data-progress-sheet="08">—</b></div>
+  <div class="card"><span class="cm">Sheet 09 &middot; DevOps</span><b class="ct" data-progress-sheet="09">—</b></div>
+  <div class="card"><span class="cm">Sheet 10 &middot; Terraform</span><b class="ct" data-progress-sheet="10">—</b></div>
+  <div class="card"><span class="cm">Sheet 11 &middot; Messaging</span><b class="ct" data-progress-sheet="11">—</b></div>
+  <div class="card"><span class="cm">Sheet 12 &middot; AI</span><b class="ct" data-progress-sheet="12">—</b></div>
+</div>
+
+<div class="signoff">
+  <div class="sh"><span>Week 00 sign-off</span><span>before Monday</span></div>
+  <label><input type="checkbox"><span>Read this sheet end to end and can name what each of the six callouts on Drawing 00-A does.</span></label>
+  <label><input type="checkbox"><span>Both laptops set up per Sheet 01, with a container running on each.</span></label>
+  <label><input type="checkbox"><span>Created the <code>badgedesk</code> Git repository and pushed an empty commit from both machines.</span></label>
+  <label><input type="checkbox"><span>Blocked the twelve Saturday sessions in the calendar as busy.</span></label>
+  <label><input type="checkbox"><span>Created a personal AWS account with a $10 billing alarm and MFA on the root user.</span></label>
+  <label><input type="checkbox"><span>Wrote today's date and the target date on a sticky note. Twelve weeks is short.</span></label>
+</div>
+
+</div><!-- /sheetbody -->
+</main>
+
+<aside class="toc" aria-label="Contents"></aside>
+</div>
+
+<script src="assets/js/nav-data.js"></script>
+<script src="assets/js/sheet.js"></script>
+</body>
+</html>

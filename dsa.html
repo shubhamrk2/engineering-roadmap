@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheet 15 — DSA Drill — BadgeDesk Roadmap</title>
+<link rel="stylesheet" href="assets/css/sheet.css">
+</head>
+<body data-sheet="15" data-dsa="index">
+<a class="skip" href="#main">Skip to sheet</a>
+<div class="wrap">
+<nav class="rail" aria-label="Sheet index"></nav>
+
+<main id="main">
+
+<header class="sheethead">
+  <div>
+    <div class="no">Sheet 15 &middot; Prove it &middot; Weeks 01&ndash;12</div>
+    <h1>DSA Drill<span>.</span></h1>
+    <p class="lede">The Striver A2Z sheet, 369 problems across 16 topics, rebuilt so that every problem
+    gives you the statement first and the answer only when you ask for it. The other fourteen sheets teach
+    you to build the system; <b>this one is the hour a day that gets you through the coding round</b>.</p>
+  </div>
+  <div class="specs">
+    <div><span>Weeks</span><span>01&ndash;12, in parallel</span></div>
+    <div><span>Hours</span><span>1 / day, 7 / week</span></div>
+    <div><span>Must know</span><span>Arrays, binary search, linked list, trees, graphs, DP</span></div>
+    <div><span>Nice to have</span><span>Tries, advanced strings</span></div>
+    <div><span>Ships</span><span>A solved-problem log you can talk through</span></div>
+  </div>
+</header>
+
+<div class="sheetbody">
+
+<h2 id="loop">The drill loop</h2>
+<p class="sub">Four steps per problem. The order is the whole point &mdash; every one of them is a thing an
+interviewer will actually watch you do.</p>
+
+<figure class="dwg dwg--hero">
+<svg viewBox="0 0 1200 430" role="img" aria-label="The four-step drill loop: read the statement cold and attempt it, reveal the approach ladder from brute force to optimal, translate the optimal approach into Java and JavaScript, then log the result as attempted or solved. A red path shows what happens when you skip straight to the solution.">
+  <defs>
+    <marker id="s15-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s15-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s15-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <rect class="zone" x="24" y="150" width="1152" height="130" rx="4"/>
+  <text class="mm g" x="40" y="171">THE LOOP &mdash; ONE PROBLEM, ABOUT 25 MINUTES</text>
+
+  <rect class="box-c" x="52" y="192" width="228" height="64" rx="3"/>
+  <text class="t" x="72" y="216">1 &middot; Attempt cold</text>
+  <text class="mm c" x="72" y="234">SECTION 1 ONLY &middot; 10 MIN</text>
+
+  <rect class="box-a" x="348" y="192" width="228" height="64" rx="3"/>
+  <text class="t" x="368" y="216">2 &middot; Reveal the ladder</text>
+  <text class="mm b" x="368" y="234">BRUTE &rarr; BETTER &rarr; OPTIMAL</text>
+
+  <rect class="box-c" x="644" y="192" width="228" height="64" rx="3"/>
+  <text class="t" x="664" y="216">3 &middot; Translate</text>
+  <text class="mm c" x="664" y="234">JAVA + JAVASCRIPT</text>
+
+  <rect class="box-a" x="940" y="192" width="212" height="64" rx="3"/>
+  <text class="t" x="960" y="216">4 &middot; Log it</text>
+  <text class="mm b" x="960" y="234">ATTEMPTED / SOLVED</text>
+
+  <path class="flow" d="M280,224 L342,224" marker-end="url(#s15-ac)"/>
+  <path class="flow" d="M576,224 L638,224" marker-end="url(#s15-ac)"/>
+  <path class="flow" d="M872,224 L934,224" marker-end="url(#s15-ac)"/>
+
+  <path class="flow-b" d="M1046,256 V300 H166 V262" marker-end="url(#s15-ab)"/>
+  <text class="mm b mid" x="600" y="318">RETURN IN A WEEK &mdash; THE SECOND ATTEMPT IS THE ONE THAT STICKS</text>
+
+  <path class="flow-r dash" d="M166,192 V126 H462 V186" marker-end="url(#s15-ar)"/>
+  <text class="mm r mid" x="314" y="116">SKIPPING STEP 1 FEELS FASTER AND TEACHES NOTHING</text>
+
+  <circle class="bub" cx="166" cy="368" r="13"/><text class="bubt mid" x="166" y="373">1</text>
+  <circle class="bub" cx="462" cy="368" r="13"/><text class="bubt mid" x="462" y="373">2</text>
+  <circle class="bub" cx="758" cy="368" r="13"/><text class="bubt mid" x="758" y="373">3</text>
+  <circle class="bub" cx="1046" cy="368" r="13"/><text class="bubt mid" x="1046" y="373">4</text>
+  <path class="lead" d="M166,262 V355"/>
+  <path class="lead" d="M462,262 V355"/>
+  <path class="lead" d="M758,262 V355"/>
+  <path class="lead" d="M1046,262 V355"/>
+</svg>
+<figcaption>Drawing 15-A &mdash; the drill loop. <b>Cyan</b> = the forward path you walk each session.
+<b>Brass</b> = the repeat pass a week later. <b>Red pencil</b> = the shortcut that wastes the problem.</figcaption>
+</figure>
+
+<div class="notes">
+  <div class="n"><b>1</b><div>Open a problem and read <b>only</b> section 1. It has the statement, the
+  constraints, two worked examples and the edge cases &mdash; everything you would get on the platform and
+  nothing else. Give it ten minutes on paper before you touch a keyboard. If you cannot start, that is
+  data: it means you do not recognise the pattern yet, and that is what section 2 is for.</div></div>
+
+  <div class="n"><b>2</b><div>Press <b>Reveal approach</b>. You get a ladder, not an answer: brute force
+  first with its complexity, then better, then optimal. Read the brute force even when you already saw the
+  optimal &mdash; interviewers almost always want the naive solution stated and costed before you improve
+  it, and &ldquo;I would start with the O(n&sup2;) and then improve it&rdquo; is a scoring sentence.</div></div>
+
+  <div class="n"><b>3</b><div>Type the optimal version in Java and in JavaScript from memory, then compare
+  against section 4. Section 5 lists the differences that actually bite for that specific problem &mdash;
+  integer overflow, sort comparators, string immutability. Typing it is what moves it from recognised to
+  recallable.</div></div>
+
+  <div class="n"><b>4</b><div>Set the problem to <b>Attempted</b> or <b>Solved</b>. Attempted is not a
+  failure state, it is a queue: it is the list you re-run next week. Progress is stored in this browser's
+  <code>localStorage</code> alongside the sign-offs from every other sheet.</div></div>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why this exists</span>
+  <p>A solutions repository is a reference, not a training tool &mdash; the answer is on screen before you
+  have had a thought. This sheet takes the same 369 C++ solutions and reconstructs the <b>question</b> from
+  each one, so the material can be used the way it will be tested. The original C++ is still there,
+  untouched, in section 3.</p>
+</div>
+
+<h2 id="budget">Reading the constraints</h2>
+<p class="sub">The constraint line tells you the complexity you are allowed to spend. Work that out before
+you design anything &mdash; it eliminates most of the wrong approaches for free.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 300" role="img" aria-label="A ladder mapping input size to the complexity you can afford: n up to 10 to the 8 allows linear, 10 to the 5 allows n log n, 5000 allows n squared, 500 allows n cubed, 25 allows 2 to the n, and 11 allows n factorial.">
+  <defs>
+    <marker id="s15b-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  </defs>
+
+  <text class="mm g" x="30" y="34">ROUGHLY 10^8 SIMPLE OPERATIONS PER SECOND &mdash; PICK THE COMPLEXITY THAT FITS UNDER IT</text>
+  <path class="ln" d="M30,52 H1170"/>
+
+  <rect class="box-c" x="30" y="76" width="176" height="58" rx="3"/>
+  <text class="t" x="46" y="100">n &le; 10&#8312;</text>
+  <text class="mm c" x="46" y="118">O(n) &middot; O(n log n)</text>
+
+  <rect class="box-c" x="222" y="76" width="176" height="58" rx="3"/>
+  <text class="t" x="238" y="100">n &le; 10&#8309;</text>
+  <text class="mm c" x="238" y="118">O(n log n)</text>
+
+  <rect class="box-a" x="414" y="76" width="176" height="58" rx="3"/>
+  <text class="t" x="430" y="100">n &le; 5000</text>
+  <text class="mm b" x="430" y="118">O(n&sup2;) IS FINE</text>
+
+  <rect class="box-a" x="606" y="76" width="176" height="58" rx="3"/>
+  <text class="t" x="622" y="100">n &le; 500</text>
+  <text class="mm b" x="622" y="118">O(n&sup3;) IS FINE</text>
+
+  <rect class="box-r" x="798" y="76" width="176" height="58" rx="3"/>
+  <text class="t" x="814" y="100">n &le; 25</text>
+  <text class="mm r" x="814" y="118">O(2&#8319;) SUBSETS</text>
+
+  <rect class="box-r" x="990" y="76" width="180" height="58" rx="3"/>
+  <text class="t" x="1006" y="100">n &le; 11</text>
+  <text class="mm r" x="1006" y="118">O(n!) PERMUTATIONS</text>
+
+  <path class="flow" d="M30,168 H1170" marker-end="url(#s15b-ac)"/>
+  <text class="mm c" x="30" y="190">SMALLER INPUT</text>
+  <text class="mm c end" x="1170" y="190">EXPONENTIAL IS EXPECTED</text>
+
+  <rect class="box" x="30" y="216" width="1140" height="58" rx="3"/>
+  <text class="m" x="50" y="240">A small n is not a hint that the problem is easy. It is a hint that the intended solution is</text>
+  <text class="m" x="50" y="260">exponential &mdash; bitmask over subsets, or full backtracking &mdash; and that you should stop hunting for a clever linear trick.</text>
+</svg>
+<figcaption>Drawing 15-B &mdash; the complexity budget. <b>Cyan</b> = polynomial, the usual target.
+<b>Brass</b> = quadratic and cubic, allowed when n is small. <b>Red pencil</b> = exponential, which a tiny n
+is quietly telling you to use.</figcaption>
+</figure>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p>&ldquo;What is the time complexity?&rdquo; is rarely the real question. The real question is
+  <b>&ldquo;can you justify it?&rdquo;</b> Say where the work happens, not just the letter: &ldquo;the outer
+  loop runs n times, and each iteration does an O(1) hash lookup, so O(n) time and O(n) extra space for the
+  map.&rdquo; Naming the space cost without being asked is the part most candidates forget.</p>
+</div>
+
+<h2 id="patterns">The pattern catalogue</h2>
+<p class="sub">Most of the 369 problems are a small number of ideas wearing different clothes. Every problem
+page is tagged with its patterns, and the search box filters on those tags.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 470" role="img" aria-label="A decision tree for choosing a technique: sorted or monotonic input suggests binary search or two pointers; contiguous subarray questions suggest sliding window or prefix sums; pair or count lookups suggest a hash map; next greater element questions suggest a monotonic stack; top-K questions suggest a heap; overlapping subproblems suggest dynamic programming.">
+  <defs>
+    <marker id="s15c-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s15c-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+  </defs>
+
+  <rect class="box-a" x="440" y="24" width="320" height="56" rx="3"/>
+  <text class="t mid" x="600" y="48">What shape is the question?</text>
+  <text class="mm b mid" x="600" y="66">ASK THIS BEFORE YOU WRITE ANYTHING</text>
+
+  <path class="flow-b" d="M600,80 V112 H110 V150" marker-end="url(#s15c-ab)"/>
+  <path class="flow-b" d="M600,80 V112 H355 V150" marker-end="url(#s15c-ab)"/>
+  <path class="flow-b" d="M600,80 V112 H600 V150" marker-end="url(#s15c-ab)"/>
+  <path class="flow-b" d="M600,80 V112 H845 V150" marker-end="url(#s15c-ab)"/>
+  <path class="flow-b" d="M600,80 V112 H1090 V150" marker-end="url(#s15c-ab)"/>
+
+  <rect class="box-c" x="24" y="150" width="172" height="62" rx="3"/>
+  <text class="t mid" x="110" y="174">Sorted input</text>
+  <text class="mm c mid" x="110" y="192">OR MONOTONIC</text>
+
+  <rect class="box-c" x="269" y="150" width="172" height="62" rx="3"/>
+  <text class="t mid" x="355" y="174">Contiguous run</text>
+  <text class="mm c mid" x="355" y="192">SUBARRAY / SUBSTRING</text>
+
+  <rect class="box-c" x="514" y="150" width="172" height="62" rx="3"/>
+  <text class="t mid" x="600" y="174">Lookup a pair</text>
+  <text class="mm c mid" x="600" y="192">OR A COUNT</text>
+
+  <rect class="box-c" x="759" y="150" width="172" height="62" rx="3"/>
+  <text class="t mid" x="845" y="174">Nearest bigger</text>
+  <text class="mm c mid" x="845" y="192">SPAN / RANGE</text>
+
+  <rect class="box-c" x="1004" y="150" width="172" height="62" rx="3"/>
+  <text class="t mid" x="1090" y="174">Best K, or best</text>
+  <text class="mm c mid" x="1090" y="192">OVERLAPPING CHOICE</text>
+
+  <path class="flow" d="M110,212 V250" marker-end="url(#s15c-ac)"/>
+  <path class="flow" d="M355,212 V250" marker-end="url(#s15c-ac)"/>
+  <path class="flow" d="M600,212 V250" marker-end="url(#s15c-ac)"/>
+  <path class="flow" d="M845,212 V250" marker-end="url(#s15c-ac)"/>
+  <path class="flow" d="M1090,212 V250" marker-end="url(#s15c-ac)"/>
+
+  <rect class="box-a" x="24" y="250" width="172" height="66" rx="3"/>
+  <text class="t mid" x="110" y="274">Binary search</text>
+  <text class="t mid" x="110" y="292">Two pointers</text>
+
+  <rect class="box-a" x="269" y="250" width="172" height="66" rx="3"/>
+  <text class="t mid" x="355" y="274">Sliding window</text>
+  <text class="t mid" x="355" y="292">Prefix sums</text>
+
+  <rect class="box-a" x="514" y="250" width="172" height="66" rx="3"/>
+  <text class="t mid" x="600" y="274">Hash map</text>
+  <text class="t mid" x="600" y="292">Frequency count</text>
+
+  <rect class="box-a" x="759" y="250" width="172" height="66" rx="3"/>
+  <text class="t mid" x="845" y="274">Monotonic stack</text>
+  <text class="t mid" x="845" y="292">Monotonic deque</text>
+
+  <rect class="box-a" x="1004" y="250" width="172" height="66" rx="3"/>
+  <text class="t mid" x="1090" y="274">Heap, or DP</text>
+  <text class="t mid" x="1090" y="292">Greedy + proof</text>
+
+  <rect class="zone" x="24" y="350" width="1152" height="100" rx="4"/>
+  <text class="mm g" x="42" y="374">WHEN NONE OF THEM FIT</text>
+  <text class="m" x="42" y="398">Write the brute force. State its complexity out loud. Then look for the repeated work &mdash; a value you</text>
+  <text class="m" x="42" y="418">recompute, a range you rescan, a subproblem you re-solve. Every optimisation above is the removal of one</text>
+  <text class="m" x="42" y="438">of those three. That sentence is also a perfectly good thing to say in an interview while you think.</text>
+</svg>
+<figcaption>Drawing 15-C &mdash; choosing a technique from the shape of the question.
+<b>Brass</b> = the question you ask yourself and the technique you land on. <b>Cyan</b> = the signal in the
+problem statement that points there.</figcaption>
+</figure>
+
+<h3 id="pattern-list">The tags you will see most</h3>
+<div class="grid g4">
+  <div class="card"><span class="cm">Linear scan</span><b class="ct">Two pointers</b><p>One index from each
+  end, or a slow/fast pair. Turns an O(n&sup2;) pair hunt into O(n) when the data is sorted or when order
+  does not matter.</p></div>
+  <div class="card"><span class="cm">Linear scan</span><b class="ct">Sliding window</b><p>Expand right,
+  shrink left, keep an invariant true. The answer is the best window you ever held.</p></div>
+  <div class="card"><span class="cm">Precompute</span><b class="ct">Prefix sum</b><p>Range sums in O(1)
+  after an O(n) pass. Paired with a hash map it answers &ldquo;how many subarrays sum to K&rdquo;.</p></div>
+  <div class="card"><span class="cm">Precompute</span><b class="ct">Hash map</b><p>Trade space for time.
+  The single most common way to delete an inner loop.</p></div>
+  <div class="card"><span class="cm">Divide</span><b class="ct">Binary search</b><p>On a sorted array, or
+  on the answer itself when you can test &ldquo;is X feasible?&rdquo; monotonically.</p></div>
+  <div class="card"><span class="cm">Structure</span><b class="ct">Monotonic stack</b><p>Next greater,
+  previous smaller, largest rectangle. Each element is pushed and popped once, so O(n).</p></div>
+  <div class="card"><span class="cm">Structure</span><b class="ct">Heap</b><p>Top-K and streaming medians
+  without sorting everything. O(n log k) instead of O(n log n).</p></div>
+  <div class="card"><span class="cm">Recursion</span><b class="ct">Pick / not-pick</b><p>The subsequence
+  skeleton. Every subset, combination and knapsack question is this tree with different pruning.</p></div>
+  <div class="card"><span class="cm">Recursion</span><b class="ct">Backtracking</b><p>Place, recurse, undo.
+  The undo is the part people forget, and it is where the bug always is.</p></div>
+  <div class="card"><span class="cm">Overlap</span><b class="ct">Dynamic programming</b><p>Recursion with a
+  memo, then a table, then rolling arrays. Always derive it in that order.</p></div>
+  <div class="card"><span class="cm">Graphs</span><b class="ct">BFS / DFS</b><p>Shortest path on an
+  unweighted graph is BFS. Connectivity, cycles and components are DFS or union-find.</p></div>
+  <div class="card"><span class="cm">Bits</span><b class="ct">XOR tricks</b><p>Self-cancelling: a XOR a is
+  0. Finds the unpaired element, and drives the prefix-XOR subarray counts.</p></div>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil</span>
+  <p>Recognising the pattern is not solving the problem. The failure mode in a real interview is
+  announcing &ldquo;this is a sliding window&rdquo; and then fumbling the shrink condition for fifteen
+  minutes. The tag gets you to the right family; the invariant is what you have to be able to state
+  precisely. For every window problem, say out loud <b>what must remain true inside the window</b> before
+  you write the loop.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; patterns and complexity</div>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@takeUforward__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5IL9gCK6$" target="_blank" rel="noopener"><span>takeUforward &mdash; Striver's A2Z DSA course<i>The channel this problem set comes from. Every topic here has a matching video walkthrough, in the same order.</i></span><span class="dur">course</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@NeetCode__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5HTjjeAO$" target="_blank" rel="noopener"><span>NeetCode &mdash; pattern-first problem walkthroughs<i>Best explanations of why an approach is chosen, not just what it is. Watch after your own attempt.</i></span><span class="dur">10&ndash;20 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@ByteByteGo__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5I97tz61$" target="_blank" rel="noopener"><span>ByteByteGo &mdash; complexity and data structure primers<i>Short, visual, good for fixing a shaky mental model of heaps, tries and hash maps.</i></span><span class="dur">6&ndash;12 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://takeuforward.org/strivers-a2z-dsa-course/strivers-a2z-dsa-course-sheet-2/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5AWiaV6i$" target="_blank" rel="noopener"><span>takeuforward &mdash; the A2Z sheet itself<i>The canonical ordering, with the platform links for every problem. Use it to check off what you have done.</i></span><span class="dur">reference</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.bigocheatsheet.com/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Btq_DYy$" target="_blank" rel="noopener"><span>Big-O cheat sheet &mdash; operation costs by structure<i>One page. Pin it until the costs of every container operation are automatic.</i></span><span class="dur">reference</span></a>
+</div>
+
+<h2 id="languages">Three languages, one algorithm</h2>
+<p class="sub">Every problem page carries the original C++ plus Java and JavaScript versions of the optimal
+approach. These are the differences that change whether your code is <b>correct</b>, not just whether it is
+idiomatic.</p>
+
+<h3 id="lang-overflow">Integer overflow</h3>
+<p>C++ <code>int</code> and Java <code>int</code> are both 32-bit and both wrap silently on overflow.
+JavaScript has no integer type at all &mdash; every number is a double, exact only up to 2&#8309;&sup3;.
+The same expression can be wrong in three different ways.</p>
+
+<div class="vs">
+  <div>
+    <div class="vh">Java &mdash; wraps silently at 2&sup3;&sup1;</div>
+<div class="code" data-lang="java">
+<header><b>Overflow.java</b></header>
+<pre><code>int lo = 2_000_000_000, hi = 2_000_000_100;
+int mid = (lo + hi) / 2;        // -147483598  &lt;- wrapped, negative
+int ok  = lo + (hi - lo) / 2;   // 2000000050  &lt;- correct
+
+// The same trap in a sum:
+int[] a = {1_500_000_000, 1_500_000_000};
+int bad  = a[0] + a[1];         // -1294967296
+long good = (long) a[0] + a[1]; //  3000000000</code></pre>
+</div>
+  </div>
+  <div>
+    <div class="vh">JavaScript &mdash; exact only to 2&#8309;&sup3;</div>
+<div class="code" data-lang="javascript">
+<header><b>overflow.js</b></header>
+<pre><code>let lo = 2000000000, hi = 2000000100;
+let mid = (lo + hi) / 2;          // 2000000050  &lt;- fine, no wrap
+let half = Math.floor((lo + hi) / 2);
+
+// But precision dies past Number.MAX_SAFE_INTEGER:
+9007199254740992 === 9007199254740993;  // true  &lt;- both are 2**53
+// Use BigInt when a product can exceed 2**53:
+BigInt(3037000500) * BigInt(3037000500); // 9223372037000250000n</code></pre>
+</div>
+  </div>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Situation</th><th>C++ / Java <code>int</code></th><th>JavaScript <code>Number</code></th><th>What to write</th></tr></thead>
+<tbody>
+<tr><td>Binary search midpoint</td><td>Wraps negative near 2&sup3;&sup1;</td><td>Safe</td><td><code>lo + (hi - lo) / 2</code> everywhere, out of habit</td></tr>
+<tr><td>Sum of a large array</td><td>Wraps</td><td>Loses precision past 2&#8309;&sup3;</td><td><code>long</code> in Java, plain number in JS unless the sum can exceed 2&#8309;&sup3;</td></tr>
+<tr><td>Product of two elements</td><td>Wraps fast</td><td>Loses precision fast</td><td><code>long</code> in Java, <code>BigInt</code> in JS</td></tr>
+<tr><td>Integer division of negatives</td><td>Truncates toward zero</td><td><code>Math.floor</code> rounds down</td><td><code>Math.trunc(a / b)</code> to match C++ and Java</td></tr>
+<tr><td>Modulo of a negative</td><td><code>-7 % 3 === -1</code></td><td><code>-7 % 3 === -1</code></td><td>Both agree; use <code>((x % m) + m) % m</code> when you need a non-negative result</td></tr>
+</tbody>
+</table>
+</div>
+<p>Write <code>lo + (hi - lo) / 2</code> in all three languages even where it is not required. It costs
+nothing and it is the version an interviewer is watching for.</p>
+
+<h3 id="lang-sort">Sorting</h3>
+<p>This is the single most common silent wrong answer when a C++ or Java solution is translated to
+JavaScript.</p>
+
+<div class="code" data-lang="javascript">
+<header><b>sorting.js &mdash; the default comparator is lexicographic</b></header>
+<pre><code>[10, 9, 100, 1].sort();               // [1, 10, 100, 9]   &lt;- string order
+[10, 9, 100, 1].sort((a, b) =&gt; a - b); // [1, 9, 10, 100]  &lt;- numeric
+
+// Sorting pairs by second key, then first:
+const pairs = [[1, 5], [2, 3], [3, 5]];
+pairs.sort((x, y) =&gt; x[1] - y[1] || x[0] - y[0]);
+
+// sort() mutates in place and returns the same array.
+// Copy first when the caller still needs the original:
+const sorted = [...nums].sort((a, b) =&gt; a - b);</code></pre>
+</div>
+
+<div class="code" data-lang="java">
+<header><b>Sorting.java &mdash; the boxing trap</b></header>
+<pre><code>int[] a = {10, 9, 100, 1};
+Arrays.sort(a);                       // fine, ascending primitives
+
+// There is no comparator overload for int[]. To sort descending you must box:
+Integer[] b = {10, 9, 100, 1};
+Arrays.sort(b, Collections.reverseOrder());
+
+// Subtraction comparators overflow. Use the built-in:
+Arrays.sort(b, (x, y) -&gt; Integer.compare(x, y));   // safe
+// Arrays.sort(b, (x, y) -&gt; x - y);                // wrong near MIN_VALUE
+
+List&lt;Integer&gt; list = new ArrayList&lt;&gt;(List.of(3, 1, 2));
+Collections.sort(list);</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil</span>
+  <p>Two Java traps that cost real interviews. First, <code>list.remove(2)</code> on a
+  <code>List&lt;Integer&gt;</code> removes the element at <b>index</b> 2, not the value 2 &mdash; you need
+  <code>list.remove(Integer.valueOf(2))</code>. Second, <code>Integer</code> objects compared with
+  <code>==</code> only work by accident for values in &minus;128&hellip;127, because that range is cached.
+  Use <code>.equals()</code> or unbox to <code>int</code>.</p>
+</div>
+
+<h3 id="lang-strings">Strings and characters</h3>
+<div class="vs">
+  <div>
+    <div class="vh">Java &mdash; immutable, so build with a builder</div>
+<div class="code" data-lang="java">
+<header><b>Strings.java</b></header>
+<pre><code>// s += c inside a loop is O(n^2): each += copies the whole string.
+StringBuilder sb = new StringBuilder();
+for (char c : s.toCharArray()) sb.append(c);
+String out = sb.reverse().toString();
+
+// char arithmetic works because char is a 16-bit integer:
+int idx = s.charAt(i) - 'a';          // 0..25
+char back = (char) ('a' + idx);
+
+// Mutating in place needs a char[]:
+char[] cs = s.toCharArray();
+cs[0] = 'X';
+String changed = new String(cs);</code></pre>
+</div>
+  </div>
+  <div>
+    <div class="vh">JavaScript &mdash; immutable too, and no char type</div>
+<div class="code" data-lang="javascript">
+<header><b>strings.js</b></header>
+<pre><code>// Building with += is optimised by modern engines, but an array join
+// is the predictable choice and matches the Java shape:
+const parts = [];
+for (const c of s) parts.push(c);
+const out = parts.reverse().join('');
+
+// There is no char: s[i] is a one-character string.
+const idx = s.charCodeAt(i) - 97;          // 'a' is 97
+const back = String.fromCharCode(97 + idx);
+
+// s[i] - 'a' does NOT work; it is NaN.
+// Mutating in place needs an array:
+const cs = [...s];
+cs[0] = 'X';
+const changed = cs.join('');</code></pre>
+</div>
+  </div>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Operation</th><th>C++</th><th>Java</th><th>JavaScript</th></tr></thead>
+<tbody>
+<tr><td>Character to 0&ndash;25 index</td><td><code>s[i] - 'a'</code></td><td><code>s.charAt(i) - 'a'</code></td><td><code>s.charCodeAt(i) - 97</code></td></tr>
+<tr><td>Mutable string</td><td><code>std::string</code> is mutable</td><td><code>StringBuilder</code> or <code>char[]</code></td><td>Array of characters, then <code>join</code></td></tr>
+<tr><td>Fixed-size counter</td><td><code>int cnt[26] = {}</code></td><td><code>new int[26]</code></td><td><code>new Array(26).fill(0)</code></td></tr>
+<tr><td>Queue pop from front</td><td><code>q.pop()</code> is O(1)</td><td><code>ArrayDeque.poll()</code> is O(1)</td><td><code>arr.shift()</code> is <b>O(n)</b> &mdash; use a head index</td></tr>
+<tr><td>Hash map with tuple key</td><td><code>map&lt;pair&lt;int,int&gt;,int&gt;</code></td><td><code>Map&lt;List&lt;Integer&gt;,Integer&gt;</code></td><td>Key on a string: <code>`${r},${c}`</code></td></tr>
+<tr><td>Recursion depth before it dies</td><td>~10&#8309; frames</td><td>~10&#8308; frames</td><td>~10&#8308; frames</td></tr>
+</tbody>
+</table>
+</div>
+<p>Pick the language you will actually use in the interview and write that one from memory every time. Use
+the other two as a reading exercise &mdash; the differences above are exactly what a cross-language
+interviewer probes.</p>
+
+<div class="panel panel--real">
+  <span class="ph">In production</span>
+  <p><code>arr.shift()</code> being O(n) is not a trivia question. A BFS over 10&#8309; nodes written with
+  <code>shift()</code> is O(n&sup2;) and will time out on the platform and stall a real queue consumer the
+  same way. In BadgeDesk's <code>provisioning-worker</code> the same mistake &mdash; treating a list as a
+  queue &mdash; is what turns a retry backlog into an outage.</p>
+</div>
+
+<h2 id="topics">The 16 topics</h2>
+<p class="sub">The folder structure of the source sheet, preserved exactly, including its inconsistent
+subfolder names. Topics are built one at a time; the bar under each card is your own progress.</p>
+
+<p id="topicsummary" class="dim">Loading the topic index&hellip;</p>
+
+<div class="dsasearch">
+  <input id="dsaq" type="search" autocomplete="off"
+         aria-label="Search problems by title or pattern tag"
+         placeholder="Search every built problem by title or pattern tag&hellip;">
+</div>
+<div id="dsahits" hidden></div>
+<div id="dsabody">
+  <div id="topicindex"></div>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why one topic at a time</span>
+  <p>Each topic means reconstructing a problem statement from every C++ file, writing the approach ladder,
+  translating the optimal solution twice and running the JavaScript against the worked examples. Doing that
+  carefully for 39 problems is a session's work; doing it for 369 in one pass produces plausible-looking
+  content with wrong examples in it. A card marked <b>not built yet</b> is honest &mdash; it has no page
+  rather than a bad one.</p>
+</div>
+
+<h2 id="connect">How the subtopics connect</h2>
+<p class="sub">The techniques on this sheet are not interview-only trivia. Here is where each one is
+already sitting inside BadgeDesk, the system the other fourteen sheets build.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 400" role="img" aria-label="A map from DSA techniques to where they appear in the BadgeDesk system: sliding window in the Redis rate limiter, hash maps in idempotency keys, heaps in the retry scheduler, two pointers in the nightly reconciler, graphs in the approval chain, and tries and vector search in the policy indexer.">
+  <defs>
+    <marker id="s15d-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  </defs>
+
+  <rect class="zone" x="24" y="20" width="1152" height="96" rx="4"/>
+  <text class="mm g" x="42" y="44">TECHNIQUE &mdash; SHEET 15</text>
+
+  <rect class="box-a" x="46" y="56" width="168" height="44" rx="3"/><text class="t mid" x="130" y="83">Sliding window</text>
+  <rect class="box-a" x="238" y="56" width="168" height="44" rx="3"/><text class="t mid" x="322" y="83">Hash map</text>
+  <rect class="box-a" x="430" y="56" width="168" height="44" rx="3"/><text class="t mid" x="514" y="83">Heap</text>
+  <rect class="box-a" x="622" y="56" width="168" height="44" rx="3"/><text class="t mid" x="706" y="83">Two pointers</text>
+  <rect class="box-a" x="814" y="56" width="168" height="44" rx="3"/><text class="t mid" x="898" y="83">Topological sort</text>
+  <rect class="box-a" x="1006" y="56" width="148" height="44" rx="3"/><text class="t mid" x="1080" y="83">Trie</text>
+
+  <path class="flow" d="M130,100 V166" marker-end="url(#s15d-ac)"/>
+  <path class="flow" d="M322,100 V166" marker-end="url(#s15d-ac)"/>
+  <path class="flow" d="M514,100 V166" marker-end="url(#s15d-ac)"/>
+  <path class="flow" d="M706,100 V166" marker-end="url(#s15d-ac)"/>
+  <path class="flow" d="M898,100 V166" marker-end="url(#s15d-ac)"/>
+  <path class="flow" d="M1080,100 V166" marker-end="url(#s15d-ac)"/>
+
+  <rect class="zone" x="24" y="166" width="1152" height="120" rx="4"/>
+  <text class="mm g" x="42" y="190">WHERE IT ALREADY LIVES IN BADGEDESK</text>
+
+  <rect class="box-c" x="46" y="202" width="168" height="66" rx="3"/>
+  <text class="m mid" x="130" y="224">Redis rate limit</text><text class="mm c mid" x="130" y="244">GATEWAY &middot; SHEET 06</text>
+
+  <rect class="box-c" x="238" y="202" width="168" height="66" rx="3"/>
+  <text class="m mid" x="322" y="224">Idempotency keys</text><text class="mm c mid" x="322" y="244">CORE &middot; SHEET 05</text>
+
+  <rect class="box-c" x="430" y="202" width="168" height="66" rx="3"/>
+  <text class="m mid" x="514" y="224">Retry scheduler</text><text class="mm c mid" x="514" y="244">WORKER &middot; SHEET 11</text>
+
+  <rect class="box-c" x="622" y="202" width="168" height="66" rx="3"/>
+  <text class="m mid" x="706" y="224">Nightly reconciler</text><text class="mm c mid" x="706" y="244">LAMBDA &middot; SHEET 07</text>
+
+  <rect class="box-c" x="814" y="202" width="168" height="66" rx="3"/>
+  <text class="m mid" x="898" y="224">Approval chain</text><text class="mm c mid" x="898" y="244">CORE &middot; SHEET 04</text>
+
+  <rect class="box-c" x="1006" y="202" width="148" height="66" rx="3"/>
+  <text class="m mid" x="1080" y="224">Policy lookup</text><text class="mm c mid" x="1080" y="244">INDEXER &middot; SHEET 12</text>
+
+  <rect class="box" x="24" y="316" width="1152" height="62" rx="3"/>
+  <text class="m" x="44" y="342">The reconciler is the clearest case: comparing what BadgeDesk believes against what the vendor returns is</text>
+  <text class="m" x="44" y="362">a two-pointer walk over two sorted lists, or a hash-set difference. It is &ldquo;merge two sorted arrays&rdquo; with a deadline attached.</text>
+</svg>
+<figcaption>Drawing 15-D &mdash; techniques mapped onto the system.
+<b>Brass</b> = the technique as the interview asks for it. <b>Cyan</b> = the component in BadgeDesk that
+already depends on it.</figcaption>
+</figure>
+
+<p>Concretely, and worth being able to say in an interview:</p>
+<div class="grid g3">
+  <div class="card"><span class="cm">Sliding window</span><b class="ct">Rate limiting</b><p>A per-employee
+  request cap over a rolling 60-second window is exactly the sliding-window counter from topic 08, kept in
+  Redis instead of an array. See <a href="databases.html">Sheet 06</a>.</p></div>
+  <div class="card"><span class="cm">Hash map</span><b class="ct">Idempotency</b><p>Deduplicating a retried
+  <code>POST /access-requests</code> is a hash-set membership test with a TTL. Same lookup, same O(1)
+  argument. See <a href="apis.html">Sheet 05</a>.</p></div>
+  <div class="card"><span class="cm">Heap</span><b class="ct">Retry scheduling</b><p>&ldquo;Which retry is
+  due next?&rdquo; is a min-heap keyed on next-attempt time &mdash; the same structure as the top-K
+  problems in topic 09. See <a href="messaging.html">Sheet 11</a>.</p></div>
+  <div class="card"><span class="cm">Two pointers</span><b class="ct">Reconciliation</b><p>The nightly
+  <code>audit-reconciler</code> diffs two sorted badge lists in one linear pass instead of a nested loop
+  over 200,000 rows. See <a href="aws.html">Sheet 07</a>.</p></div>
+  <div class="card"><span class="cm">Topological sort</span><b class="ct">Approval chains</b><p>A
+  multi-step approval with dependencies is a DAG; detecting a cycle in it is the same algorithm as topic
+  13's cycle detection. See <a href="backend.html">Sheet 04</a>.</p></div>
+  <div class="card"><span class="cm">Trie / vectors</span><b class="ct">Policy search</b><p>Prefix matching
+  over site codes, and the nearest-neighbour search behind &ldquo;Ask BadgeDesk&rdquo;, are both index
+  structures chosen for a query shape. See <a href="ai.html">Sheet 12</a>.</p></div>
+</div>
+
+<p><b>What you ship from this sheet:</b> a log of solved problems with a one-line insight for each, and the
+ability to talk through any of them from brute force to optimal without notes. That log is what you revise
+from in week 12, alongside <a href="interview.html">Sheet 14</a>.</p>
+
+<h2 id="drill">Drill book</h2>
+<p class="sub">Answer out loud before you open each one. These are the questions that surround the coding
+problem, and they are graded just as hard.</p>
+
+<div class="drill">
+  <div class="dh">Drill &mdash; complexity and trade-offs</div>
+
+  <details><summary>You have an O(n&sup2;) solution and the interviewer says nothing. What do you do?</summary>
+    <div class="ans"><p>State it yourself: &ldquo;this is O(n&sup2;) time, O(1) space &mdash; the repeated
+    work is that I rescan the suffix for every index. If I trade O(n) space for a hash map I can drop it to
+    O(n).&rdquo; Then ask whether they want the optimisation. Volunteering the cost and naming the specific
+    repeated work is what separates a candidate who memorised a solution from one who understands it. The
+    follow-up is nearly always &ldquo;so what is the space cost of that map, and does it matter here?&rdquo;</p></div></details>
+
+  <details><summary>When is an O(n log n) solution better than an O(n) one?</summary>
+    <div class="ans"><p>When the O(n) solution needs O(n) extra memory you do not have, when n is small
+    enough that constants dominate &mdash; sorting 50 elements beats building a hash map &mdash; or when the
+    sort gives you something else you need, like ordered output. Big-O describes growth, not runtime.
+    Follow-up: &ldquo;at what n does the crossover happen?&rdquo; Answer honestly: you would measure it, but
+    it is usually in the hundreds.</p></div></details>
+
+  <details><summary>What is amortised complexity, and where have you relied on it today?</summary>
+    <div class="ans"><p>The average cost per operation across a sequence, even though one individual
+    operation may be expensive. A dynamic array's push is amortised O(1): most pushes are O(1), and the
+    occasional resize copies n elements, but the doubling means those copies total O(n) across n pushes.
+    A monotonic stack relies on the same argument &mdash; a single element can trigger many pops, but each
+    element is pushed and popped at most once, so the whole pass is O(n), not O(n&sup2;).</p></div></details>
+
+  <details><summary>Your recursive solution passes the samples and fails the large case. First three checks?</summary>
+    <div class="ans"><p>Stack depth &mdash; roughly 10&#8308; frames in Java and JavaScript, so a recursion
+    of depth 10&#8309; dies; convert to an explicit stack or an iterative form. Missing memoisation &mdash;
+    if the same arguments recur, you are exponential. Integer overflow in an accumulator, which is silent in
+    Java and a precision loss in JavaScript. Check those before touching the logic, because the logic is
+    probably fine.</p></div></details>
+
+  <details><summary>Explain why binary search on the answer works.</summary>
+    <div class="ans"><p>It needs a predicate that is monotonic: if X is feasible then every value on one
+    side of X is also feasible. You are not searching the input, you are searching the range of possible
+    answers and asking a yes/no feasibility question at each midpoint. &ldquo;Minimum capacity to ship in D
+    days&rdquo; is the standard example &mdash; if capacity C works, C+1 works, so you binary search C and
+    the check is a linear simulation. Cost is O(n log(range)).</p></div></details>
+
+  <details><summary>How do you know a greedy algorithm is correct?</summary>
+    <div class="ans"><p>You have to argue it, usually with an exchange argument: take any optimal solution,
+    show you can swap in the greedy choice without making it worse, and conclude the greedy choice is safe.
+    If you cannot make that argument, the problem is probably DP. Saying &ldquo;greedy feels right
+    here&rdquo; is the wrong answer even when the code passes &mdash; the interviewer is testing whether you
+    know the difference between a heuristic and a proof.</p></div></details>
+
+  <details><summary>Walk me from a recursive solution to an O(1)-space DP.</summary>
+    <div class="ans"><p>Four steps, always in this order. Write the recursion and state the parameters that
+    change. Add a memo keyed on exactly those parameters &mdash; that alone kills the exponential blowup.
+    Convert to a table by filling the states in dependency order, which removes the call stack. Then notice
+    the table only reads the previous row or two, and keep just those. Doing it in this order means each
+    step is mechanical; jumping straight to the tabulation is where people get the base cases wrong.</p></div></details>
+
+  <details><summary>Why is a hash map's O(1) lookup a lie, and when does it matter?</summary>
+    <div class="ans"><p>It is O(1) expected, not worst case. With adversarial keys that all collide it
+    degrades to O(n) per lookup, making a scan O(n&sup2;). Java's HashMap mitigates this by turning long
+    buckets into balanced trees, giving O(log n) worst case. It matters when keys are attacker-controlled
+    &mdash; a real denial-of-service vector &mdash; and in competitive settings where anti-hash tests
+    exist. In an interview, saying &ldquo;O(1) average, O(n) worst case with collisions&rdquo; is the
+    complete answer.</p></div></details>
+
+  <details><summary>What is the difference between BFS and Dijkstra, and when does BFS stop working?</summary>
+    <div class="ans"><p>BFS finds the shortest path when every edge costs the same, because the first time
+    it reaches a node it has used the fewest edges. Add non-uniform positive weights and that stops holding,
+    so you need Dijkstra &mdash; a priority queue that always expands the cheapest known node. Add negative
+    weights and Dijkstra breaks too, because a settled node can later be improved; that is Bellman-Ford.
+    Knowing which assumption each algorithm rests on is the actual question.</p></div></details>
+
+  <details><summary>You cannot see the optimal solution and there are ten minutes left. What now?</summary>
+    <div class="ans"><p>Write the brute force, correctly, and say what you are doing: &ldquo;I will get a
+    correct O(n&sup2;) version down first so we have something working, then optimise.&rdquo; A correct slow
+    solution scores; a half-written clever one does not. Then narrate where the waste is. Most interviewers
+    will hint once you have shown a working baseline, and taking a hint well is itself a positive
+    signal.</p></div></details>
+</div>
+
+<h2 id="signoff">Sign-off</h2>
+<p class="sub">Tick these on the machine where you actually did the work. Progress is per browser.</p>
+
+<div class="signoff">
+  <div class="sh"><span>Weeks 01&ndash;12</span><span>Sheet 15</span></div>
+  <label><input type="checkbox"><span>Solved all 13 Easy array problems cold, without revealing the approach first.</span></label>
+  <label><input type="checkbox"><span>Can state the complexity budget for a given constraint line without looking at Drawing 15-B.</span></label>
+  <label><input type="checkbox"><span>Wrote a binary search from memory, with the overflow-safe midpoint, and got the boundary conditions right first try.</span></label>
+  <label><input type="checkbox"><span>Explained Kadane's algorithm out loud, including why the running sum resets, to another person or a recording.</span></label>
+  <label><input type="checkbox"><span>Translated one optimal solution into Java and JavaScript from memory and diffed it against section 4.</span></label>
+  <label><input type="checkbox"><span>Hit the JavaScript lexicographic sort bug once, deliberately, and can now spot it in a diff.</span></label>
+  <label><input type="checkbox"><span>Took one problem from recursion to memo to tabulation to O(1) space, writing all four versions.</span></label>
+  <label><input type="checkbox"><span>Re-ran every problem marked Attempted from the previous week and cleared at least half.</span></label>
+  <label><input type="checkbox"><span>Answered all ten drill questions out loud without reading the answers.</span></label>
+  <label><input type="checkbox"><span>Named, for three different techniques on this sheet, the BadgeDesk component that uses it.</span></label>
+</div>
+
+</div><!-- /sheetbody -->
+</main>
+
+<aside class="toc" aria-label="Contents"></aside>
+</div>
+
+<script src="assets/js/nav-data.js"></script>
+<script src="assets/js/dsa-topics.js"></script>
+<script src="assets/js/sheet.js"></script>
+<script src="assets/js/dsa.js"></script>
+</body>
+</html>

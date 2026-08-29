@@ -1,0 +1,2501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheet 11 — Messaging — BadgeDesk Roadmap</title>
+<link rel="stylesheet" href="assets/css/sheet.css">
+</head>
+<body data-sheet="11">
+<a class="skip" href="#main">Skip to sheet</a>
+<div class="wrap">
+<nav class="rail" aria-label="Sheet index"></nav>
+
+<main id="main">
+
+<header class="sheethead">
+  <div>
+    <div class="no">Sheet 11 &middot; Ship it and run it &middot; Week 11</div>
+    <h1>Mess&shy;aging<span>.</span></h1>
+    <p class="lede">Kafka, RabbitMQ and the ideas underneath both. This sheet builds the seam from callout 4
+    of Drawing 00-A: BadgeDesk must never call the slow, flaky vendor access-control API while an employee is
+    waiting. The whole subject reduces to one move &mdash; <b>turn a synchronous dependency you do not control
+    into a durable message you do</b> &mdash; and then to the bill that move sends you: duplicates, ordering,
+    lag and poison messages.</p>
+  </div>
+  <div class="specs">
+    <div><span>Weeks</span><span>11</span></div>
+    <div><span>Hours</span><span>9 &ndash; 11</span></div>
+    <div><span>Must know</span><span>Kafka, guarantees</span></div>
+    <div><span>Nice to have</span><span>RabbitMQ, outbox</span></div>
+    <div><span>Ships</span><span>The event seam</span></div>
+  </div>
+</header>
+
+<div class="sheetbody">
+
+<!-- ===================================================================== -->
+<h2 id="seam">The seam</h2>
+<p class="sub">One drawing, two halves, the same feature. The top half is what almost everyone builds first.
+The bottom half is what this sheet exists to teach. Everything after this &mdash; partitions, acks,
+idempotency, dead-letter topics &mdash; is a detail of the bottom half.</p>
+
+<figure class="dwg dwg--hero">
+<svg viewBox="0 0 1200 630" role="img" aria-label="A before and after comparison. Before: the FastAPI core calls the vendor access-control API synchronously, the employee waits up to thirty seconds, and a vendor failure returns a 500 and rolls the row back. After: the core writes a row and an outbox event in one transaction, returns 202 Accepted in forty milliseconds, an outbox relay publishes to the badge.requests topic, and the provisioning worker calls the vendor with retries and a dead-letter topic.">
+  <defs>
+    <marker id="s11-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s11-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s11-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <!-- ================= BEFORE ================= -->
+  <text class="mm r" x="30" y="34">BEFORE &mdash; SYNCHRONOUS &middot; THE USER WAITS FOR THE VENDOR</text>
+
+  <rect class="box" x="30" y="56" width="140" height="56" rx="3"/>
+  <text class="t mid" x="100" y="80">Employee</text>
+  <text class="mm mid" x="100" y="96">BROWSER</text>
+
+  <rect class="box-c" x="214" y="56" width="190" height="56" rx="3"/>
+  <text class="t mid" x="309" y="80">FastAPI core</text>
+  <text class="mm mid" x="309" y="96">POST /access-requests</text>
+
+  <rect class="box-r" x="790" y="56" width="210" height="56" rx="3"/>
+  <text class="t r mid" x="895" y="80">Vendor access-control API</text>
+  <text class="mm mid" x="895" y="96">P95 8 S &middot; P99 30 S &middot; 2% 5XX</text>
+
+  <path class="flow" d="M174,84 H208" marker-end="url(#s11-ac)"/>
+  <path class="flow" d="M408,84 H784" marker-end="url(#s11-ac)"/>
+  <text class="mm c" x="440" y="76">BLOCKING HTTP CALL ON THE REQUEST PATH</text>
+
+  <rect class="box-c" x="214" y="170" width="190" height="56" rx="3"/>
+  <text class="t mid" x="309" y="194">PostgreSQL</text>
+  <text class="mm mid" x="309" y="210">access_requests</text>
+  <path class="flow" d="M309,112 V164" marker-end="url(#s11-ac)"/>
+  <text class="mm r" x="214" y="248">ROLLED BACK WHEN THE VENDOR CALL FAILS</text>
+
+  <path class="flow-r dash" d="M895,118 V146 H100 V118" marker-end="url(#s11-ar)"/>
+  <text class="mm r" x="440" y="138">30 S TIMEOUT &rarr; 500 TO THE BROWSER &middot; REQUEST LOST</text>
+
+  <rect class="box-r" x="440" y="184" width="560" height="26" rx="2"/>
+  <text class="m r" x="454" y="202">30 000 ms of user-visible latency, 2% of requests evaporate entirely</text>
+
+  <line class="ln dash" x1="20" y1="286" x2="1180" y2="286"/>
+
+  <!-- ================= AFTER ================= -->
+  <text class="mm b" x="30" y="316">AFTER &mdash; ASYNCHRONOUS &middot; NOBODY WAITS FOR THE VENDOR</text>
+
+  <rect class="box" x="30" y="336" width="140" height="56" rx="3"/>
+  <text class="t mid" x="100" y="360">Employee</text>
+  <text class="mm mid" x="100" y="376">BROWSER</text>
+
+  <rect class="box-c" x="214" y="336" width="190" height="56" rx="3"/>
+  <text class="t mid" x="309" y="360">FastAPI core</text>
+  <text class="mm mid" x="309" y="376">WRITE ROW &middot; ENQUEUE &middot; 202</text>
+
+  <path class="flow" d="M174,352 H208" marker-end="url(#s11-ac)"/>
+  <path class="flow" d="M210,378 H176" marker-end="url(#s11-ac)"/>
+  <text class="mm c" x="30" y="412">202 ACCEPTED IN 40 MS WITH A LOCATION HEADER</text>
+
+  <rect class="box-c" x="214" y="450" width="190" height="56" rx="3"/>
+  <text class="t mid" x="309" y="474">PostgreSQL</text>
+  <text class="mm mid" x="309" y="490">access_requests + outbox</text>
+  <path class="flow" d="M309,392 V444" marker-end="url(#s11-ac)"/>
+  <text class="mm" x="214" y="524">ONE TRANSACTION: ROW AND EVENT COMMIT TOGETHER</text>
+
+  <rect class="box-a" x="470" y="336" width="250" height="56" rx="3"/>
+  <text class="t b mid" x="595" y="360">badge.requests</text>
+  <text class="mm mid" x="595" y="376">3 PARTITIONS &middot; KEY = site_id</text>
+  <path class="flow-b" d="M408,476 H690 V398" marker-end="url(#s11-ab)"/>
+  <text class="mm b" x="478" y="418">PUBLISHED BY THE OUTBOX RELAY</text>
+
+  <rect class="box" x="780" y="336" width="210" height="56" rx="3"/>
+  <text class="t mid" x="885" y="360">provisioning-worker</text>
+  <text class="mm mid" x="885" y="376">MANUAL COMMIT &middot; IDEMPOTENT</text>
+  <path class="flow-b" d="M724,364 H774" marker-end="url(#s11-ab)"/>
+
+  <rect class="box-r" x="1020" y="336" width="150" height="56" rx="3"/>
+  <text class="t r mid" x="1095" y="364">badge.requests.dlq</text>
+  <text class="mm mid" x="1095" y="380">POISON MESSAGES</text>
+  <path class="flow-r" d="M994,364 H1014" marker-end="url(#s11-ar)"/>
+  <text class="mm r" x="1020" y="328">AFTER 3 ATTEMPTS</text>
+
+  <rect class="box-r" x="780" y="450" width="210" height="56" rx="3"/>
+  <text class="t r mid" x="885" y="474">Vendor API</text>
+  <text class="mm mid" x="885" y="490">STILL SLOW &middot; STILL FLAKY</text>
+  <path class="flow" d="M885,392 V444" marker-end="url(#s11-ac)"/>
+  <path class="flow-r" d="M994,462 C1016,458 1016,498 996,494" marker-end="url(#s11-ar)"/>
+  <text class="mm r" x="1020" y="484">RETRY 1 S &middot; 4 S &middot; 16 S</text>
+
+  <rect class="box-a" x="470" y="536" width="250" height="56" rx="3"/>
+  <text class="t b mid" x="595" y="560">badge.provisioned</text>
+  <text class="mm mid" x="595" y="576">WHAT ACTUALLY HAPPENED</text>
+  <path class="flow-b" d="M776,380 H750 V562 H726" marker-end="url(#s11-ab)"/>
+
+  <rect class="box" x="30" y="536" width="180" height="56" rx="3"/>
+  <text class="t mid" x="120" y="560">notifier</text>
+  <text class="mm mid" x="120" y="576">TEAMS + WEBHOOK</text>
+  <path class="flow-b" d="M466,562 H216" marker-end="url(#s11-ab)"/>
+
+  <text class="mm b" x="760" y="558">CONSUMER LAG ALARMED IN CLOUDWATCH &mdash; SHEET 07</text>
+  <text class="mm" x="760" y="574">A VENDOR OUTAGE IS NOW A LAG GRAPH, NOT AN OUTAGE</text>
+
+  <!-- callouts -->
+  <circle class="bub" cx="600" cy="34" r="13"/><text class="bubt" x="600" y="38">1</text>
+  <path class="lead" d="M600,47 V78"/>
+  <circle class="bub" cx="1030" cy="84" r="13"/><text class="bubt" x="1030" y="88">2</text>
+  <path class="lead" d="M1017,84 H1004"/>
+  <circle class="bub" cx="422" cy="197" r="13"/><text class="bubt" x="422" y="201">3</text>
+  <path class="lead" d="M435,197 H436"/>
+  <circle class="bub" cx="1150" cy="146" r="13"/><text class="bubt" x="1150" y="150">4</text>
+  <path class="lead" d="M1137,146 H1004"/>
+  <circle class="bub" cx="156" cy="470" r="13"/><text class="bubt" x="156" y="474">5</text>
+  <path class="lead" d="M169,470 H208"/>
+  <circle class="bub" cx="595" cy="316" r="13"/><text class="bubt" x="595" y="320">6</text>
+  <path class="lead" d="M595,329 V332"/>
+  <circle class="bub" cx="885" cy="316" r="13"/><text class="bubt" x="885" y="320">7</text>
+  <path class="lead" d="M885,329 V332"/>
+  <circle class="bub" cx="340" cy="604" r="13"/><text class="bubt" x="340" y="608">8</text>
+  <path class="lead" d="M340,591 V568"/>
+</svg>
+<figcaption>Drawing 11-A &mdash; the seam, before and after. <b>Cyan</b> = synchronous, someone is waiting.
+<b>Brass</b> = asynchronous, durable, nobody is waiting. <b>Red</b> = the failure path.</figcaption>
+</figure>
+
+<div class="notes">
+  <div class="n"><b>1</b><div><b>The line that ruins the feature.</b> <code>POST /access-requests</code> calls
+  the vendor inside the request handler. The employee's browser, the Next.js server, the NestJS gateway and
+  the FastAPI worker process are all held open for the duration. On a four-worker Uvicorn process, four
+  simultaneous slow vendor calls take the entire service down &mdash; not because the code is wrong but
+  because every worker is parked on a socket owned by somebody else's data centre.</div></div>
+  <div class="n"><b>2</b><div><b>The constraint you cannot fix.</b> The vendor's p99 is 30&nbsp;seconds and
+  roughly 2% of calls return a 5xx. You do not own it, you cannot make it faster, and asking them to is not
+  an engineering answer. Every design on this sheet starts by accepting this number as a fact and asking
+  what shape of system tolerates it.</div></div>
+  <div class="n"><b>3</b><div><b>The cost, measured.</b> A 30-second wait is not &ldquo;slow&rdquo;, it is a
+  broken feature: browsers, load balancers and API gateways all have their own shorter timeouts, so the user
+  frequently sees a network error while the vendor call is still in flight and may yet succeed. Now
+  BadgeDesk and the vendor disagree about reality, and nothing in the system will notice.</div></div>
+  <div class="n"><b>4</b><div><b>The failure path is where the data dies.</b> The vendor 503s, the exception
+  propagates, the transaction rolls back, and the employee gets a 500. The request that a human typed is now
+  gone. There is no retry, no record, no queue &mdash; the only durable copy of the intent was in flight in a
+  Python stack frame. This is the specific failure that messaging removes.</div></div>
+  <div class="n"><b>5</b><div><b>The synchronous work shrinks to one local write.</b> Insert the
+  <code>access_requests</code> row and insert an <code>outbox</code> row describing the event, in the same
+  Postgres transaction. Both commit or neither does. That is the whole synchronous path: 40&nbsp;ms, all of
+  it inside your own VPC, against a database you operate. See <a href="databases.html">Sheet 06</a>.</div></div>
+  <div class="n"><b>6</b><div><b>The topic is the seam.</b> <code>badge.requests</code> is a durable,
+  replicated, ordered log that the API writes to and the worker reads from. It is the contract boundary: the
+  API's job ends when the event is durable, the worker's job begins when it reads it. Neither service needs
+  the other to be up at the same moment &mdash; which is the actual definition of decoupling, and the reason
+  a queue is not just &ldquo;a buffer&rdquo;.</div></div>
+  <div class="n"><b>7</b><div><b>The slow work moves to a place where slow is allowed.</b> The
+  provisioning-worker still makes the same 30-second call to the same flaky vendor. Nothing got faster. What
+  changed is who waits: a background consumer that can retry on a 1&nbsp;s / 4&nbsp;s / 16&nbsp;s ladder,
+  process 200 messages concurrently, and give up into <code>badge.requests.dlq</code> after three attempts
+  without losing the message or the user's afternoon.</div></div>
+  <div class="n"><b>8</b><div><b>The result is a second event, not a silence.</b> The worker publishes
+  <code>badge.provisioned</code>, which the notifier consumes to send the Teams message and the outbound
+  webhook from <a href="apis.html">Sheet 05</a>. Failure is now observable rather than invisible: a vendor
+  outage shows up as consumer lag on a CloudWatch alarm (<a href="aws.html">Sheet 07</a>) and drains
+  automatically when the vendor recovers.</div></div>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why this exists</span>
+  <p>Two services that call each other synchronously are one service with a network in the middle: if either
+  is down, both are down, and availability multiplies downward (99.9% &times; 99.9% = 99.8%, and the vendor is
+  nowhere near 99.9%). A broker breaks that multiplication by making the handoff <b>durable</b> instead of
+  <b>immediate</b>. You are trading consistency-in-time for availability: after the 202, BadgeDesk has
+  promised the badge will exist, not that it exists yet. Every hard question in this subject &mdash;
+  duplicates, ordering, lag, dead letters &mdash; is the invoice for that trade.</p>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil</span>
+  <p>&ldquo;We'll just put it on a queue&rdquo; is not a design. A queue moves the failure, it does not remove
+  it. If you add Kafka and keep returning <code>200 OK</code> with a fully-populated badge object, you have
+  lied to the client. Asynchronous processing forces three visible changes to the API contract: the status
+  code becomes <code>202 Accepted</code>, the response carries an identifier and a
+  <code>Location</code> the client can poll, and the resource gains a real state machine
+  (<code>pending &rarr; provisioning &rarr; active | failed</code>). Interviewers who know this subject ask
+  about the API change, not about Kafka.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="concepts">Messaging concepts</h2>
+<p class="sub">Broker-agnostic first. Kafka and RabbitMQ disagree about almost everything except this
+vocabulary, and every interview question worth asking is about the vocabulary rather than the product.</p>
+
+<h3 id="c-parts">The five nouns</h3>
+<p>A message system has exactly five moving parts. Learn to say them precisely, because sloppy naming here
+is the fastest way to sound junior: &ldquo;we send it to the queue&rdquo; is ambiguous in Kafka and simply
+wrong in RabbitMQ.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Noun</th><th>What it is</th><th>In BadgeDesk</th><th>The thing people get wrong</th></tr></thead>
+<tbody>
+<tr><td>Producer</td><td>Code that writes a message. Never knows who reads it.</td><td><code>core</code> publishing <code>badge.requested</code></td><td>Assuming a producer knows whether the work succeeded. It does not &mdash; that is a second message.</td></tr>
+<tr><td>Broker</td><td>The server that stores messages and hands them out. Kafka calls a cluster member a broker; RabbitMQ calls the whole node one.</td><td>A 3-broker Kafka cluster (1 in Docker locally)</td><td>Treating it as stateless infrastructure. It is a database with different indexes, and it needs disk, replication and a retention policy.</td></tr>
+<tr><td>Consumer</td><td>Code that reads and acknowledges messages.</td><td><code>provisioning-worker</code>, <code>notifier</code></td><td>Forgetting that a consumer can be delivered the same message twice, and that this is normal rather than a bug.</td></tr>
+<tr><td>Message</td><td>Immutable bytes plus headers. Usually a key, a payload and metadata.</td><td>JSON body + <code>correlation-id</code> header, keyed by <code>site_id</code></td><td>Putting mutable state or a whole database row in it. A message is a fact about a moment, not a pointer to now.</td></tr>
+<tr><td>Topic / queue</td><td>The named destination. A <b>queue</b> holds work to be taken; a <b>topic</b> is a stream to be observed.</td><td><code>badge.requests</code>, <code>badge.provisioned</code>, <code>access.events</code></td><td>Using the words interchangeably. They imply different delivery semantics &mdash; see the next drawing.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="c-shapes">The two fundamental shapes</h3>
+<p>Every messaging design is one of these two, or a composition of them. This is not a tuning choice; it
+determines who is responsible for the work, how you scale, and what happens when you add a second reader
+next quarter.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 350" role="img" aria-label="Left: a point-to-point work queue where one message is delivered to exactly one of three competing worker consumers. Right: publish-subscribe fan-out where one message is copied to every one of three independent subscribers.">
+  <defs>
+    <marker id="s11-bc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s11-bb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+  </defs>
+
+  <text class="mm c" x="30" y="30">POINT-TO-POINT &mdash; A WORK QUEUE</text>
+  <rect class="box" x="30" y="96" width="150" height="56" rx="3"/>
+  <text class="t mid" x="105" y="120">core</text>
+  <text class="mm mid" x="105" y="136">PRODUCER</text>
+  <rect class="box-c" x="214" y="96" width="176" height="56" rx="3"/>
+  <text class="t mid" x="302" y="120">badge.requests</text>
+  <text class="mm mid" x="302" y="136">ONE UNIT OF WORK EACH</text>
+  <path class="flow" d="M184,124 H210" marker-end="url(#s11-bc)"/>
+  <rect class="box" x="436" y="66" width="130" height="44" rx="3"/>
+  <text class="t mid" x="501" y="93">worker 1</text>
+  <rect class="box" x="436" y="124" width="130" height="44" rx="3"/>
+  <text class="t mid" x="501" y="151">worker 2</text>
+  <rect class="box" x="436" y="182" width="130" height="44" rx="3"/>
+  <text class="t mid" x="501" y="209">worker 3</text>
+  <path class="flow" d="M394,116 C414,116 414,88 428,88" marker-end="url(#s11-bc)"/>
+  <path class="flow" d="M394,124 H428" marker-end="url(#s11-bc)"/>
+  <path class="flow" d="M394,132 C414,132 414,204 428,204" marker-end="url(#s11-bc)"/>
+  <text class="mm" x="30" y="252">EACH MESSAGE IS DELIVERED TO EXACTLY ONE CONSUMER</text>
+  <text class="mm" x="30" y="268">ADD CONSUMERS &rarr; MORE THROUGHPUT, SAME TOTAL WORK</text>
+  <text class="mm" x="30" y="284">COMPETING CONSUMERS &middot; IN KAFKA: ONE CONSUMER GROUP</text>
+
+  <line class="ln dash" x1="600" y1="20" x2="600" y2="300"/>
+
+  <text class="mm b" x="630" y="30">PUBLISH / SUBSCRIBE &mdash; FAN-OUT</text>
+  <rect class="box" x="630" y="96" width="150" height="56" rx="3"/>
+  <text class="t mid" x="705" y="120">provisioning-worker</text>
+  <text class="mm mid" x="705" y="136">PRODUCER</text>
+  <rect class="box-a" x="814" y="96" width="176" height="56" rx="3"/>
+  <text class="t b mid" x="902" y="120">badge.provisioned</text>
+  <text class="mm mid" x="902" y="136">A FACT, COPIED TO ALL</text>
+  <path class="flow-b" d="M784,124 H810" marker-end="url(#s11-bb)"/>
+  <rect class="box" x="1036" y="66" width="134" height="44" rx="3"/>
+  <text class="t mid" x="1103" y="93">notifier</text>
+  <rect class="box" x="1036" y="124" width="134" height="44" rx="3"/>
+  <text class="t mid" x="1103" y="151">audit-reconciler</text>
+  <rect class="box" x="1036" y="182" width="134" height="44" rx="3"/>
+  <text class="t mid" x="1103" y="209">policy-indexer</text>
+  <path class="flow-b" d="M994,116 C1014,116 1014,88 1028,88" marker-end="url(#s11-bb)"/>
+  <path class="flow-b" d="M994,124 H1028" marker-end="url(#s11-bb)"/>
+  <path class="flow-b" d="M994,132 C1014,132 1014,204 1028,204" marker-end="url(#s11-bb)"/>
+  <text class="mm b" x="630" y="252">EVERY SUBSCRIBER GETS ITS OWN COPY AND ITS OWN POSITION</text>
+  <text class="mm b" x="630" y="268">ADD A SUBSCRIBER &rarr; NOTHING ELSE CHANGES OR SLOWS DOWN</text>
+  <text class="mm b" x="630" y="284">IN KAFKA: THREE CONSUMER GROUPS ON ONE TOPIC</text>
+
+  <text class="mm r mid" x="600" y="330">CHOOSING THE WRONG SHAPE IS A REDESIGN, NOT A CONFIG CHANGE &mdash; IT DECIDES WHO OWNS THE WORK</text>
+</svg>
+<figcaption>Drawing 11-B &mdash; work queue versus fan-out. <b>Cyan</b> = one message, one taker.
+<b>Brass</b> = one message, every reader.</figcaption>
+</figure>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil</span>
+  <p>Building <code>badge.provisioned</code> as a work queue is the classic mistake. It works on day one
+  because there is only the notifier. Then the audit-reconciler subscribes, and now the two services
+  <b>steal messages from each other</b>: half the notifications vanish and half the audit rows are missing,
+  intermittently, under load. The tell is the naming &mdash; a destination whose name is an <i>event in the
+  past tense</i> (<code>badge.provisioned</code>) is a topic with many independent readers; a destination
+  whose name is <i>work to do</i> (<code>badge.requests</code>) is a queue with competing consumers. In
+  Kafka the mechanism is the same log and the difference is entirely whether readers share a
+  <code>group.id</code>; get that wrong and you have silently chosen the other shape.</p>
+</div>
+
+<h3 id="c-guarantees">Delivery guarantees &mdash; where the interview lives</h3>
+<p>A guarantee is not a property of the broker. It is a property of <b>when the acknowledgement happens
+relative to the side effect</b>. Two lines of code in your consumer, swapped, change the guarantee. Draw
+this timeline on the whiteboard and you have answered the question before it is finished.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 470" role="img" aria-label="Three timelines. At-most-once commits the offset before processing, so a crash loses the message. At-least-once commits after processing, so a crash causes redelivery and a duplicate side effect. Effectively-once inserts a deduplication key before the side effect, so redelivery is skipped.">
+  <defs>
+    <marker id="s11-cc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s11-cb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s11-cr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <text class="t" x="24" y="62">AT-MOST-ONCE</text>
+  <text class="mm" x="24" y="78">COMMIT FIRST</text>
+  <rect class="box-c" x="146" y="46" width="140" height="34" rx="2"/><text class="m mid" x="216" y="67">poll msg 71</text>
+  <rect class="box-c" x="306" y="46" width="150" height="34" rx="2"/><text class="m mid" x="381" y="67">commit offset 72</text>
+  <rect class="box-c" x="476" y="46" width="150" height="34" rx="2"/><text class="m mid" x="551" y="67">start processing</text>
+  <rect class="box-r" x="646" y="46" width="120" height="34" rx="2"/><text class="m r mid" x="706" y="67">pod is killed</text>
+  <path class="flow" d="M290,63 H302" marker-end="url(#s11-cc)"/>
+  <path class="flow" d="M460,63 H472" marker-end="url(#s11-cc)"/>
+  <path class="flow-r" d="M630,63 H642" marker-end="url(#s11-cr)"/>
+  <path class="flow-r" d="M770,63 H794" marker-end="url(#s11-cr)"/>
+  <rect class="box-r" x="800" y="40" width="370" height="46" rx="3"/>
+  <text class="m r" x="814" y="60">msg 71 is never redelivered. The badge</text>
+  <text class="m r" x="814" y="76">is never provisioned, and nobody is told.</text>
+  <line class="ln dash" x1="146" y1="100" x2="1170" y2="100"/>
+
+  <text class="t" x="24" y="192">AT-LEAST-ONCE</text>
+  <text class="mm" x="24" y="208">COMMIT LAST</text>
+  <rect class="box-c" x="146" y="176" width="140" height="34" rx="2"/><text class="m mid" x="216" y="197">poll msg 71</text>
+  <rect class="box-c" x="306" y="176" width="150" height="34" rx="2"/><text class="m mid" x="381" y="197">vendor returns 201</text>
+  <rect class="box-r" x="476" y="176" width="150" height="34" rx="2"/><text class="m r mid" x="551" y="197">killed pre-commit</text>
+  <rect class="box-c" x="646" y="176" width="120" height="34" rx="2"/><text class="m mid" x="706" y="197">restart</text>
+  <path class="flow" d="M290,193 H302" marker-end="url(#s11-cc)"/>
+  <path class="flow-r" d="M460,193 H472" marker-end="url(#s11-cr)"/>
+  <path class="flow" d="M630,193 H642" marker-end="url(#s11-cc)"/>
+  <path class="flow-r" d="M770,193 H794" marker-end="url(#s11-cr)"/>
+  <rect class="box-r" x="800" y="170" width="370" height="46" rx="3"/>
+  <text class="m r" x="814" y="190">msg 71 is polled again. The vendor issues</text>
+  <text class="m r" x="814" y="206">a second badge for the same request.</text>
+  <line class="ln dash" x1="146" y1="230" x2="1170" y2="230"/>
+
+  <text class="t" x="24" y="316">EFFECTIVELY-</text>
+  <text class="t" x="24" y="332">ONCE</text>
+  <text class="mm" x="24" y="348">DEDUPE + COMMIT</text>
+  <rect class="box-c" x="146" y="306" width="140" height="34" rx="2"/><text class="m mid" x="216" y="327">poll msg 71</text>
+  <rect class="box-a" x="306" y="306" width="150" height="34" rx="2"/><text class="m b mid" x="381" y="327">claim id 71 in DB</text>
+  <rect class="box-c" x="476" y="306" width="150" height="34" rx="2"/><text class="m mid" x="551" y="327">vendor returns 201</text>
+  <rect class="box-r" x="646" y="306" width="120" height="34" rx="2"/><text class="m r mid" x="706" y="327">killed</text>
+  <path class="flow" d="M290,323 H302" marker-end="url(#s11-cc)"/>
+  <path class="flow-b" d="M460,323 H472" marker-end="url(#s11-cb)"/>
+  <path class="flow-r" d="M630,323 H642" marker-end="url(#s11-cr)"/>
+  <path class="flow-b" d="M770,323 H794" marker-end="url(#s11-cb)"/>
+  <rect class="box-a" x="800" y="300" width="370" height="46" rx="3"/>
+  <text class="m b" x="814" y="320">redelivered &rarr; the claim insert conflicts</text>
+  <text class="m b" x="814" y="336">&rarr; skip the vendor, commit the offset.</text>
+  <line class="ln dash" x1="146" y1="360" x2="1170" y2="360"/>
+
+  <text class="m b" x="24" y="406">The broker chooses between lane 1 and lane 2. Only your consumer can build lane 3.</text>
+  <text class="mm r" x="24" y="440">NO BROKER SETTING PRODUCES LANE 3. THERE IS NO END-TO-END EXACTLY-ONCE DELIVERY &mdash; ONLY EXACTLY-ONCE EFFECT.</text>
+</svg>
+<figcaption>Drawing 11-C &mdash; the three guarantees as timelines. <b>Red</b> = the moment the message is
+lost or duplicated. <b>Brass</b> = the step that makes redelivery harmless.</figcaption>
+</figure>
+
+<div class="tw">
+<table>
+<thead><tr><th>Guarantee</th><th>Mechanism</th><th>You lose</th><th>You gain</th><th>Use it for</th></tr></thead>
+<tbody>
+<tr><td>At-most-once</td><td>Acknowledge before processing (Kafka <code>enable.auto.commit=true</code> at its worst, RabbitMQ <code>autoAck</code>)</td><td>Messages, silently, on any crash</td><td>Lowest latency, no duplicate logic</td><td>Metrics samples, cache warmers, click telemetry &mdash; anything where one lost point is invisible</td></tr>
+<tr><td>At-least-once</td><td>Acknowledge after the side effect succeeds</td><td>Uniqueness &mdash; you will get duplicates</td><td>No lost work, ever</td><td>Everything in BadgeDesk. This is the default and the correct default.</td></tr>
+<tr><td>&ldquo;Exactly-once&rdquo;</td><td>At-least-once delivery plus an idempotent or transactional consumer</td><td>Throughput, and a table you must maintain</td><td>Exactly-once <i>effect</i>, which is what anybody actually wanted</td><td>Provisioning a badge, charging money, sending one email</td></tr>
+</tbody>
+</table>
+</div>
+<p>Pick at-least-once and make the consumer idempotent. That single sentence is the answer to most messaging
+design questions, and the rest of this section is how you earn the right to say it.</p>
+
+<h3 id="c-exactly">Why end-to-end exactly-once delivery is not achievable</h3>
+<p>This is worth arguing properly, because the phrase is on marketing pages and candidates repeat it.</p>
+<p>Consider the smallest possible unit: a consumer reads a message, calls the vendor, and acknowledges. Three
+things must happen in a fixed order across two machines connected by a network that can drop packets at any
+instant. Now the consumer calls the vendor and the connection dies before the response arrives. The consumer
+has <b>no way to know</b> whether the badge was created. It has exactly two options: assume it worked (risk
+losing the badge) or try again (risk creating two). There is no third option, because the information needed
+to choose does not exist anywhere in the consumer's process. This is the same impossibility as the Two
+Generals problem, and no broker feature changes it &mdash; the uncertainty is in the <i>side effect</i>, which
+the broker cannot see.</p>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p>&ldquo;Kafka advertises exactly-once semantics. What does it actually give you?&rdquo; Kafka's EOS is
+  real but narrow: with an idempotent producer (sequence numbers per partition, so a retried
+  <code>produce</code> is deduplicated by the broker) and transactions, a <b>consume &rarr; transform &rarr;
+  produce</b> pipeline that stays inside Kafka can atomically commit its output messages and its input
+  offsets. That covers stream processing &mdash; reading <code>access.events</code> and writing a rollup
+  topic. It does <b>not</b> cover calling somebody else's HTTP API, writing to Postgres, or sending an
+  email, because those systems are not participants in Kafka's transaction. So: exactly-once inside Kafka,
+  effectively-once at the edges. Say it in those words.</p>
+</div>
+
+<p>What people mean when they claim exactly-once is one of exactly two designs:</p>
+<div class="grid g2">
+  <div class="card"><span class="cm">Design A</span><b class="ct">Idempotent consumer</b>
+    <p>Deliver at-least-once and make the second delivery a no-op, using a deduplication key derived from the
+    message. Cheap, universal, works against any third party. This is what BadgeDesk does.</p></div>
+  <div class="card"><span class="cm">Design B</span><b class="ct">Transactional processing</b>
+    <p>Put the side effect and the offset commit in one transaction. Only possible when both live in the same
+    transactional system &mdash; Kafka-to-Kafka, or &ldquo;write to Postgres and store the offset in the same
+    Postgres transaction&rdquo;. Elegant, and rarely available.</p></div>
+</div>
+
+<h3 id="c-idem">Idempotent consumers, for real</h3>
+<p>Idempotent means: applying the operation twice produces the same state as applying it once. Note that this
+is a property of the <b>whole path</b>, not of your function. If the vendor creates a second badge, your
+handler being pure does not help. So there are two layers, and you need both.</p>
+
+<div class="code" data-lang="sql">
+<header><b>badgedesk/migrations/014_processed_messages.sql</b></header>
+<pre><code>-- The consumer-side dedupe ledger. One row per (group, message) ever seen.
+CREATE TABLE processed_messages (
+    consumer_group text        NOT NULL,          -- so two groups can both process msg 71
+    message_id     uuid        NOT NULL,          -- the envelope id, NOT the Kafka offset
+    status         text        NOT NULL           -- 'in_progress' | 'done' | 'failed'
+                   CHECK (status IN ('in_progress','done','failed')),
+    attempts       int         NOT NULL DEFAULT 1,
+    claimed_at     timestamptz NOT NULL DEFAULT now(),
+    finished_at    timestamptz,
+    PRIMARY KEY (consumer_group, message_id)      -- the uniqueness that does the work
+);
+
+-- Prune: keep the ledger small. Retention must exceed the topic's retention.
+CREATE INDEX processed_messages_claimed_idx ON processed_messages (claimed_at);
+DELETE FROM processed_messages WHERE claimed_at &lt; now() - interval '30 days';
+</code></pre>
+</div>
+
+<div class="code" data-lang="python">
+<header><b>badgedesk/provisioning_worker/idempotency.py</b></header>
+<pre><code>import psycopg
+from datetime import datetime, timedelta, timezone
+from psycopg.errors import UniqueViolation
+
+GROUP = "badge-provisioners"
+LEASE = timedelta(minutes=5)          # longer than the worst vendor timeout
+
+class Duplicate(Exception):
+    """This message is already done, or in flight somewhere else."""
+
+def _lease_live(claimed_at: datetime) -&gt; bool:
+    return datetime.now(timezone.utc) - claimed_at &lt; LEASE
+
+def claim(conn: psycopg.Connection, message_id: str) -&gt; None:
+    """Take ownership of a message, or raise Duplicate.
+
+    Committed on its own, BEFORE the vendor call - never hold a Postgres
+    transaction open across a 30-second third-party HTTP request.
+    """
+    with conn.transaction():
+        try:
+            conn.execute(
+                "INSERT INTO processed_messages (consumer_group, message_id, status)"
+                " VALUES (%s, %s, 'in_progress')",
+                (GROUP, message_id),
+            )
+        except UniqueViolation:
+            row = conn.execute(
+                "SELECT status, claimed_at FROM processed_messages"
+                " WHERE consumer_group = %s AND message_id = %s FOR UPDATE",
+                (GROUP, message_id),
+            ).fetchone()
+            status, claimed_at = row
+            if status == "done":
+                raise Duplicate(message_id)          # the normal, boring case
+            # 'in_progress' means a previous attempt died mid-flight. Only
+            # retry once the lease has expired, or two pods race the vendor.
+            if _lease_live(claimed_at):
+                raise Duplicate(message_id)          # someone else owns it now
+            conn.execute(
+                "UPDATE processed_messages SET status = 'in_progress',"
+                " attempts = attempts + 1, claimed_at = now()"
+                " WHERE consumer_group = %s AND message_id = %s",
+                (GROUP, message_id),
+            )
+
+def finish(conn, message_id: str, status: str = "done") -&gt; None:
+    conn.execute(
+        "UPDATE processed_messages SET status = %s, finished_at = now()"
+        " WHERE consumer_group = %s AND message_id = %s",
+        (status, GROUP, message_id),
+    )
+    conn.commit()
+</code></pre>
+</div>
+
+<div class="code" data-lang="python">
+<header><b>badgedesk/provisioning_worker/handler.py &mdash; both layers</b></header>
+<pre><code>import httpx
+from .idempotency import claim, finish, Duplicate
+
+def provision(conn, event: dict) -&gt; str:
+    """Layer 1: our ledger. Layer 2: an idempotency key at the vendor."""
+    try:
+        claim(conn, event["id"])
+    except Duplicate:
+        return "skipped-duplicate"                  # commit the offset, do nothing
+
+    body = {
+        "employee": event["payload"]["employee_id"],
+        "site":     event["payload"]["site_id"],
+        "valid_from": event["payload"]["starts_on"],
+        "valid_to":   event["payload"]["ends_on"],
+    }
+    # Layer 2 - the vendor collapses retries with the same key onto one badge.
+    # Sheet 05 covers this from the server side.
+    r = httpx.post(
+        "<a href="https://urldefense.com/v3/__https://vendor.example/api/v2/badges__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5DmVvXa3$">https://vendor.example/api/v2/badges</a>",
+        json=body,
+        headers={"Idempotency-Key": event["id"]},
+        timeout=httpx.Timeout(connect=3.0, read=35.0, write=5.0, pool=3.0),
+    )
+    r.raise_for_status()
+    finish(conn, event["id"])
+    return r.json()["badge_id"]                     # 'BLR-01-88213'
+</code></pre>
+</div>
+
+<div class="code" data-lang="python">
+<header><b>the Redis variant &mdash; and its honest caveat</b></header>
+<pre><code>import redis
+r = redis.Redis(host="redis", decode_responses=True)
+
+def first_time(message_id: str, ttl_days: int = 14) -&gt; bool:
+    # SET key value NX EX ttl  -> atomic "claim if absent"
+    return bool(r.set(f"seen:badge-provisioners:{message_id}", "1",
+                      nx=True, ex=ttl_days * 86_400))
+
+if not first_time(event["id"]):
+    return "skipped-duplicate"
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; three ways this goes wrong</span>
+  <p><b>1. Deduplicating on the offset.</b> The Kafka offset identifies a position in a partition, not a
+  business fact. Replay the topic into a new consumer group, or re-publish after a bug fix, and every offset
+  is different while every event is the same. Deduplicate on an id the <i>producer</i> generated and put in
+  the envelope. <b>2. Redis as the only ledger.</b> Redis is a cache: it evicts under memory pressure and a
+  non-persisted restart loses every key, which re-opens the duplicate window exactly when you are already
+  having a bad day. Use Redis for cheap, high-volume, low-stakes dedupe; use Postgres when a duplicate costs
+  money or a physical badge. <b>3. Checking then acting.</b> <code>if not exists: insert</code> across two
+  statements is a race between two consumer pods. Let the unique constraint decide &mdash; insert and catch
+  the violation.</p>
+</div>
+
+<h3 id="c-order">Ordering, and what it costs</h3>
+<p>Ordering is available, narrow and expensive, and candidates consistently over-buy it. A broker can promise
+you order within one sequence and nothing more. Kafka's sequence is a partition; RabbitMQ's is a single
+queue with a single consumer and no requeues.</p>
+<p>What ordering costs, concretely:</p>
+<ul>
+<li><b>A throughput ceiling per sequence.</b> If all <code>BLR-01</code> messages must be ordered, they go to
+one partition, which one consumer thread handles. That site's throughput is now one worker's throughput no
+matter how many pods you run.</li>
+<li><b>Head-of-line blocking.</b> One message that takes 30 seconds, or one poison message being retried,
+delays every later message for that key. In an ordered queue, a stuck message is an outage for everything
+behind it.</li>
+<li><b>It breaks anyway on retry.</b> Send message A to a dead-letter queue and retry it 16 seconds later
+and it now arrives <i>after</i> B and C. Any retry ladder plus strict ordering is a contradiction; you get
+to keep one.</li>
+</ul>
+<p>The senior move is to design the consumer so ordering does not matter: make the operations commutative,
+or carry a version and reject stale updates. Then order becomes a nice-to-have instead of a constraint.</p>
+
+<div class="code" data-lang="python">
+<header><b>badgedesk/provisioning_worker/versioned.py &mdash; order-free by design</b></header>
+<pre><code># Instead of "apply this change", the event carries the resulting state and a
+# monotonic version. Out-of-order and duplicate delivery both become harmless.
+def apply_status(conn, event: dict) -&gt; None:
+    conn.execute(
+        """
+        UPDATE access_requests
+           SET status = %(status)s,
+               version = %(version)s,
+               updated_at = %(occurred_at)s
+         WHERE id = %(id)s
+           AND version &lt; %(version)s      -- stale event? zero rows, no error.
+        """,
+        {
+            "id":          event["payload"]["request_id"],
+            "status":      event["payload"]["status"],
+            "version":     event["payload"]["version"],
+            "occurred_at": event["occurred_at"],
+        },
+    )
+    conn.commit()
+</code></pre>
+</div>
+
+<h3 id="c-lag">Backpressure and consumer lag</h3>
+<p>A broker turns a latency problem into a queue-depth problem, and queue depth is the single most useful
+metric you will ever alarm on. <b>Consumer lag</b> is the log end offset minus the committed offset: how many
+messages have been published that this group has not finished. Its <i>derivative</i> is what matters &mdash;
+lag of 40 000 that is falling is fine; lag of 900 that is rising is an incident.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 350" role="img" aria-label="A chart of consumer lag growing after the vendor starts returning errors, crossing an alarm threshold, next to the three possible responses: scale the consumer group out, make each message cheaper, or shed and park the load.">
+  <defs>
+    <marker id="s11-dr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+    <marker id="s11-dc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  </defs>
+
+  <text class="mm" x="30" y="30">CONSUMER LAG = LOG END OFFSET MINUS COMMITTED OFFSET</text>
+  <line class="ln" x1="100" y1="60" x2="100" y2="272"/>
+  <line class="ln" x1="100" y1="272" x2="620" y2="272"/>
+  <text class="mm" x="30" y="66">LAG</text>
+  <text class="mm" x="30" y="82">(MESSAGES)</text>
+  <text class="mm" x="556" y="294">TIME &rarr;</text>
+  <line class="ln dash" x1="100" y1="120" x2="620" y2="120"/>
+  <text class="mm r" x="424" y="114">ALARM AT 10 000</text>
+  <line class="ln dash" x1="300" y1="60" x2="300" y2="272"/>
+  <text class="mm r" x="306" y="76">VENDOR STARTS 503-ING</text>
+  <polyline class="flow-r" points="100,268 160,264 230,258 300,252 360,214 420,168 480,122 540,80" marker-end="url(#s11-dr)"/>
+  <text class="mm" x="106" y="248">STEADY: PRODUCE 180/S, CONSUME 180/S</text>
+  <path class="flow-b dash" d="M540,90 C570,110 590,150 600,200"/>
+  <text class="mm b" x="560" y="230">DRAINS BY</text>
+  <text class="mm b" x="560" y="246">ITSELF WHEN</text>
+  <text class="mm b" x="560" y="262">FIXED</text>
+
+  <rect class="box-a" x="680" y="36" width="490" height="86" rx="3"/>
+  <text class="t b" x="696" y="62">1 &middot; Scale the consumer group out</text>
+  <text class="mm" x="696" y="84">ONE CONSUMER PER PARTITION IS THE HARD CEILING.</text>
+  <text class="mm" x="696" y="100">A 4TH POD ON A 3-PARTITION TOPIC SITS IDLE, FOREVER.</text>
+  <rect class="box-a" x="680" y="140" width="490" height="86" rx="3"/>
+  <text class="t b" x="696" y="166">2 &middot; Make each message cheaper</text>
+  <text class="mm" x="696" y="188">BATCH THE VENDOR CALL, RAISE MAX.POLL.RECORDS,</text>
+  <text class="mm" x="696" y="204">CACHE THE SITE POLICY IN REDIS &mdash; SHEET 06.</text>
+  <rect class="box-r" x="680" y="244" width="490" height="86" rx="3"/>
+  <text class="t r" x="696" y="270">3 &middot; Shed, park or slow the producer</text>
+  <text class="mm" x="696" y="292">ROUTE LOW-PRIORITY SITES TO A SLOW-LANE TOPIC AND</text>
+  <text class="mm" x="696" y="308">PAGE A HUMAN. LAG THAT ONLY GROWS IS AN INCIDENT.</text>
+</svg>
+<figcaption>Drawing 11-D &mdash; lag growing, and the only three responses. <b>Red</b> = the symptom.
+<b>Brass</b> = a response you can actually take.</figcaption>
+</figure>
+
+<div class="panel panel--real">
+  <span class="ph">In production</span>
+  <p>The alarm that matters is not &ldquo;lag &gt; N&rdquo;, it is <b>&ldquo;lag is rising for 10 minutes&rdquo;</b>
+  or, better, <b>time-based lag</b>: how old is the oldest unprocessed message. &ldquo;We are 14 minutes
+  behind&rdquo; is a sentence an incident commander can act on; &ldquo;lag is 41 902&rdquo; is not, because
+  nobody knows the drain rate. Kafka exposes <code>records-lag-max</code> per consumer; MSK publishes
+  <code>MaxOffsetLag</code> to CloudWatch, where you wire the alarm in <a href="aws.html">Sheet 07</a>.
+  Alarm on lag <i>and</i> on consumer heartbeat &mdash; a group with zero lag because every consumer is dead
+  looks perfectly healthy on a lag graph.</p>
+</div>
+
+<h3 id="c-dlq">Dead letters and the retry ladder</h3>
+<p>A poison message is one that will never succeed: malformed JSON, a <code>site_id</code> the vendor has
+never heard of, a schema the consumer cannot parse. Retrying it forever is the classic messaging outage
+&mdash; the consumer never advances, lag climbs to infinity, and the topic stops being processed because of
+one bad row. The fix is a bounded retry ladder and a terminal destination.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 290" role="img" aria-label="A retry timeline: attempt one fails, wait about one second, attempt two fails, wait about four seconds, attempt three fails, wait about sixteen seconds, then the message is routed to the dead-letter topic at roughly twenty-one seconds.">
+  <defs>
+    <marker id="s11-er" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+  <rect class="box-c" x="40" y="62" width="150" height="42" rx="3"/>
+  <text class="t mid" x="115" y="80">attempt 1</text>
+  <text class="mm mid" x="115" y="96">VENDOR 503</text>
+  <rect class="box-c" x="300" y="62" width="150" height="42" rx="3"/>
+  <text class="t mid" x="375" y="80">attempt 2</text>
+  <text class="mm mid" x="375" y="96">VENDOR 503</text>
+  <rect class="box-c" x="650" y="62" width="150" height="42" rx="3"/>
+  <text class="t mid" x="725" y="80">attempt 3</text>
+  <text class="mm mid" x="725" y="96">VENDOR 503</text>
+  <rect class="box-r" x="1000" y="62" width="160" height="42" rx="3"/>
+  <text class="t r mid" x="1080" y="80">.dlq</text>
+  <text class="mm mid" x="1080" y="96">WITH THE ERROR</text>
+  <path class="flow-r" d="M194,83 H296" marker-end="url(#s11-er)"/>
+  <path class="flow-r" d="M454,83 H646" marker-end="url(#s11-er)"/>
+  <path class="flow-r" d="M804,83 H996" marker-end="url(#s11-er)"/>
+  <line class="ln" x1="40" y1="120" x2="1160" y2="120"/>
+  <path class="ln" d="M190,120 V142 H300 V120"/>
+  <path class="ln" d="M450,120 V142 H650 V120"/>
+  <path class="ln" d="M800,120 V142 H1000 V120"/>
+  <text class="mm b mid" x="245" y="160">WAIT ~1 S</text>
+  <text class="mm b mid" x="550" y="160">WAIT ~4 S &plusmn; JITTER</text>
+  <text class="mm b mid" x="900" y="160">WAIT ~16 S &plusmn; JITTER</text>
+  <text class="mm" x="40" y="188">T = 0</text>
+  <text class="mm" x="300" y="188">T &asymp; 1 S</text>
+  <text class="mm" x="650" y="188">T &asymp; 5 S</text>
+  <text class="mm" x="1000" y="188">T &asymp; 21 S &mdash; GIVE UP</text>
+  <text class="m" x="40" y="228">sleep = min(cap, base * 2 ** attempt) * random.uniform(0.5, 1.5) &mdash; base 1 s, cap 60 s, 3 attempts, then dead-letter</text>
+  <text class="mm r" x="40" y="262">WITHOUT JITTER, 4 000 MESSAGES BEHIND ONE VENDOR OUTAGE RETRY IN LOCKSTEP AND RE-CREATE THE OUTAGE ON EVERY RUNG</text>
+</svg>
+<figcaption>Drawing 11-E &mdash; the retry ladder. <b>Red</b> = a failed attempt. <b>Brass</b> = the wait
+that stops you making it worse.</figcaption>
+</figure>
+
+<div class="code" data-lang="python">
+<header><b>badgedesk/provisioning_worker/retry.py</b></header>
+<pre><code>import random, time, httpx
+
+TRANSIENT = (httpx.TimeoutException, httpx.ConnectError)
+MAX_ATTEMPTS, BASE, CAP = 3, 1.0, 60.0
+
+class Permanent(Exception):
+    """Do not retry this - straight to the dead-letter topic."""
+
+def backoff(attempt: int) -&gt; float:
+    """Full jitter. attempt is 0-based: ~1 s, ~2 s, ~4 s ... capped at 60 s."""
+    return min(CAP, BASE * 2 ** attempt) * random.uniform(0.5, 1.5)
+
+def with_retries(fn, *args):
+    for attempt in range(MAX_ATTEMPTS):
+        try:
+            return fn(*args)
+        except httpx.HTTPStatusError as e:
+            code = e.response.status_code
+            if code in (400, 404, 409, 422):        # the vendor says never
+                raise Permanent(f"vendor rejected: {code} {e.response.text[:120]}")
+            if code == 429:                          # respect their backpressure
+                time.sleep(float(e.response.headers.get("Retry-After", 5)))
+                continue
+            if code &lt; 500:
+                raise Permanent(f"unexpected 4xx: {code}")
+        except TRANSIENT:
+            pass                                     # fall through to the sleep
+        if attempt &lt; MAX_ATTEMPTS - 1:
+            time.sleep(backoff(attempt))
+    raise Permanent(f"still failing after {MAX_ATTEMPTS} attempts")
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil</span>
+  <p>Two mistakes, both common. <b>Retrying in-process for 21 seconds blocks the partition.</b> Every message
+  behind this one waits, and if the total exceeds <code>max.poll.interval.ms</code> Kafka decides your
+  consumer is dead and rebalances the group out from under you. For anything longer than a couple of seconds,
+  do not sleep &mdash; re-publish to a delay topic (or a RabbitMQ TTL queue) and commit the offset. <b>A
+  dead-letter topic nobody reads is a data-loss bug with extra steps.</b> Alarm on
+  <code>badge.requests.dlq</code> having any messages at all, store the original message plus the exception,
+  the stack, the attempt count and the consumer version alongside it, and build the replay tool in the same
+  week you build the DLQ &mdash; not after the first incident.</p>
+</div>
+
+<h3 id="c-outbox">The dual-write problem and the transactional outbox</h3>
+<p>This is the highest-value topic on the sheet for an SE3 interview, because it is the exact point where
+&ldquo;I have used Kafka&rdquo; separates from &ldquo;I have designed with Kafka&rdquo;.</p>
+<p>Your handler must do two things: commit a row to Postgres and publish an event to Kafka. Two systems, two
+networks, no shared transaction. There is no ordering of those two operations that is safe, because the
+process can die between them &mdash; and a distributed transaction across Postgres and Kafka is not a real
+option (two-phase commit needs both to support it, and it converts two independent availability numbers into
+one worse one).</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 390" role="img" aria-label="Left: the dual write problem as a sequence diagram, where the row commits to Postgres but the publish to Kafka fails and the event is lost. Right: the transactional outbox, where the row and an outbox row commit in one transaction and a separate relay polls the outbox, publishes to Kafka and marks the row sent.">
+  <defs>
+    <marker id="s11-fc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s11-fb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s11-fr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <text class="mm r" x="24" y="30">DUAL WRITE &mdash; TWO SYSTEMS, NO SHARED TRANSACTION</text>
+  <rect class="box-c" x="30" y="46" width="120" height="34" rx="2"/><text class="t mid" x="90" y="68">core</text>
+  <rect class="box" x="220" y="46" width="120" height="34" rx="2"/><text class="t mid" x="280" y="68">Postgres</text>
+  <rect class="box-a" x="410" y="46" width="120" height="34" rx="2"/><text class="t b mid" x="470" y="68">Kafka</text>
+  <line class="ln dash" x1="90" y1="80" x2="90" y2="236"/>
+  <line class="ln dash" x1="280" y1="80" x2="280" y2="236"/>
+  <line class="ln dash" x1="470" y1="80" x2="470" y2="236"/>
+  <text class="mm" x="96" y="104">COMMIT: INSERT access_requests</text>
+  <path class="flow" d="M94,112 H274" marker-end="url(#s11-fc)"/>
+  <text class="mm" x="96" y="136">OK &mdash; DURABLE, VISIBLE TO READERS</text>
+  <path class="flow" d="M276,144 H96" marker-end="url(#s11-fc)"/>
+  <text class="mm b" x="96" y="176">PUBLISH badge.requested</text>
+  <path class="flow-b dash" d="M94,184 H444" marker-end="url(#s11-fb)"/>
+  <text class="mm r" x="96" y="214">POD KILLED, OR THE BROKER IS UNREACHABLE, HERE</text>
+  <rect class="box-r" x="24" y="250" width="548" height="60" rx="3"/>
+  <text class="m r" x="38" y="274">The row is committed and the event never existed.</text>
+  <text class="m r" x="38" y="292">No badge, no error, no retry, nothing to alarm on.</text>
+  <text class="mm r" x="24" y="340">SWAPPING THE ORDER JUST INVERTS THE BUG: AN EVENT FOR A ROW THAT NEVER COMMITTED</text>
+
+  <line class="ln dash" x1="600" y1="20" x2="600" y2="360"/>
+
+  <text class="mm b" x="624" y="30">TRANSACTIONAL OUTBOX &mdash; ONE TRANSACTION, THEN A RELAY</text>
+  <rect class="box-c" x="620" y="46" width="120" height="34" rx="2"/><text class="t mid" x="680" y="68">core</text>
+  <rect class="box" x="790" y="46" width="120" height="34" rx="2"/><text class="t mid" x="850" y="68">Postgres</text>
+  <rect class="box-a" x="950" y="46" width="120" height="34" rx="2"/><text class="t b mid" x="1010" y="68">relay</text>
+  <rect class="box-a" x="1090" y="46" width="90" height="34" rx="2"/><text class="t b mid" x="1135" y="68">Kafka</text>
+  <line class="ln dash" x1="680" y1="80" x2="680" y2="266"/>
+  <line class="ln dash" x1="850" y1="80" x2="850" y2="266"/>
+  <line class="ln dash" x1="1010" y1="80" x2="1010" y2="266"/>
+  <line class="ln dash" x1="1135" y1="80" x2="1135" y2="266"/>
+  <text class="mm" x="686" y="104">ONE TX: ROW + OUTBOX ROW</text>
+  <path class="flow" d="M684,112 H844" marker-end="url(#s11-fc)"/>
+  <text class="mm" x="686" y="136">COMMIT OK &rarr; 202 TO THE USER</text>
+  <path class="flow" d="M846,144 H686" marker-end="url(#s11-fc)"/>
+  <text class="mm end" x="1002" y="168">SELECT FROM outbox WHERE sent_at IS NULL</text>
+  <path class="flow" d="M1006,176 H856" marker-end="url(#s11-fc)"/>
+  <text class="mm b" x="1016" y="200">PUBLISH</text>
+  <path class="flow-b" d="M1014,208 H1131" marker-end="url(#s11-fb)"/>
+  <text class="mm b" x="1016" y="230">ACK &mdash; ALL REPLICAS</text>
+  <path class="flow-b" d="M1131,238 H1016" marker-end="url(#s11-fb)"/>
+  <text class="mm end" x="1002" y="258">UPDATE outbox SET sent_at = now()</text>
+  <path class="flow" d="M1006,264 H856" marker-end="url(#s11-fc)"/>
+  <rect class="box-a" x="620" y="280" width="560" height="60" rx="3"/>
+  <text class="m b" x="634" y="304">The event is exactly as durable as the row it describes.</text>
+  <text class="m b" x="634" y="322">The relay may publish twice &mdash; consumers are idempotent.</text>
+  <text class="mm b" x="624" y="366">THE RELAY IS A POLLING LOOP, OR DEBEZIUM ON THE POSTGRES WAL &mdash; AT-LEAST-ONCE, NEVER ZERO</text>
+</svg>
+<figcaption>Drawing 11-F &mdash; dual write versus transactional outbox. <b>Red</b> = the event that never
+existed. <b>Brass</b> = the publish, now guaranteed to happen eventually.</figcaption>
+</figure>
+
+<div class="code" data-lang="sql">
+<header><b>badgedesk/migrations/015_outbox.sql</b></header>
+<pre><code>CREATE TABLE outbox (
+    id            uuid        PRIMARY KEY,          -- becomes the event envelope id
+    aggregate     text        NOT NULL,             -- 'access_request'
+    aggregate_id  text        NOT NULL,             -- 'req-1'
+    topic         text        NOT NULL,             -- 'badge.requests'
+    partition_key text        NOT NULL,             -- 'BLR-01'  (see Kafka section)
+    event_type    text        NOT NULL,             -- 'badge.requested'
+    payload       jsonb       NOT NULL,
+    occurred_at   timestamptz NOT NULL DEFAULT now(),
+    sent_at       timestamptz                       -- NULL = not published yet
+);
+
+-- The relay's only query. Partial index keeps it O(unsent), not O(table).
+CREATE INDEX outbox_unsent_idx ON outbox (occurred_at)
+    WHERE sent_at IS NULL;
+</code></pre>
+</div>
+
+<div class="code" data-lang="python">
+<header><b>badgedesk/core/routers/access_requests.py &mdash; the write path, 40 ms</b></header>
+<pre><code>import uuid
+from fastapi import APIRouter, Response, status
+
+router = APIRouter()
+
+@router.post("/access-requests", status_code=status.HTTP_202_ACCEPTED)
+def create(body: AccessRequestIn, response: Response, conn=Depends(get_conn)):
+    request_id = f"req-{uuid.uuid4().hex[:8]}"
+    event_id   = uuid.uuid4()
+
+    with conn.transaction():                      # this block IS the guarantee
+        conn.execute(
+            "INSERT INTO access_requests"
+            " (id, employee_id, site_id, starts_on, ends_on, status)"
+            " VALUES (%s, %s, %s, %s, %s, 'pending')",
+            (request_id, body.employee_id, body.site_id,
+             body.starts_on, body.ends_on),
+        )
+        conn.execute(
+            "INSERT INTO outbox (id, aggregate, aggregate_id, topic,"
+            " partition_key, event_type, payload)"
+            " VALUES (%s, 'access_request', %s, 'badge.requests', %s,"
+            " 'badge.requested', %s)",
+            (event_id, request_id, body.site_id,
+             Json({"request_id": request_id,
+                   "employee_id": body.employee_id,
+                   "site_id": body.site_id,
+                   "starts_on": str(body.starts_on),
+                   "ends_on": str(body.ends_on)})),
+        )
+    # No Kafka client in this function at all. If Kafka is down, this still works.
+    response.headers["Location"] = f"/access-requests/{request_id}"
+    return {"id": request_id, "status": "pending"}
+</code></pre>
+</div>
+
+<div class="code" data-lang="python">
+<header><b>badgedesk/core/outbox_relay.py &mdash; the only process that talks to Kafka</b></header>
+<pre><code>import json, time
+from confluent_kafka import Producer
+
+producer = Producer({
+    "bootstrap.servers": "localhost:9092",
+    "acks": "all",                 # every in-sync replica, or it did not happen
+    "enable.idempotence": True,    # broker dedupes the producer's own retries
+    "linger.ms": 20,               # small batching window: fewer, bigger requests
+    "compression.type": "zstd",
+})
+
+BATCH = 200
+
+def relay_once(conn) -&gt; int:
+    rows = conn.execute(
+        "SELECT id, topic, partition_key, event_type, payload, occurred_at"
+        "  FROM outbox WHERE sent_at IS NULL"
+        "  ORDER BY occurred_at"
+        "  LIMIT %s"
+        "  FOR UPDATE SKIP LOCKED",   # two relay pods never fight over a row
+        (BATCH,),
+    ).fetchall()
+
+    for row in rows:
+        event_id, topic, key, etype, payload, occurred_at = row
+        envelope = {
+            "id": str(event_id), "type": etype, "version": 1,
+            "occurred_at": occurred_at.isoformat(), "producer": "core",
+            "payload": payload,
+        }
+        producer.produce(
+            topic=topic,
+            key=key.encode(),                     # ordering + partition placement
+            value=json.dumps(envelope).encode(),
+            headers=[("event-id", str(event_id)), ("event-type", etype)],
+        )
+    producer.flush(10)                            # block until brokers acked
+    if rows:
+        conn.execute("UPDATE outbox SET sent_at = now() WHERE id = ANY(%s)",
+                     ([r[0] for r in rows],))
+    conn.commit()
+    return len(rows)
+
+if __name__ == "__main__":
+    with psycopg.connect(DSN) as conn:
+        while True:
+            if relay_once(conn) == 0:
+                time.sleep(0.25)                  # idle poll, ~4 Hz
+</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p>&ldquo;Doesn't the outbox just move the dual write into the relay?&rdquo; Yes &mdash; and that is the
+  point. The relay's two steps are <i>publish</i> then <i>mark sent</i>, and a crash between them causes a
+  <b>duplicate publish</b>, never a lost event. You have converted an unbounded, invisible, unrecoverable
+  failure (event lost forever, nobody knows) into a bounded, well-understood one (event published twice,
+  handled by the idempotent consumer you already built). Trading loss for duplication is almost always the
+  right trade, because duplication is detectable and loss is not. Follow-up they will ask: &ldquo;how do you
+  avoid polling?&rdquo; &mdash; Debezium tails the Postgres write-ahead log and publishes outbox inserts
+  with no polling at all, at the cost of running Kafka Connect.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; messaging concepts</div>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@ByteByteGo__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5I97tz61$" target="_blank" rel="noopener"><span>ByteByteGo &mdash; message queue and Kafka explainers<i>Best-drawn 8-minute overviews of queues, pub/sub, and why exactly-once is hard. Watch two before you write any code.</i></span><span class="dur">8 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@hnasr__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5BLEvZzq$" target="_blank" rel="noopener"><span>Hussein Nasser &mdash; queues, brokers and backpressure<i>First-principles backend reasoning about why a broker changes the failure model. The &ldquo;why&rdquo; source for this section.</i></span><span class="dur">deep</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://microservices.io/patterns/data/transactional-outbox.html__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5KRzzn2x$" target="_blank" rel="noopener"><span>microservices.io &mdash; Transactional Outbox pattern<i>Chris Richardson's canonical write-up, with the polling-publisher and log-tailing variants. Read this one properly.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=Debezium*outbox*pattern*change*data*capture*tutorial__;KysrKysr!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5JEvZ5zj$" target="_blank" rel="noopener"><span>Debezium and the outbox pattern<i>What log-based change data capture looks like when you stop polling. Watch after you have built the polling version.</i></span><span class="dur">30 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@ArpitBhayani__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5MtGaP4j$" target="_blank" rel="noopener"><span>Arpit Bhayani &mdash; idempotency and delivery semantics<i>Careful, whiteboard-style treatment of at-least-once and dedupe keys. Good for the interview phrasing.</i></span><span class="dur">25 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5D5zgVVv$" target="_blank" rel="noopener"><span>AWS Builders' Library &mdash; Timeouts, retries and backoff with jitter<i>The definitive short paper on why jitter is not optional. Read before you tune a retry ladder.</i></span><span class="dur">docs</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="kafka">Apache Kafka</h2>
+<p class="sub">The one to learn first. Not because it is simpler &mdash; it is not &mdash; but because it is
+free to run locally, it is what the job descriptions ask for, and its model forces you to understand
+partitions, offsets and consumer groups, which transfer to everything else.</p>
+
+<h3 id="k-log">It is a commit log, not a queue</h3>
+<p>Kafka is a <b>distributed, partitioned, replicated, append-only commit log</b>. Read that as four
+promises. <i>Append-only</i>: you cannot modify or delete a message, only append. <i>Partitioned</i>: a topic
+is split into independent logs so it can exceed one machine. <i>Replicated</i>: each partition exists on
+several brokers. <i>Distributed</i>: those brokers form a cluster with no single writer.</p>
+<p>The consequence that changes how you design: <b>reading does not remove anything.</b> A consumer holds a
+cursor &mdash; an offset &mdash; and Kafka's only job is to remember where each group's cursor is. Messages
+leave because retention expires, never because somebody read them. That is why Kafka can do things a queue
+cannot: add a new consumer group next year and it can read the last seven days from the beginning; a
+consumer with a bug can be fixed, its offsets reset, and the day replayed.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 490" role="img" aria-label="One Kafka topic with three partitions. The producer hashes the site_id key to choose a partition, offsets increase left to right along each partition, and a consumer group of three pods owns one partition each.">
+  <defs>
+    <marker id="s11-gb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+  </defs>
+
+  <text class="mm" x="360" y="30">OFFSETS ONLY INCREASE &middot; READING DOES NOT REMOVE ANYTHING</text>
+
+  <rect class="box" x="30" y="196" width="140" height="68" rx="3"/>
+  <text class="t mid" x="100" y="224">core</text>
+  <text class="mm mid" x="100" y="242">PRODUCER</text>
+  <rect class="box-a" x="196" y="196" width="124" height="68" rx="3"/>
+  <text class="m b mid" x="258" y="222">murmur2(key)</text>
+  <text class="m b mid" x="258" y="242">mod 3</text>
+  <text class="mm mid" x="258" y="288">PLACEMENT IS THE</text>
+  <text class="mm mid" x="258" y="304">PRODUCER'S JOB</text>
+  <path class="flow-b" d="M174,230 H192" marker-end="url(#s11-gb)"/>
+
+  <text class="mm c" x="360" y="62">PARTITION 0 &mdash; ALL KEY BLR-01</text>
+  <rect class="box-c" x="360" y="70" width="52" height="44" rx="3"/><text class="mm mid" x="386" y="88">0</text><text class="mm mid" x="386" y="104">BLR-01</text>
+  <rect class="box-c" x="412" y="70" width="52" height="44" rx="3"/><text class="mm mid" x="438" y="88">1</text><text class="mm mid" x="438" y="104">BLR-01</text>
+  <rect class="box-c" x="464" y="70" width="52" height="44" rx="3"/><text class="mm mid" x="490" y="88">2</text><text class="mm mid" x="490" y="104">BLR-01</text>
+  <rect class="box-c" x="516" y="70" width="52" height="44" rx="3"/><text class="mm mid" x="542" y="88">3</text><text class="mm mid" x="542" y="104">BLR-01</text>
+  <rect class="box-c" x="568" y="70" width="52" height="44" rx="3"/><text class="mm mid" x="594" y="88">4</text><text class="mm mid" x="594" y="104">BLR-01</text>
+  <rect class="box-c" x="620" y="70" width="52" height="44" rx="3"/><text class="mm mid" x="646" y="88">5</text><text class="mm mid" x="646" y="104">BLR-01</text>
+  <rect class="box-c" x="672" y="70" width="52" height="44" rx="3"/><text class="mm mid" x="698" y="88">6</text><text class="mm mid" x="698" y="104">BLR-01</text>
+  <rect class="box-a dash" x="724" y="70" width="52" height="44" rx="3"/><text class="mm b mid" x="750" y="88">7</text><text class="mm b mid" x="750" y="104">HEAD</text>
+
+  <text class="mm c" x="360" y="172">PARTITION 1 &mdash; ALL KEY BLR-02</text>
+  <rect class="box-c" x="360" y="180" width="52" height="44" rx="3"/><text class="mm mid" x="386" y="198">0</text><text class="mm mid" x="386" y="214">BLR-02</text>
+  <rect class="box-c" x="412" y="180" width="52" height="44" rx="3"/><text class="mm mid" x="438" y="198">1</text><text class="mm mid" x="438" y="214">BLR-02</text>
+  <rect class="box-c" x="464" y="180" width="52" height="44" rx="3"/><text class="mm mid" x="490" y="198">2</text><text class="mm mid" x="490" y="214">BLR-02</text>
+  <rect class="box-c" x="516" y="180" width="52" height="44" rx="3"/><text class="mm mid" x="542" y="198">3</text><text class="mm mid" x="542" y="214">BLR-02</text>
+  <rect class="box-a dash" x="568" y="180" width="52" height="44" rx="3"/><text class="mm b mid" x="594" y="198">4</text><text class="mm b mid" x="594" y="214">HEAD</text>
+
+  <text class="mm c" x="360" y="282">PARTITION 2 &mdash; ALL KEY HYD-01</text>
+  <rect class="box-c" x="360" y="290" width="52" height="44" rx="3"/><text class="mm mid" x="386" y="308">0</text><text class="mm mid" x="386" y="324">HYD-01</text>
+  <rect class="box-c" x="412" y="290" width="52" height="44" rx="3"/><text class="mm mid" x="438" y="308">1</text><text class="mm mid" x="438" y="324">HYD-01</text>
+  <rect class="box-c" x="464" y="290" width="52" height="44" rx="3"/><text class="mm mid" x="490" y="308">2</text><text class="mm mid" x="490" y="324">HYD-01</text>
+  <rect class="box-c" x="516" y="290" width="52" height="44" rx="3"/><text class="mm mid" x="542" y="308">3</text><text class="mm mid" x="542" y="324">HYD-01</text>
+  <rect class="box-c" x="568" y="290" width="52" height="44" rx="3"/><text class="mm mid" x="594" y="308">4</text><text class="mm mid" x="594" y="324">HYD-01</text>
+  <rect class="box-a dash" x="620" y="290" width="52" height="44" rx="3"/><text class="mm b mid" x="646" y="308">5</text><text class="mm b mid" x="646" y="324">HEAD</text>
+
+  <path class="flow-b" d="M324,214 H340 V92 H354" marker-end="url(#s11-gb)"/>
+  <path class="flow-b" d="M324,226 H344 V202 H354" marker-end="url(#s11-gb)"/>
+  <path class="flow-b" d="M324,246 H340 V312 H354" marker-end="url(#s11-gb)"/>
+
+  <rect class="zone" x="826" y="40" width="344" height="400" rx="4"/>
+  <text class="mm c" x="836" y="34">GROUP.ID = badge-provisioners</text>
+  <rect class="box" x="850" y="70" width="300" height="44" rx="3"/>
+  <text class="t mid" x="1000" y="89">provisioning-worker pod 1</text>
+  <text class="mm mid" x="1000" y="105">COMMITTED OFFSET 7 &middot; LAG 0</text>
+  <rect class="box" x="850" y="180" width="300" height="44" rx="3"/>
+  <text class="t mid" x="1000" y="199">provisioning-worker pod 2</text>
+  <text class="mm mid" x="1000" y="215">COMMITTED OFFSET 2 &middot; LAG 2</text>
+  <rect class="box" x="850" y="290" width="300" height="44" rx="3"/>
+  <text class="t mid" x="1000" y="309">provisioning-worker pod 3</text>
+  <text class="mm mid" x="1000" y="325">COMMITTED OFFSET 5 &middot; LAG 0</text>
+  <path class="flow-b" d="M780,92 H842" marker-end="url(#s11-gb)"/>
+  <path class="flow-b" d="M780,202 H842" marker-end="url(#s11-gb)"/>
+  <path class="flow-b" d="M780,312 H842" marker-end="url(#s11-gb)"/>
+  <text class="mm b" x="784" y="84">OWNS P0</text>
+  <text class="mm b" x="784" y="194">OWNS P1</text>
+  <text class="mm b" x="784" y="304">OWNS P2</text>
+  <rect class="box-r" x="850" y="378" width="300" height="44" rx="3"/>
+  <text class="t r mid" x="1000" y="397">pod 4 &mdash; idle forever</text>
+  <text class="mm mid" x="1000" y="413">NO PARTITION LEFT TO ASSIGN</text>
+
+  <text class="mm b" x="30" y="462">ORDER IS GUARANTEED INSIDE ONE PARTITION. ACROSS PARTITIONS THERE IS NO ORDER AT ALL.</text>
+  <text class="mm r" x="30" y="480">PARTITION COUNT IS THE PARALLELISM CEILING FOR A GROUP &mdash; PICK IT HIGHER THAN YOU NEED TODAY.</text>
+</svg>
+<figcaption>Drawing 11-G &mdash; one topic, three partitions, one consumer group. <b>Cyan</b> = stored
+records. <b>Brass</b> = the write and fetch paths, and the log head. <b>Red</b> = capacity you cannot use.</figcaption>
+</figure>
+
+<h3 id="k-cluster">Brokers, the cluster and KRaft</h3>
+<p>A <b>broker</b> is one Kafka server process holding some partition replicas on local disk. A
+<b>cluster</b> is several brokers that agree on metadata: which topics exist, how many partitions each has,
+and which broker leads each partition. Clients bootstrap by connecting to any broker, asking for metadata,
+and then talking directly to the leader of each partition they care about &mdash; there is no proxy or load
+balancer in the data path, which is why <code>advertised.listeners</code> must be an address the client can
+actually reach. Getting that wrong is the number one &ldquo;Kafka works in the container but not from my
+laptop&rdquo; bug.</p>
+<p>Historically that metadata lived in ZooKeeper. Since Kafka 3.3 it lives in Kafka itself via <b>KRaft</b>,
+a Raft quorum of controller nodes. For interviews: know that ZooKeeper is gone, that KRaft removes a whole
+separate system to operate, and that it made metadata operations and failover materially faster. For the
+local setup below it means one container instead of two.</p>
+
+<h3 id="k-partitions">Partitions: parallelism, ordering, and the key decision</h3>
+<p>A partition is simultaneously the unit of <b>parallelism</b> (one partition is consumed by at most one
+member of a group) and the unit of <b>ordering</b> (records in a partition are strictly ordered by offset;
+records in different partitions have no defined relative order). Those two facts pull against each other,
+and resolving the tension is what the partition key is for.</p>
+<p>The producer chooses the partition: <code>hash(key) mod partition_count</code> when a key is present,
+sticky round-robin when it is not. So <b>all records with the same key land in the same partition and are
+therefore ordered relative to each other</b>. That is the entire mechanism, and every design question about
+Kafka ordering is really &ldquo;what did you pick as the key?&rdquo;</p>
+
+<div class="panel panel--why">
+  <span class="ph">Why BadgeDesk keys on <code>site_id</code></span>
+  <p><b>What it buys:</b> all requests for <code>BLR-01</code> are processed in submission order by one
+  consumer, so a revoke that follows a grant can never overtake it. It also means one worker holds one site's
+  vendor session and can batch calls per site, and it makes the vendor's own per-site rate limit easy to
+  respect &mdash; only one consumer is ever hitting a given site's endpoint. <b>What it costs:</b> one site's
+  throughput is capped at one consumer, and BadgeDesk's traffic is skewed (<code>BLR-01</code> has 4 000
+  employees, <code>HYD-01</code> has 60), so partitions are unevenly loaded &mdash; a <b>hot partition</b>.
+  If a single site ever outgrows one consumer, the fix is a composite key such as
+  <code>site_id:employee_id</code>, which restores parallelism and gives up cross-employee ordering within a
+  site. Keying on <code>request_id</code> would spread load perfectly and give up ordering entirely, which is
+  fine only if the consumer is version-aware as in <a href="#c-order">the ordering section</a>.</p>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil</span>
+  <p>You can add partitions to a topic but never remove them, and adding them <b>breaks key-to-partition
+  affinity</b>: <code>hash("BLR-01") mod 3</code> and <code>mod 6</code> are different partitions, so
+  in-flight ordering for existing keys is lost at the moment you expand and old records stay where they were.
+  Plan partition count up front &mdash; a common rule is target throughput divided by per-consumer
+  throughput, then double it for headroom, then check that you are not creating tens of thousands of
+  partitions per cluster. Also: no key means no ordering <i>and</i> no idempotency by key. Producing
+  <code>badge.requests</code> with <code>key=None</code> is a bug that will not show up until two
+  requests for one site race.</p>
+</div>
+
+<h3 id="k-replication">Replication, leaders, followers and the ISR</h3>
+<p>Each partition has a <b>replication factor</b>. One replica is the <b>leader</b> and serves all reads and
+writes; the others are <b>followers</b> that continuously fetch from the leader. Followers that are caught
+up form the <b>in-sync replica set (ISR)</b>. A write acknowledged with <code>acks=all</code> is on disk on
+every member of the ISR &mdash; and <code>min.insync.replicas</code> sets how small the ISR may get before
+the leader refuses writes altogether.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 340" role="img" aria-label="Left: a healthy partition with replication factor three, a leader on broker one and two in-sync followers. Right: broker one dies and the controller elects the in-sync follower on broker two as the new leader, with no data loss and brief unavailability.">
+  <defs>
+    <marker id="s11-hb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s11-hr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <text class="mm c" x="24" y="30">HEALTHY &mdash; RF 3, MIN.INSYNC.REPLICAS 2</text>
+  <rect class="box" x="30" y="60" width="160" height="130" rx="3"/><text class="t mid" x="110" y="86">broker 1</text>
+  <rect class="box" x="210" y="60" width="160" height="130" rx="3"/><text class="t mid" x="290" y="86">broker 2</text>
+  <rect class="box" x="390" y="60" width="160" height="130" rx="3"/><text class="t mid" x="470" y="86">broker 3</text>
+  <rect class="box-a" x="46" y="110" width="128" height="64" rx="3"/>
+  <text class="t b mid" x="110" y="130">P0 LEADER</text>
+  <text class="mm mid" x="110" y="148">ALL READS+WRITES</text>
+  <text class="mm mid" x="110" y="164">OFFSET 4 712</text>
+  <rect class="box" x="226" y="110" width="128" height="64" rx="3"/>
+  <text class="t mid" x="290" y="130">P0 FOLLOWER</text>
+  <text class="mm mid" x="290" y="148">IN SYNC (ISR)</text>
+  <text class="mm mid" x="290" y="164">OFFSET 4 712</text>
+  <rect class="box" x="406" y="110" width="128" height="64" rx="3"/>
+  <text class="t mid" x="470" y="130">P0 FOLLOWER</text>
+  <text class="mm mid" x="470" y="148">IN SYNC (ISR)</text>
+  <text class="mm mid" x="470" y="164">OFFSET 4 711</text>
+  <path class="flow-b" d="M178,140 H222" marker-end="url(#s11-hb)"/>
+  <path class="flow-b" d="M110,194 V212 H470 V196" marker-end="url(#s11-hb)"/>
+  <text class="mm b" x="180" y="230">FOLLOWERS FETCH FROM THE LEADER &mdash; NO BROKER PUSH</text>
+  <text class="mm c" x="24" y="256">A WRITE IS ACKED ONLY WHEN THE LEADER AND AT LEAST ONE FOLLOWER HAVE IT</text>
+  <text class="mm" x="24" y="276">UNCLEAN.LEADER.ELECTION.ENABLE = FALSE &mdash; PREFER UNAVAILABLE OVER WRONG</text>
+
+  <line class="ln dash" x1="600" y1="20" x2="600" y2="300"/>
+
+  <text class="mm r" x="624" y="30">BROKER 1 DIES &mdash; FAILOVER IN A FEW SECONDS</text>
+  <rect class="box-r" x="630" y="60" width="160" height="130" rx="3"/><text class="t r mid" x="710" y="86">broker 1</text>
+  <rect class="box" x="810" y="60" width="160" height="130" rx="3"/><text class="t mid" x="890" y="86">broker 2</text>
+  <rect class="box" x="990" y="60" width="160" height="130" rx="3"/><text class="t mid" x="1070" y="86">broker 3</text>
+  <rect class="box-r" x="646" y="110" width="128" height="64" rx="3"/>
+  <text class="t r mid" x="710" y="130">GONE</text>
+  <text class="mm mid" x="710" y="148">SESSION TIMED OUT</text>
+  <text class="mm mid" x="710" y="164">DISK MAY RETURN</text>
+  <rect class="box-a" x="826" y="110" width="128" height="64" rx="3"/>
+  <text class="t b mid" x="890" y="130">P0 LEADER</text>
+  <text class="mm mid" x="890" y="148">ELECTED FROM ISR</text>
+  <text class="mm mid" x="890" y="164">OFFSET 4 712</text>
+  <rect class="box" x="1006" y="110" width="128" height="64" rx="3"/>
+  <text class="t mid" x="1070" y="130">P0 FOLLOWER</text>
+  <text class="mm mid" x="1070" y="148">IN SYNC (ISR)</text>
+  <text class="mm mid" x="1070" y="164">OFFSET 4 712</text>
+  <path class="flow-r" d="M778,140 H822" marker-end="url(#s11-hr)"/>
+  <path class="flow-b" d="M890,194 V212 H1070 V196" marker-end="url(#s11-hb)"/>
+  <text class="mm r" x="624" y="256">THE CONTROLLER ELECTS FROM THE ISR ONLY &mdash; NEVER FROM A LAGGING REPLICA</text>
+  <text class="mm" x="624" y="276">CLIENTS REFRESH METADATA, RETRY, CARRY ON. NO DATA LOSS, BRIEF UNAVAILABILITY.</text>
+
+  <text class="mm r" x="24" y="322">LOSE TWO BROKERS AND MIN.INSYNC.REPLICAS 2 MAKES ACKS=ALL PRODUCERS FAIL LOUDLY INSTEAD OF SILENTLY LOSING DATA</text>
+</svg>
+<figcaption>Drawing 11-H &mdash; replication and leader failover. <b>Brass</b> = the replication path and the
+elected leader. <b>Red</b> = the dead broker and the loss of one replica.</figcaption>
+</figure>
+
+<h3 id="k-acks">Producer <code>acks</code> &mdash; durability against latency</h3>
+<p>One setting, three values, and a genuine trade-off you should be able to argue both sides of.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th><code>acks</code></th><th>Producer waits for</th><th>Typical added latency</th><th>What loses data</th><th>Use it for</th></tr></thead>
+<tbody>
+<tr><td><code>0</code></td><td>Nothing. Fire and forget &mdash; the write is &ldquo;done&rdquo; when it leaves the socket buffer.</td><td>~0 ms</td><td>Anything. A broker restart, a network blip, a full queue &mdash; all silent losses.</td><td>High-volume telemetry where you would rather drop a sample than slow down. Never for BadgeDesk.</td></tr>
+<tr><td><code>1</code></td><td>The leader has written it to its own log.</td><td>+1&ndash;5 ms</td><td>Leader dies before a follower fetches the record. Rare, and completely silent.</td><td>Clickstream, logs, <code>access.events</code> if you can tolerate losing a handful in a failover.</td></tr>
+<tr><td><code>all</code></td><td>Every in-sync replica has it, subject to <code>min.insync.replicas</code>.</td><td>+5&ndash;20 ms (a cross-AZ round trip)</td><td>Only the loss of every replica at once, or <code>unclean.leader.election=true</code>.</td><td><code>badge.requests</code> and <code>badge.provisioned</code>. This is the default answer for anything a human requested.</td></tr>
+</tbody>
+</table>
+</div>
+<p>Pair <code>acks=all</code> with <code>enable.idempotence=true</code>, <code>retries</code> high and
+<code>max.in.flight.requests.per.connection</code> at 5 or below: the broker then deduplicates the
+producer's own retries by sequence number, so a retried publish after a timeout does not double-write. That
+combination is the correct default for every BadgeDesk producer, and the 15 ms is invisible next to the
+40 ms request.</p>
+
+<h3 id="k-groups">Consumer groups and offset commits</h3>
+<p>A consumer group is identified by <code>group.id</code>, and Kafka guarantees each partition is assigned
+to exactly one member. The group's committed offsets live in the internal
+<code>__consumer_offsets</code> topic &mdash; which is why offsets survive a pod restart and why two groups
+reading one topic are completely independent. Same topic, different <code>group.id</code> means fan-out;
+same <code>group.id</code> means a work queue. That one string is the switch between the two shapes in
+<a href="#c-shapes">Drawing 11-B</a>.</p>
+<p>How you commit decides your delivery guarantee, exactly as drawn in
+<a href="#c-guarantees">Drawing 11-C</a>:</p>
+<ul>
+<li><b>Auto-commit</b> (<code>enable.auto.commit=true</code>, every 5 s by default) commits offsets for
+records that <code>poll()</code> has <i>returned to you</i>, whether or not you finished with them. Crash
+mid-batch and you skip whatever was polled but unprocessed &mdash; <b>silent loss</b>. It is also
+deceptively fine in testing, because a clean shutdown commits.</li>
+<li><b>Manual commit after processing</b> (<code>enable.auto.commit=false</code> then
+<code>commit(msg)</code>) means a crash re-delivers the last batch &mdash; <b>duplicates</b>, which you have
+already made harmless. Note that <code>commit(message=msg)</code> in <code>confluent-kafka</code> commits
+<code>msg.offset() + 1</code>: the committed offset is the <i>next</i> record to read, not the last one
+read. Off-by-one here re-processes or skips one message per restart forever.</li>
+<li><b>Synchronous or asynchronous.</b> <code>commit(asynchronous=False)</code> costs a round trip per batch
+and is what you want while learning. In production, commit asynchronously per batch and synchronously once
+in <code>on_revoke</code> and at shutdown.</li>
+</ul>
+
+<h3 id="k-rebalance">Rebalancing &mdash; and why yours fired at 3 a.m.</h3>
+<p>When a member joins, leaves, dies or the partition count changes, the group coordinator reassigns
+partitions. With the legacy eager assignor the whole group stops consuming for the duration &mdash;
+&ldquo;stop the world&rdquo;. The cooperative-sticky assignor revokes only what must move.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 400" role="img" aria-label="Three states of a consumer group. Before: two pods share three partitions. During: a third pod joins and every partition is briefly unassigned while the group rebalances. After: each pod owns one partition. Below, an explanation that exceeding max.poll.interval.ms makes the coordinator declare a healthy consumer dead.">
+  <defs>
+    <marker id="s11-ic" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s11-ib" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+  </defs>
+
+  <text class="mm c" x="38" y="46">BEFORE &mdash; 2 PODS, 3 PARTITIONS</text>
+  <rect class="zone" x="30" y="56" width="350" height="250" rx="4"/>
+  <rect class="box-c" x="46" y="76" width="110" height="44" rx="3"/><text class="t mid" x="101" y="103">P0</text>
+  <rect class="box-c" x="46" y="138" width="110" height="44" rx="3"/><text class="t mid" x="101" y="165">P1</text>
+  <rect class="box-c" x="46" y="200" width="110" height="44" rx="3"/><text class="t mid" x="101" y="227">P2</text>
+  <rect class="box" x="230" y="76" width="134" height="44" rx="3"/><text class="t mid" x="297" y="95">pod 1</text><text class="mm mid" x="297" y="111">OWNS 2</text>
+  <rect class="box" x="230" y="169" width="134" height="44" rx="3"/><text class="t mid" x="297" y="188">pod 2</text><text class="mm mid" x="297" y="204">OWNS 1</text>
+  <path class="flow" d="M160,98 H226" marker-end="url(#s11-ic)"/>
+  <path class="flow" d="M160,160 C190,160 194,98 222,98" marker-end="url(#s11-ic)"/>
+  <path class="flow" d="M160,222 C190,222 194,191 222,191" marker-end="url(#s11-ic)"/>
+  <text class="mm" x="46" y="272">UNEVEN, BUT WORKING</text>
+  <text class="mm" x="46" y="290">LAG FLAT AT ZERO</text>
+
+  <text class="mm r" x="433" y="46">DURING &mdash; POD 3 JOINS, GROUP REBALANCES</text>
+  <rect class="zone" x="425" y="56" width="350" height="250" rx="4"/>
+  <rect class="box" x="441" y="76" width="110" height="44" rx="3"/><text class="t mid" x="496" y="97">P0</text><text class="mm mid" x="496" y="112">UNASSIGNED</text>
+  <rect class="box" x="441" y="138" width="110" height="44" rx="3"/><text class="t mid" x="496" y="159">P1</text><text class="mm mid" x="496" y="174">UNASSIGNED</text>
+  <rect class="box" x="441" y="200" width="110" height="44" rx="3"/><text class="t mid" x="496" y="221">P2</text><text class="mm mid" x="496" y="236">UNASSIGNED</text>
+  <rect class="box-r" x="625" y="76" width="134" height="44" rx="3"/><text class="t r mid" x="692" y="95">pod 1</text><text class="mm mid" x="692" y="111">PAUSED</text>
+  <rect class="box-r" x="625" y="138" width="134" height="44" rx="3"/><text class="t r mid" x="692" y="157">pod 2</text><text class="mm mid" x="692" y="173">PAUSED</text>
+  <rect class="box-r" x="625" y="200" width="134" height="44" rx="3"/><text class="t r mid" x="692" y="219">pod 3</text><text class="mm mid" x="692" y="235">JOINING</text>
+  <text class="mm r" x="441" y="272">NOBODY CONSUMES FOR 1&ndash;10 S</text>
+  <text class="mm r" x="441" y="290">IN-FLIGHT COMMITS ARE REJECTED</text>
+
+  <text class="mm b" x="828" y="46">AFTER &mdash; ONE PARTITION EACH</text>
+  <rect class="zone" x="820" y="56" width="350" height="250" rx="4"/>
+  <rect class="box-c" x="836" y="76" width="110" height="44" rx="3"/><text class="t mid" x="891" y="103">P0</text>
+  <rect class="box-c" x="836" y="138" width="110" height="44" rx="3"/><text class="t mid" x="891" y="165">P1</text>
+  <rect class="box-c" x="836" y="200" width="110" height="44" rx="3"/><text class="t mid" x="891" y="227">P2</text>
+  <rect class="box-a" x="1020" y="76" width="134" height="44" rx="3"/><text class="t b mid" x="1087" y="95">pod 1</text><text class="mm mid" x="1087" y="111">OWNS P0</text>
+  <rect class="box-a" x="1020" y="138" width="134" height="44" rx="3"/><text class="t b mid" x="1087" y="157">pod 2</text><text class="mm mid" x="1087" y="173">OWNS P1</text>
+  <rect class="box-a" x="1020" y="200" width="134" height="44" rx="3"/><text class="t b mid" x="1087" y="219">pod 3</text><text class="mm mid" x="1087" y="235">OWNS P2</text>
+  <path class="flow-b" d="M950,98 H1016" marker-end="url(#s11-ib)"/>
+  <path class="flow-b" d="M950,160 H1016" marker-end="url(#s11-ib)"/>
+  <path class="flow-b" d="M950,222 H1016" marker-end="url(#s11-ib)"/>
+  <text class="mm b" x="836" y="272">EACH POD RESUMES FROM THE</text>
+  <text class="mm b" x="836" y="290">COMMITTED OFFSET, NOT FROM ZERO</text>
+
+  <text class="m r" x="30" y="336">Why the group rebalanced when nothing was deployed: one message took longer than max.poll.interval.ms (default 300 s).</text>
+  <text class="mm" x="30" y="362">POLL() WAS NOT CALLED &rarr; THE COORDINATOR DECLARED THE POD DEAD &rarr; ITS PARTITIONS MOVED &rarr; ITS LATER COMMIT WAS REJECTED &rarr; THE WORK REPEATED</text>
+  <text class="mm b" x="30" y="384">FIXES: SMALLER MAX.POLL.RECORDS &middot; SHORTER PER-MESSAGE WORK &middot; COOPERATIVE-STICKY ASSIGNOR &middot; STATIC GROUP MEMBERSHIP FOR ROLLING RESTARTS</text>
+</svg>
+<figcaption>Drawing 11-I &mdash; a rebalance, start to finish. <b>Red</b> = the window where the topic is not
+being consumed. <b>Brass</b> = the settled assignment.</figcaption>
+</figure>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil</span>
+  <p>Two rebalance traps that cost real incidents. <b>The retry loop that looks like a dead consumer:</b> the
+  21-second retry ladder from <a href="#c-dlq">Drawing 11-E</a> plus a 500-record batch is 3 hours between
+  <code>poll()</code> calls. Kafka evicts you, another pod picks up the same partition, both call the vendor,
+  and you get duplicate badges plus an endless rebalance storm. <b>The rolling deploy that rebalances
+  <i>n</i> times:</b> without <code>group.instance.id</code> (static membership) every pod restart triggers a
+  full leave-and-rejoin, so a 6-pod rolling update causes twelve rebalances and a few minutes of stalled
+  consumption. Also always call <code>consumer.close()</code> on <code>SIGTERM</code> &mdash; it commits and
+  leaves the group cleanly, turning a 45-second session timeout into an instant reassignment.</p>
+</div>
+
+<h3 id="k-retention">Retention and log compaction</h3>
+<p>Kafka deletes by policy, not by consumption. <code>retention.ms</code> (default 7 days) and
+<code>retention.bytes</code> delete whole log segments once <i>either</i> limit is exceeded &mdash; so a
+size cap can quietly evict data far younger than your time cap, which is how &ldquo;we have 30 days of
+history&rdquo; becomes 6 hours on a busy topic. <code>cleanup.policy=compact</code> is the other mode: keep
+the most recent value for every key, forever.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 300" role="img" aria-label="Log compaction before and after. Before: seven records with repeated keys BLR-01, BLR-02 and HYD-01. After: only the latest value for each key survives, and the key with a null tombstone value is deleted entirely.">
+  <defs>
+    <marker id="s11-jb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+  </defs>
+  <text class="mm" x="24" y="86">BEFORE</text>
+  <text class="mm" x="24" y="102">RAW LOG</text>
+  <rect class="box-c" x="120" y="60" width="140" height="56" rx="3"/><text class="mm mid" x="190" y="82">OFFSET 0</text><text class="m mid" x="190" y="100">BLR-01 = v1</text>
+  <rect class="box-c" x="260" y="60" width="140" height="56" rx="3"/><text class="mm mid" x="330" y="82">OFFSET 1</text><text class="m mid" x="330" y="100">BLR-02 = v1</text>
+  <rect class="box-c" x="400" y="60" width="140" height="56" rx="3"/><text class="mm mid" x="470" y="82">OFFSET 2</text><text class="m mid" x="470" y="100">BLR-01 = v2</text>
+  <rect class="box-c" x="540" y="60" width="140" height="56" rx="3"/><text class="mm mid" x="610" y="82">OFFSET 3</text><text class="m mid" x="610" y="100">HYD-01 = v1</text>
+  <rect class="box-c" x="680" y="60" width="140" height="56" rx="3"/><text class="mm mid" x="750" y="82">OFFSET 4</text><text class="m mid" x="750" y="100">BLR-01 = v3</text>
+  <rect class="box-c" x="820" y="60" width="140" height="56" rx="3"/><text class="mm mid" x="890" y="82">OFFSET 5</text><text class="m mid" x="890" y="100">BLR-02 = v2</text>
+  <rect class="box-r" x="960" y="60" width="140" height="56" rx="3"/><text class="mm mid" x="1030" y="82">OFFSET 6</text><text class="m r mid" x="1030" y="100">HYD-01 = null</text>
+
+  <path class="flow-b" d="M610,122 V164" marker-end="url(#s11-jb)"/>
+  <text class="mm b" x="622" y="148">LOG CLEANER RUNS</text>
+
+  <text class="mm b" x="24" y="196">AFTER</text>
+  <text class="mm b" x="24" y="212">COMPACTED</text>
+  <rect class="box dash" x="120" y="170" width="140" height="56" rx="3"/><text class="mm mid" x="190" y="204">GONE</text>
+  <rect class="box dash" x="260" y="170" width="140" height="56" rx="3"/><text class="mm mid" x="330" y="204">GONE</text>
+  <rect class="box dash" x="400" y="170" width="140" height="56" rx="3"/><text class="mm mid" x="470" y="204">GONE</text>
+  <rect class="box dash" x="540" y="170" width="140" height="56" rx="3"/><text class="mm mid" x="610" y="204">GONE</text>
+  <rect class="box-a" x="680" y="170" width="140" height="56" rx="3"/><text class="mm b mid" x="750" y="192">OFFSET 4</text><text class="m b mid" x="750" y="210">BLR-01 = v3</text>
+  <rect class="box-a" x="820" y="170" width="140" height="56" rx="3"/><text class="mm b mid" x="890" y="192">OFFSET 5</text><text class="m b mid" x="890" y="210">BLR-02 = v2</text>
+  <rect class="box-r dash" x="960" y="170" width="140" height="56" rx="3"/><text class="mm r mid" x="1030" y="192">TOMBSTONE</text><text class="mm r mid" x="1030" y="210">KEY DELETED</text>
+
+  <text class="m" x="120" y="262">Compaction keeps the newest value per key forever, so the topic becomes a replayable snapshot of current state &mdash; offsets stay stable, they just get sparse.</text>
+  <text class="mm r" x="120" y="286">USE IT FOR STATE (SITE &rarr; POLICY). NEVER FOR badge.requests &mdash; IT WOULD DELETE THE SECOND REQUEST FOR THE SAME SITE.</text>
+</svg>
+<figcaption>Drawing 11-J &mdash; log compaction. <b>Brass</b> = the surviving latest value per key.
+<b>Red</b> = the tombstone that removes a key entirely.</figcaption>
+</figure>
+
+<h3 id="k-schema">Schema evolution and why a registry exists</h3>
+<p>A topic is an API with a much longer memory than an HTTP endpoint. A record written today may be read next
+month by a consumer you have not written, and by a replay of a consumer version you deleted. So the schema
+is a contract with two directions, and the words matter in interviews:</p>
+<ul>
+<li><b>Backward compatible</b> &mdash; a new consumer can read old records. Achieved by adding optional
+fields with defaults. This is the change you make most often.</li>
+<li><b>Forward compatible</b> &mdash; an old consumer can read new records. Achieved by never removing or
+renaming a field an old consumer requires, and by consumers ignoring unknown fields.</li>
+<li><b>Full</b> &mdash; both. What you want on <code>badge.requests</code>, because you cannot deploy the
+producer and every consumer at the same instant, and because replay makes both directions live at once.</li>
+</ul>
+<p>A <b>schema registry</b> (Confluent's, or Apicurio) stores versioned Avro/Protobuf/JSON schemas, gives each
+one an id that the producer stamps into the first bytes of every message, and <b>rejects a producer whose new
+schema breaks the configured compatibility rule</b>. That last clause is the real product: it turns
+&ldquo;someone renamed a field and the reconciler silently stopped matching rows&rdquo; into a failed CI
+build. It also shrinks messages, because the schema is not repeated in every payload the way JSON keys are.
+For Week 11, produce JSON with an explicit <code>version</code> field in the envelope and treat the registry
+as a concept you can explain; adding it is Week 12 work if you have time.</p>
+
+<h3 id="k-run">Running Kafka on the personal laptop</h3>
+<p>Docker Desktop and WSL2 &mdash; <b>personal laptop only</b>. On the corporate machine Docker Desktop is
+usually unlicensed and the registry may be blocked; read this section, run the code against a Kafka you port-forward
+from elsewhere, or use Redpanda's single static binary, which speaks the Kafka protocol. Setup details and the
+proxy workarounds are on <a href="setup.html">Sheet 01</a>.</p>
+
+<div class="code" data-lang="yaml">
+<header><b>badgedesk/infra/kafka/docker-compose.yml</b></header>
+<pre><code># Single-broker Kafka in KRaft mode - no ZooKeeper container at all.
+# docker compose up -d   then open <a href="https://urldefense.com/v3/__http://localhost:8080__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5KXeCO-i$">http://localhost:8080</a>
+services:
+  kafka:
+    image: apache/kafka:3.9.0
+    container_name: badgedesk-kafka
+    ports:
+      - "9092:9092"                 # what your laptop connects to
+    environment:
+      CLUSTER_ID: badgedesk-local-cluster
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_LISTENERS: INTERNAL://:19092,CONTROLLER://:9093,EXTERNAL://:9092
+      # THE line people get wrong: each listener must advertise an address
+      # that the client using it can actually resolve and reach.
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:19092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      # Single broker, so nothing can be replicated more than once.
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0      # no 3 s startup pause
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"       # typos should fail, not create
+      KAFKA_LOG_RETENTION_HOURS: 168                 # 7 days
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: badgedesk-kafka-ui
+    depends_on: [kafka]
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: badgedesk-local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:19092  # in-network listener
+      DYNAMIC_CONFIG_ENABLED: "true"
+
+volumes:
+  kafka-data:
+</code></pre>
+</div>
+
+<div class="code" data-lang="bash">
+<header><b>terminal &mdash; create the topics, then prove they work</b></header>
+<pre><code>docker compose up -d
+K="docker compose exec kafka /opt/kafka/bin"
+
+# 3 partitions so three consumers can share the work; RF 1 because 1 broker.
+$K/kafka-topics.sh --bootstrap-server localhost:9092 --create \
+  --topic badge.requests --partitions 3 --replication-factor 1 \
+  --config retention.ms=604800000 --config min.insync.replicas=1
+
+$K/kafka-topics.sh --bootstrap-server localhost:9092 --create \
+  --topic badge.provisioned --partitions 3 --replication-factor 1
+
+# The dead-letter topic gets LONGER retention - you need time to investigate.
+$K/kafka-topics.sh --bootstrap-server localhost:9092 --create \
+  --topic badge.requests.dlq --partitions 1 --replication-factor 1 \
+  --config retention.ms=2592000000
+
+$K/kafka-topics.sh --bootstrap-server localhost:9092 --describe --topic badge.requests
+# Topic: badge.requests  PartitionCount: 3  ReplicationFactor: 1
+#   Partition: 0  Leader: 1  Replicas: 1  Isr: 1
+#   Partition: 1  Leader: 1  Replicas: 1  Isr: 1
+#   Partition: 2  Leader: 1  Replicas: 1  Isr: 1
+
+# Produce by hand, with a key. The key before ':' decides the partition.
+$K/kafka-console-producer.sh --bootstrap-server localhost:9092 \
+  --topic badge.requests --property "parse.key=true" --property "key.separator=:"
+&gt;BLR-01:{"id":"11111111-1111-1111-1111-111111111111","type":"badge.requested"}
+
+# Consume from the very beginning, showing key, partition and offset.
+$K/kafka-console-consumer.sh --bootstrap-server localhost:9092 \
+  --topic badge.requests --from-beginning \
+  --property print.key=true --property print.partition=true \
+  --property print.offset=true
+</code></pre>
+</div>
+
+<h3 id="k-code">The BadgeDesk producer and consumer</h3>
+<p><code>pip install confluent-kafka</code> &mdash; the librdkafka-based client. It is the one used in
+production Python services; <code>kafka-python</code> is pure Python and easier to read but slower and less
+maintained. The producer below is the one the outbox relay uses; the consumer is the whole
+provisioning-worker loop, including manual commits, dead-letter routing and a clean shutdown.</p>
+
+<div class="code" data-lang="python">
+<header><b>badgedesk/provisioning_worker/consumer.py</b></header>
+<pre><code>import json, logging, os, signal, socket
+from confluent_kafka import Consumer, Producer, KafkaError, KafkaException, TopicPartition
+
+from .handler import provision
+from .retry import Permanent, with_retries
+
+log = logging.getLogger("provisioning-worker")
+BROKERS = os.environ["KAFKA_BOOTSTRAP"]          # localhost:9092
+TOPIC, DLQ, DONE = "badge.requests", "badge.requests.dlq", "badge.provisioned"
+
+consumer = Consumer({
+    "bootstrap.servers": BROKERS,
+    "group.id": "badge-provisioners",
+    "enable.auto.commit": False,                 # we commit, deliberately
+    "auto.offset.reset": "earliest",             # a brand-new group reads history
+    "partition.assignment.strategy": "cooperative-sticky",
+    "max.poll.interval.ms": 300_000,             # must exceed worst-case handling
+    "session.timeout.ms": 45_000,
+    "max.poll.records": 50,                      # small batches - see the trap above
+    "group.instance.id": os.environ.get("POD_NAME", socket.gethostname()),
+})
+
+producer = Producer({
+    "bootstrap.servers": BROKERS,
+    "acks": "all",
+    "enable.idempotence": True,
+    "max.in.flight.requests.per.connection": 5,
+})
+
+running = True
+def stop(signum, frame):
+    global running
+    running = False                              # finish the message, then leave
+signal.signal(signal.SIGTERM, stop)
+signal.signal(signal.SIGINT, stop)
+
+def dead_letter(msg, reason: str, attempts: int) -&gt; None:
+    """Keep the original bytes. Put the diagnosis in the headers."""
+    producer.produce(
+        topic=DLQ,
+        key=msg.key(),
+        value=msg.value(),                       # never a reformatted version
+        headers=[
+            ("dlq-reason",   reason[:512]),
+            ("dlq-attempts", str(attempts)),
+            ("src-topic",    msg.topic()),
+            ("src-partition", str(msg.partition())),
+            ("src-offset",   str(msg.offset())),
+            ("worker-version", os.environ.get("GIT_SHA", "dev")),
+        ],
+    )
+    producer.flush(10)
+    log.error("dead-lettered %s@%s: %s", msg.partition(), msg.offset(), reason)
+
+def on_revoke(c, partitions):
+    """Called before partitions are taken away. Last chance to commit."""
+    log.warning("revoking %s", [p.partition for p in partitions])
+    try:
+        c.commit(asynchronous=False)
+    except KafkaException as e:
+        log.warning("commit during revoke failed (expected on eviction): %s", e)
+
+def run(conn):
+    consumer.subscribe([TOPIC], on_revoke=on_revoke)
+    while running:
+        msg = consumer.poll(1.0)
+        if msg is None:
+            continue
+        if msg.error():
+            if msg.error().code() == KafkaError._PARTITION_EOF:
+                continue
+            raise KafkaException(msg.error())
+
+        # 1. Parse. Unparseable bytes can never succeed -> straight to the DLQ.
+        try:
+            event = json.loads(msg.value())
+            event_id = event["id"]
+        except (json.JSONDecodeError, KeyError, TypeError) as e:
+            dead_letter(msg, f"unparseable envelope: {e}", attempts=1)
+            consumer.commit(msg, asynchronous=False)
+            continue
+
+        # 2. Do the work. with_retries handles 429/5xx; Permanent means stop.
+        try:
+            badge_id = with_retries(provision, conn, event)
+        except Permanent as e:
+            dead_letter(msg, str(e), attempts=3)
+            consumer.commit(msg, asynchronous=False)   # poison message, move on
+            continue
+        except Exception:
+            # Unknown failure: do NOT commit. Rewind so this partition retries
+            # from here on the next poll instead of skipping the record.
+            log.exception("unhandled failure at %s@%s", msg.partition(), msg.offset())
+            consumer.seek(TopicPartition(msg.topic(), msg.partition(), msg.offset()))
+            continue
+
+        # 3. Publish the result, keyed the same way so ordering is preserved.
+        if badge_id != "skipped-duplicate":
+            producer.produce(
+                topic=DONE,
+                key=msg.key(),
+                value=json.dumps({
+                    "id": event_id, "type": "badge.provisioned", "version": 1,
+                    "producer": "provisioning-worker",
+                    "payload": {"request_id": event["payload"]["request_id"],
+                                "site_id": event["payload"]["site_id"],
+                                "badge_id": badge_id},
+                }).encode(),
+            )
+            producer.flush(10)                   # durable BEFORE we commit
+
+        # 4. Commit last. commit(message=msg) stores msg.offset() + 1.
+        consumer.commit(msg, asynchronous=False)
+
+    consumer.close()                             # commits + leaves the group now
+    producer.flush(15)
+</code></pre>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">In production</span>
+  <p>Step 3 before step 4 is not stylistic. Publishing <code>badge.provisioned</code> and committing the
+  input offset are a dual write, so the order decides which way it fails: publish-then-commit can duplicate
+  the output event (harmless &mdash; the notifier is idempotent), while commit-then-publish can lose it
+  entirely (an employee whose badge exists but who is never told). Always order the two so that the failure
+  is a duplicate. For a strictly Kafka-to-Kafka stage you can instead use a Kafka transaction and make both
+  atomic; the moment a vendor HTTP call is in the middle, you are back to ordering the writes by hand.</p>
+</div>
+
+<h3 id="k-debug">Debugging Kafka from the terminal</h3>
+<p>These five commands cover almost every incident. Learn them before you need them.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Symptom</th><th>Command</th><th>What you are looking for</th><th>Likely cause</th></tr></thead>
+<tbody>
+<tr><td>Lag is climbing</td><td><code>kafka-consumer-groups.sh --describe --group badge-provisioners</code></td><td>Per-partition <code>LAG</code>, plus the <code>CONSUMER-ID</code> and <code>HOST</code> columns</td><td>If lag is on one partition only: a hot key or a slow message. If on all: the vendor is slow or you are under-provisioned.</td></tr>
+<tr><td>Zero lag but nothing happening</td><td>Same command &mdash; look for empty <code>CONSUMER-ID</code></td><td><code>-</code> in the consumer column means the group has <b>no members</b></td><td>Every pod crashed, or the group is stuck rebalancing. A dead group has flat, healthy-looking lag.</td></tr>
+<tr><td>One message is stuck</td><td><code>kafka-console-consumer.sh --partition 1 --offset 4712 --max-messages 1</code></td><td>The exact bytes at the offset the consumer keeps retrying</td><td>Poison message. Fix the handler, or route it to the DLQ and skip past it deliberately.</td></tr>
+<tr><td>Need to skip or replay</td><td><code>kafka-consumer-groups.sh --reset-offsets --to-offset 4713 --topic badge.requests:1 --group badge-provisioners --execute</code></td><td>The group must be <b>stopped</b> or the reset is refused</td><td>Use <code>--to-earliest</code> to replay a whole topic into a fixed consumer, <code>--to-datetime</code> to replay from an incident start.</td></tr>
+<tr><td>Producer timing out</td><td><code>kafka-topics.sh --describe --under-replicated-partitions</code></td><td>Any output at all is bad; also compare <code>Isr</code> against <code>Replicas</code></td><td>ISR shrank below <code>min.insync.replicas</code>, so <code>acks=all</code> writes are correctly refused. Fix the broker, do not lower the setting.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p>&ldquo;A consumer group is 2 million messages behind and rising. Walk me through it.&rdquo; Answer in
+  this order and you will sound like you have done it: (1) is the group alive &mdash; members present,
+  heartbeating? (2) is lag on all partitions or one &mdash; capacity problem or hot-key problem? (3) what is
+  the per-message latency now versus normal, and is the downstream dependency the cause? (4) is anything
+  being retried in a loop and blocking a partition? Then the levers in order of blast radius: add consumers
+  up to the partition count, cut per-message work, raise batch sizes, and only then consider skipping
+  offsets &mdash; which is a data-loss decision and needs saying out loud.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; Kafka</div>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@confluent__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5JZy3dBd$" target="_blank" rel="noopener"><span>Confluent &mdash; Apache Kafka 101<i>Made by the people who wrote it. Short episodes on topics, partitions, brokers, consumer groups. Start here.</i></span><span class="dur">series</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://kafka.apache.org/documentation/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5O45F_ze$" target="_blank" rel="noopener"><span>Apache Kafka documentation<i>The configuration reference you will actually keep open. Read the &ldquo;Design&rdquo; chapter once, end to end &mdash; it is unusually good.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=Kafka*consumer*group*rebalance*explained*max.poll.interval.ms__;KysrKys!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5KRiEcCE$" target="_blank" rel="noopener"><span>Consumer groups and rebalancing, explained<i>The single most misunderstood Kafka mechanism, and the one that causes 3 a.m. pages. Watch after Drawing 11-I.</i></span><span class="dur">25 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@TechWorldwithNana__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5CyCI6xD$" target="_blank" rel="noopener"><span>TechWorld with Nana &mdash; Kafka in Docker and Kubernetes<i>Best source for getting the Compose file and the listener configuration right the first time.</i></span><span class="dur">40 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://github.com/confluentinc/confluent-kafka-python__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5H8ajmYi$" target="_blank" rel="noopener"><span>confluent-kafka-python &mdash; examples directory<i>Working producer, consumer, transactional and Avro examples. Read <code>consumer.py</code> and diff it against yours.</i></span><span class="dur">code</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=Jay*Kreps*the*log*what*every*software*engineer*should*know__;KysrKysrKysr!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5C9Ur_li$" target="_blank" rel="noopener"><span>The Log: what every software engineer should know<i>Jay Kreps' essay and the talks about it. The &ldquo;why a log, not a queue&rdquo; argument in full.</i></span><span class="dur">long</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="rabbit">RabbitMQ</h2>
+<p class="sub">A message broker built around <b>routing</b> rather than storage. Where Kafka asks
+&ldquo;which partition does this key belong to?&rdquo;, RabbitMQ asks &ldquo;which of my queues should get a
+copy of this, and under what conditions?&rdquo; &mdash; and answers it with far more flexibility than Kafka
+can.</p>
+
+<h3 id="r-model">The AMQP model: exchange, binding, queue</h3>
+<p>The single most important sentence about RabbitMQ: <b>a producer never publishes to a queue.</b> It
+publishes to an <b>exchange</b> with a <b>routing key</b>. The exchange consults its <b>bindings</b> and
+copies the message into zero, one or many <b>queues</b>. Consumers subscribe to queues. Nothing else in
+RabbitMQ makes sense until that is automatic.</p>
+<p>This is the thing that trips up engineers whose model came from SQS, where you send to a queue URL and
+that is the whole story. In RabbitMQ, publishing to a routing key with no matching binding is not an error
+&mdash; the message is silently dropped. Zero consumers, zero errors, zero messages. Set
+<code>mandatory=True</code> and handle the return, or you will debug this for an afternoon.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 400" role="img" aria-label="The AMQP routing model. The core publishes the routing key badge.request.blr.created to a topic exchange, whose bindings copy it into the BLR provisioning queue and the audit queue, but not into the HYD queue, which does not match. Consumers subscribe to queues, never to the exchange.">
+  <defs>
+    <marker id="s11-kb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s11-kr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <text class="mm r" x="30" y="30">PRODUCERS NEVER PUBLISH TO A QUEUE. THEY PUBLISH TO AN EXCHANGE WITH A ROUTING KEY.</text>
+
+  <rect class="box" x="30" y="150" width="170" height="56" rx="3"/>
+  <text class="t mid" x="115" y="174">core</text>
+  <text class="mm mid" x="115" y="190">PUBLISHER</text>
+  <rect class="box-a" x="250" y="150" width="210" height="56" rx="3"/>
+  <text class="t b mid" x="355" y="174">x.badge (topic)</text>
+  <text class="mm mid" x="355" y="190">ROUTES, STORES NOTHING</text>
+  <path class="flow-b" d="M204,178 H246" marker-end="url(#s11-kb)"/>
+
+  <rect class="box-c" x="560" y="60" width="250" height="50" rx="3"/>
+  <text class="t mid" x="685" y="80">q.provision.blr</text>
+  <text class="mm mid" x="685" y="96">BINDING badge.request.blr.*</text>
+  <rect class="box-c" x="560" y="150" width="250" height="50" rx="3"/>
+  <text class="t mid" x="685" y="170">q.audit.all</text>
+  <text class="mm mid" x="685" y="186">BINDING badge.request.#</text>
+  <rect class="box" x="560" y="240" width="250" height="50" rx="3"/>
+  <text class="t mid" x="685" y="260">q.provision.hyd</text>
+  <text class="mm mid" x="685" y="276">BINDING badge.request.hyd.*</text>
+
+  <path class="flow-b" d="M464,168 C500,168 512,85 554,85" marker-end="url(#s11-kb)"/>
+  <path class="flow-b" d="M464,178 H554" marker-end="url(#s11-kb)"/>
+  <path class="flow-r dash" d="M464,190 C500,190 512,265 554,265" marker-end="url(#s11-kr)"/>
+
+  <rect class="box" x="880" y="60" width="290" height="50" rx="3"/>
+  <text class="t mid" x="1025" y="80">provisioning-worker BLR</text>
+  <text class="mm mid" x="1025" y="96">MANUAL ACK &middot; PREFETCH 20</text>
+  <rect class="box" x="880" y="150" width="290" height="50" rx="3"/>
+  <text class="t mid" x="1025" y="170">audit-reconciler</text>
+  <text class="mm mid" x="1025" y="186">ITS OWN QUEUE, ITS OWN COPY</text>
+  <rect class="box" x="880" y="240" width="290" height="50" rx="3"/>
+  <text class="t mid" x="1025" y="260">provisioning-worker HYD</text>
+  <text class="mm mid" x="1025" y="276">IDLE FOR THIS MESSAGE</text>
+  <path class="flow-b" d="M814,85 H876" marker-end="url(#s11-kb)"/>
+  <path class="flow-b" d="M814,175 H876" marker-end="url(#s11-kb)"/>
+  <path class="flow-b dash" d="M814,265 H876" marker-end="url(#s11-kb)"/>
+
+  <text class="mm b" x="30" y="240">ROUTING KEY: badge.request.blr.created</text>
+  <text class="mm b" x="30" y="262">TWO BINDINGS MATCH &rarr; TWO COPIES</text>
+  <text class="mm r" x="470" y="316">NO MATCH &rarr; NOT COPIED HERE, AND NOT AN ERROR</text>
+  <text class="mm" x="30" y="352">* MATCHES EXACTLY ONE WORD &middot; # MATCHES ZERO OR MORE WORDS &middot; WORDS ARE DOT-SEPARATED</text>
+  <text class="mm b" x="30" y="378">THE QUEUE IS WHERE MESSAGES LIVE. THE EXCHANGE IS A ROUTING TABLE WITH NO STORAGE AND NO MEMORY.</text>
+</svg>
+<figcaption>Drawing 11-K &mdash; the AMQP model and a topic exchange in action. <b>Brass</b> = a copy being
+routed. <b>Red</b> = a binding that did not match, which is silent.</figcaption>
+</figure>
+
+<h3 id="r-exchanges">The four exchange types</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Type</th><th>Routing rule</th><th>BadgeDesk use</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><code>direct</code></td><td>Deliver where the binding key equals the routing key, exactly.</td><td><code>badge.provision</code> &rarr; one worker queue</td><td>The default exchange (<code>""</code>) is a direct exchange where every queue is bound to its own name &mdash; which is why <code>publish(routing_key="q.name")</code> appears to send &ldquo;to a queue&rdquo;.</td></tr>
+<tr><td><code>topic</code></td><td>Pattern match on dot-separated words: <code>*</code> is one word, <code>#</code> is zero or more.</td><td><code>badge.request.blr.*</code> per site, <code>badge.request.#</code> for audit</td><td>The one you will actually use. Design the routing key as a hierarchy: <code>domain.event.site.action</code>.</td></tr>
+<tr><td><code>fanout</code></td><td>Ignore the routing key, copy to every bound queue.</td><td><code>x.badge.dlx</code>, cache-invalidation broadcasts</td><td>Cheapest and fastest. Kafka's equivalent is many consumer groups on one topic.</td></tr>
+<tr><td><code>headers</code></td><td>Match on header values instead of the routing key (<code>x-match: all|any</code>).</td><td>Rarely. Routing on <code>region</code> + <code>priority</code> headers.</td><td>Flexible, slower, and harder to reason about. Know it exists; reach for <code>topic</code> first.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="r-ack">Acknowledgements and <code>prefetch</code></h3>
+<p>RabbitMQ pushes messages to consumers, which is the opposite of Kafka's pull model and the source of both
+its low latency and its fairness problems. A message is delivered, marked unacknowledged, and held in memory
+until the consumer sends <code>basic.ack</code> (done), <code>basic.nack</code>/<code>basic.reject</code>
+(failed &mdash; requeue or dead-letter), or dies (the channel closes and every unacknowledged message is
+requeued automatically). That last behaviour is genuinely excellent: crash a consumer mid-message and the
+message goes back, at-least-once, with no work from you.</p>
+<p><b>Prefetch</b> (<code>basic_qos(prefetch_count=n)</code>) is how many unacknowledged messages one
+consumer may hold. The default in most clients is <i>unlimited</i>, and that is a trap:</p>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; unbounded prefetch</span>
+  <p>With no prefetch limit, RabbitMQ shovels the entire queue at whichever consumer connected first. It now
+  holds 80 000 messages in memory, the two other consumers sit idle with nothing to do, and if the greedy one
+  dies you re-deliver 80 000 messages at once. You have accidentally rebuilt a single-threaded consumer with
+  extra latency and a memory leak. Set <code>prefetch_count</code> to roughly
+  <i>(target throughput &times; processing time)</i> and no higher &mdash; for a 30-second vendor call, that
+  is a small number like 10&ndash;20, not 1 000. Prefetch 1 is maximally fair and maximally slow (a round trip
+  per message); it is the right choice only when per-message work is long and uneven, which is exactly
+  BadgeDesk's provisioning case.</p>
+</div>
+
+<h3 id="r-durable">Durability: three switches, all required</h3>
+<p>&ldquo;My messages disappeared when RabbitMQ restarted&rdquo; is always one of these three being off. They
+are independent and you need all of them:</p>
+<ul>
+<li><b>Durable queue</b> (<code>durable=True</code>) &mdash; the queue definition survives a broker restart.
+Without it the queue itself is gone, along with everything in it.</li>
+<li><b>Persistent message</b> (<code>delivery_mode=2</code>) &mdash; this individual message is written to
+disk. A persistent message in a non-durable queue is still lost, and a transient message in a durable queue
+is still lost. Both, or neither works.</li>
+<li><b>Publisher confirms</b> (<code>confirm_delivery()</code>) &mdash; the broker tells you it accepted and
+persisted the message. Without confirms, <code>basic_publish</code> is fire-and-forget over TCP: it returns
+successfully even when the broker never received the bytes. This is RabbitMQ's <code>acks=all</code>.</li>
+</ul>
+<p>Note the cost, because interviewers ask: persistence plus confirms means an <code>fsync</code> in the
+publish path, which typically takes RabbitMQ from tens of thousands of messages per second to a few thousand.
+That is still far more than BadgeDesk needs, and the trade is obviously correct for a badge request. It is
+obviously wrong for telemetry.</p>
+
+<h3 id="r-dlx">Dead-letter exchanges and delayed retry</h3>
+<p>RabbitMQ has no native &ldquo;retry this in 5 seconds&rdquo;. What it has is a queue-level TTL plus a
+dead-letter exchange, and the composition of those two <i>is</i> the delay mechanism. A message that expires
+in a TTL queue is dead-lettered onward &mdash; so a queue with a 5-second TTL whose dead-letter exchange
+routes back to the main queue is a 5-second delay line.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 340" role="img" aria-label="A RabbitMQ delayed-retry loop. The provisioning queue delivers to the worker; a negative acknowledgement dead-letters the message to a dead-letter exchange, which routes it into a retry queue with a five-second time to live; when the TTL expires the message is dead-lettered back into the main queue as the next attempt. After more than three deaths it is routed to a parked queue instead.">
+  <defs>
+    <marker id="s11-lb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s11-lr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+  <text class="mm" x="40" y="30">DELAYED RETRY WITHOUT A SCHEDULER: A QUEUE WITH A TTL AND A DEAD-LETTER EXCHANGE IS THE DELAY</text>
+
+  <rect class="box-c" x="40" y="60" width="210" height="56" rx="3"/>
+  <text class="t mid" x="145" y="84">q.badge.provision</text>
+  <text class="mm mid" x="145" y="100">DURABLE &middot; DLX = x.badge.dlx</text>
+  <rect class="box" x="310" y="60" width="210" height="56" rx="3"/>
+  <text class="t mid" x="415" y="84">provisioning-worker</text>
+  <text class="mm mid" x="415" y="100">PREFETCH 20 &middot; MANUAL ACK</text>
+  <rect class="box-r" x="580" y="60" width="190" height="56" rx="3"/>
+  <text class="t r mid" x="675" y="84">x.badge.dlx</text>
+  <text class="mm mid" x="675" y="100">FANOUT EXCHANGE</text>
+  <rect class="box-a" x="830" y="60" width="230" height="56" rx="3"/>
+  <text class="t b mid" x="945" y="84">q.badge.retry.5s</text>
+  <text class="mm mid" x="945" y="100">TTL 5 000 MS &middot; DLX = x.badge</text>
+
+  <rect class="box-r" x="580" y="210" width="250" height="56" rx="3"/>
+  <text class="t r mid" x="705" y="234">q.badge.parked</text>
+  <text class="mm mid" x="705" y="250">NO CONSUMER &middot; ALARM ON DEPTH</text>
+
+  <path class="flow-b" d="M254,88 H306" marker-end="url(#s11-lb)"/>
+  <text class="mm b" x="258" y="80">PUSH</text>
+  <path class="flow-r" d="M524,88 H576" marker-end="url(#s11-lr)"/>
+  <text class="mm r" x="528" y="80">NACK</text>
+  <path class="flow-r" d="M774,88 H826" marker-end="url(#s11-lr)"/>
+  <text class="mm r" x="700" y="140">DLX ROUTES THE REJECTED MESSAGE ONWARD</text>
+  <path class="flow-r" d="M675,120 V204" marker-end="url(#s11-lr)"/>
+  <text class="mm r" x="690" y="176">x-death COUNT &gt; 3</text>
+  <path class="flow-b" d="M945,120 V290 H145 V122" marker-end="url(#s11-lb)"/>
+  <text class="mm b" x="300" y="284">TTL EXPIRES &rarr; DEAD-LETTERED BACK TO THE MAIN QUEUE &mdash; ATTEMPT 2</text>
+  <text class="mm r" x="40" y="326">RABBITMQ HAS NO NATIVE DELAY. THIS TTL + DLX LOOP, OR THE DELAYED-MESSAGE PLUGIN, IS HOW EVERYONE DOES IT.</text>
+</svg>
+<figcaption>Drawing 11-L &mdash; a TTL and dead-letter-exchange retry loop. <b>Red</b> = rejection and the
+terminal parking queue. <b>Brass</b> = the delay and the return path.</figcaption>
+</figure>
+
+<h3 id="r-extras">Priority queues and quorum queues</h3>
+<p><b>Priority queues</b> (<code>x-max-priority</code>) let a message jump the line &mdash; genuinely useful
+and something Kafka simply cannot do, because a log has one order. In BadgeDesk, an emergency
+revoke (a departing employee's badge) should overtake 3 000 routine grants. The caveats: priority applies
+only to messages sitting in the queue, so a message already prefetched by a consumer cannot be overtaken
+(keep prefetch small if priority matters), and a permanently busy high-priority stream starves the low one.</p>
+<p><b>Quorum queues</b> are the modern replicated queue type, using Raft, and are the default choice for
+anything that must survive a node loss; classic mirrored queues are deprecated. One sentence for an
+interview: &ldquo;quorum queues replicate via Raft and trade a little throughput for correct failover, and
+they are what you should use in production.&rdquo;</p>
+
+<h3 id="r-code">The BadgeDesk consumer in RabbitMQ</h3>
+<div class="code" data-lang="python">
+<header><b>badgedesk/provisioning_worker/rabbit_consumer.py</b></header>
+<pre><code>import json, os, pika
+from .db import get_conn
+from .handler import provision
+from .retry import Permanent
+
+params = pika.URLParameters(os.environ["RABBIT_URL"])   # amqp://user:pw@host/%2f
+conn = pika.BlockingConnection(params)
+ch = conn.channel()
+
+# --- topology. Declaring is idempotent, so every service declares what it needs.
+ch.exchange_declare("x.badge",     exchange_type="topic",  durable=True)
+ch.exchange_declare("x.badge.dlx", exchange_type="fanout", durable=True)
+
+ch.queue_declare("q.badge.provision", durable=True, arguments={
+    "x-dead-letter-exchange": "x.badge.dlx",     # where rejections go
+    "x-max-priority": 5,                          # emergency revokes jump the line
+})
+ch.queue_bind("q.badge.provision", "x.badge", routing_key="badge.request.#")
+
+ch.queue_declare("q.badge.retry.5s", durable=True, arguments={
+    "x-message-ttl": 5_000,                       # expire after 5 s ...
+    "x-dead-letter-exchange": "x.badge",          # ... then re-enter the main flow
+    "x-dead-letter-routing-key": "badge.request.retry",
+})
+ch.queue_bind("q.badge.retry.5s", "x.badge.dlx")
+
+ch.queue_declare("q.badge.parked", durable=True)   # terminal. Nobody consumes it.
+
+# --- fairness. Without this, one consumer takes the whole queue.
+ch.basic_qos(prefetch_count=20)
+
+def deaths(props) -&gt; int:
+    """RabbitMQ appends an x-death entry every time a message is dead-lettered."""
+    entries = (props.headers or {}).get("x-death", [])
+    return sum(e.get("count", 0) for e in entries)
+
+def on_message(channel, method, props, body):
+    try:
+        event = json.loads(body)
+    except json.JSONDecodeError:
+        channel.basic_publish("", "q.badge.parked", body)   # unparseable: park it
+        channel.basic_ack(method.delivery_tag)
+        return
+
+    try:
+        provision(get_conn(), event)                         # idempotent - see above
+    except Permanent:
+        channel.basic_publish("", "q.badge.parked", body)
+        channel.basic_ack(method.delivery_tag)               # ack: do not requeue
+        return
+    except Exception:
+        if deaths(props) &gt;= 3:
+            channel.basic_publish("", "q.badge.parked", body)
+            channel.basic_ack(method.delivery_tag)
+        else:
+            # requeue=False sends it to the DLX -&gt; retry.5s -&gt; back here in 5 s.
+            # requeue=True would spin at full CPU forever. Never do that.
+            channel.basic_nack(method.delivery_tag, requeue=False)
+        return
+
+    channel.basic_ack(method.delivery_tag)                   # commit last, as ever
+
+ch.basic_consume("q.badge.provision", on_message, auto_ack=False)
+ch.start_consuming()
+</code></pre>
+</div>
+
+<div class="code" data-lang="python">
+<header><b>badgedesk/core/rabbit_publisher.py &mdash; with confirms</b></header>
+<pre><code>ch.confirm_delivery()          # turn on publisher confirms for this channel
+
+try:
+    ch.basic_publish(
+        exchange="x.badge",
+        routing_key=f"badge.request.{site_id.split('-')[0].lower()}.created",
+        body=json.dumps(envelope).encode(),
+        properties=pika.BasicProperties(
+            delivery_mode=2,               # persistent - written to disk
+            message_id=envelope["id"],     # the consumer's dedupe key
+            content_type="application/json",
+            priority=5 if envelope["type"] == "badge.revoked" else 1,
+            headers={"correlation-id": correlation_id},
+        ),
+        mandatory=True,        # raise if NO queue was bound - not silently dropped
+    )
+except pika.exceptions.UnroutableError:
+    log.error("no binding matched - the message would have vanished")
+    raise
+except pika.exceptions.NackError:
+    log.error("broker refused the message; the outbox row stays unsent")
+    raise
+</code></pre>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; RabbitMQ</div>
+  <a class="r" href="https://urldefense.com/v3/__https://www.rabbitmq.com/tutorials__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5PElbNOA$" target="_blank" rel="noopener"><span>RabbitMQ official tutorials 1&ndash;6<i>Genuinely the best introduction to any broker. Six short programs that build up work queues, pub/sub, routing and RPC. Do all six in Python.</i></span><span class="dur">2 h</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.rabbitmq.com/docs/dlx__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5O6uTRcZ$" target="_blank" rel="noopener"><span>RabbitMQ docs &mdash; dead-letter exchanges<i>The reference for <code>x-death</code>, TTL interaction and the retry loop in Drawing 11-L. Read before you build it.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=RabbitMQ*exchanges*bindings*topic*exchange*explained*tutorial__;KysrKysr!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5OXTBHOP$" target="_blank" rel="noopener"><span>Exchanges and bindings, explained visually<i>Watch one of these if the exchange-versus-queue distinction has not clicked yet. It is the whole model.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@hnasr__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5BLEvZzq$" target="_blank" rel="noopener"><span>Hussein Nasser &mdash; RabbitMQ and push versus pull<i>Why a push broker needs prefetch, and what that costs. The best treatment of the fairness problem.</i></span><span class="dur">25 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.cloudamqp.com/blog/part1-rabbitmq-best-practice.html__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5JvI-bPg$" target="_blank" rel="noopener"><span>CloudAMQP &mdash; RabbitMQ best practice series<i>Operational hard-won advice: queue length, prefetch, connection churn, lazy queues. Read when yours misbehaves.</i></span><span class="dur">docs</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="versus">Kafka versus RabbitMQ</h2>
+<p class="sub">The same job &mdash; publish a badge request, consume it, provision it &mdash; written twice.
+Read the code first, then the table, then the decision tree. The difference is not syntax; it is where the
+routing decision lives and whether history is kept.</p>
+
+<div class="vs">
+  <div>
+    <div class="vh">Kafka</div>
+    <div class="code" data-lang="python"><header><b>produce and consume</b></header><pre><code>from confluent_kafka import Producer, Consumer
+
+p = Producer({"bootstrap.servers": "localhost:9092",
+              "acks": "all", "enable.idempotence": True})
+
+# The KEY decides the partition, which decides
+# ordering and which consumer sees it.
+p.produce("badge.requests",
+          key=b"BLR-01",
+          value=json.dumps(envelope).encode())
+p.flush()
+
+c = Consumer({"bootstrap.servers": "localhost:9092",
+              "group.id": "badge-provisioners",
+              "enable.auto.commit": False,
+              "auto.offset.reset": "earliest"})
+c.subscribe(["badge.requests"])
+
+msg = c.poll(1.0)                  # PULL
+provision(json.loads(msg.value()))
+c.commit(msg, asynchronous=False)  # move my cursor
+</code></pre></div>
+    <div class="vb"><p><b>Mental model:</b> a shared, replayable log. The consumer owns a cursor. Adding a
+    reader costs nothing and changes nothing. Routing is one hash of one key.</p></div>
+  </div>
+  <div>
+    <div class="vh">RabbitMQ</div>
+    <div class="code" data-lang="python"><header><b>publish and consume</b></header><pre><code>import pika
+
+ch.exchange_declare("x.badge", "topic", durable=True)
+ch.queue_declare("q.badge.provision", durable=True)
+ch.queue_bind("q.badge.provision", "x.badge",
+              routing_key="badge.request.#")
+
+# The ROUTING KEY plus the BINDINGS decide who
+# gets a copy. The publisher names neither queue.
+ch.basic_publish("x.badge",
+                 "badge.request.blr.created",
+                 json.dumps(envelope).encode(),
+                 pika.BasicProperties(delivery_mode=2))
+
+def on_message(chan, method, props, body):   # PUSH
+    provision(json.loads(body))
+    chan.basic_ack(method.delivery_tag)      # delete it
+
+ch.basic_qos(prefetch_count=20)
+ch.basic_consume("q.badge.provision", on_message)
+ch.start_consuming()
+</code></pre></div>
+    <div class="vb"><p><b>Mental model:</b> a post office. Messages are deleted when acknowledged. Routing is
+    arbitrarily expressive, and a new reader needs a new queue and binding, declared by somebody.</p></div>
+  </div>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Dimension</th><th>Kafka</th><th>RabbitMQ</th></tr></thead>
+<tbody>
+<tr><td>Core model</td><td>Distributed, partitioned, replicated commit log. Consumers hold offsets.</td><td>AMQP broker: exchanges route to queues, queues hold messages until acked.</td></tr>
+<tr><td>Delivery style</td><td>Pull. The consumer asks for the next batch, so it controls its own pace.</td><td>Push, bounded by <code>prefetch</code>. Lower latency, but you must configure fairness.</td></tr>
+<tr><td>Ordering</td><td>Strict within a partition, guaranteed by key. None across partitions.</td><td>Per queue, and only with one consumer and no requeues. Practically, weaker.</td></tr>
+<tr><td>Replay</td><td>First-class. Reset offsets, or start a new <code>group.id</code>, and read the retained history again.</td><td>Not a feature. An acked message is gone. You would re-publish from your own store.</td></tr>
+<tr><td>Retention</td><td>Time or size based, independent of consumption. 7 days by default; compaction keeps latest-per-key forever.</td><td>Until acknowledged. A queue is a backlog, and a growing queue is a problem, not an archive.</td></tr>
+<tr><td>Throughput</td><td>Very high &mdash; hundreds of thousands to millions of messages/s per cluster; sequential disk writes and zero-copy reads.</td><td>High &mdash; tens of thousands/s, dropping to low thousands with persistence plus confirms.</td></tr>
+<tr><td>Routing flexibility</td><td>Deliberately minimal: <code>hash(key) mod partitions</code>. Filtering is the consumer's job (or a stream processor's).</td><td>The main feature: direct, topic, fanout, headers, per-message priority, TTL, alternate exchanges.</td></tr>
+<tr><td>Consumer scaling</td><td>Group members, capped at the partition count. Scaling past it needs a repartition.</td><td>Add consumers to a queue freely; competing consumers with no ceiling.</td></tr>
+<tr><td>Delayed delivery</td><td>No native support. You build a delay topic or re-publish with a timestamp check.</td><td>TTL + dead-letter exchange, or the delayed-message plugin. Much easier.</td></tr>
+<tr><td>Message size</td><td>Tuned for small records (default max 1 MB). Big payloads go to S3, with a pointer in the message.</td><td>Also prefers small. Large messages hurt memory and flow control badly.</td></tr>
+<tr><td>Operational complexity</td><td>Higher: partitions, replication, ISR, retention, rebalancing, disk sizing. Managed as MSK or Confluent Cloud.</td><td>Lower to start, and the management UI is excellent. Gets harder with clustering and network partitions.</td></tr>
+<tr><td>Typical use case</td><td>Event streaming, audit trails, analytics pipelines, service-to-service events at volume, anything you may want to replay.</td><td>Task queues, RPC-ish work distribution, complex per-message routing, priorities, and delayed jobs.</td></tr>
+<tr><td>Managed equivalents</td><td>Amazon MSK, Confluent Cloud, Azure Event Hubs (Kafka-compatible endpoint) &mdash; <a href="aws.html">Sheet 07</a>, <a href="azure.html">Sheet 08</a></td><td>Amazon MQ, CloudAMQP; the closest cloud-native shapes are SQS (queue) + SNS (fan-out) and Azure Service Bus &mdash; same two sheets</td></tr>
+</tbody>
+</table>
+</div>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 470" role="img" aria-label="A decision tree. Starting from what the message needs, four branches lead to Kafka for replay and history, RabbitMQ for per-message routing and delays, SNS plus SQS for simple managed fan-out on AWS, and Azure Service Bus for enterprise Azure features, each with the real BadgeDesk decision at the leaf.">
+  <defs>
+    <marker id="s11-mc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s11-mb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+  </defs>
+
+  <rect class="box-a" x="470" y="30" width="260" height="56" rx="3"/>
+  <text class="t b mid" x="600" y="54">What does the message need?</text>
+  <text class="mm mid" x="600" y="72">ASK THIS BEFORE NAMING A PRODUCT</text>
+  <path class="ln" d="M600,86 V116"/>
+  <path class="ln" d="M155,116 H1025"/>
+
+  <rect class="box" x="30" y="140" width="250" height="80" rx="3"/>
+  <text class="t mid" x="155" y="166">Replay and history?</text>
+  <text class="mm mid" x="155" y="186">MANY INDEPENDENT READERS,</text>
+  <text class="mm mid" x="155" y="204">HIGH VOLUME, AUDIT TRAIL</text>
+  <rect class="box" x="320" y="140" width="250" height="80" rx="3"/>
+  <text class="t mid" x="445" y="166">Per-message routing?</text>
+  <text class="mm mid" x="445" y="186">TOPIC PATTERNS, PRIORITY,</text>
+  <text class="mm mid" x="445" y="204">PER-MESSAGE TTL, DELAYS</text>
+  <rect class="box" x="610" y="140" width="250" height="80" rx="3"/>
+  <text class="t mid" x="735" y="166">Already all-in on AWS?</text>
+  <text class="mm mid" x="735" y="186">SIMPLE FAN-OUT, NO REPLAY,</text>
+  <text class="mm mid" x="735" y="204">NOBODY TO OPERATE A CLUSTER</text>
+  <rect class="box" x="900" y="140" width="250" height="80" rx="3"/>
+  <text class="t mid" x="1025" y="166">Azure enterprise shop?</text>
+  <text class="mm mid" x="1025" y="186">SESSIONS, TRANSACTIONS,</text>
+  <text class="mm mid" x="1025" y="204">DEDUPE WINDOW BUILT IN</text>
+  <path class="flow" d="M155,116 V134" marker-end="url(#s11-mc)"/>
+  <path class="flow" d="M445,116 V134" marker-end="url(#s11-mc)"/>
+  <path class="flow" d="M735,116 V134" marker-end="url(#s11-mc)"/>
+  <path class="flow" d="M1025,116 V134" marker-end="url(#s11-mc)"/>
+
+  <rect class="box-a" x="30" y="270" width="250" height="64" rx="3"/>
+  <text class="t b mid" x="155" y="296">Kafka</text>
+  <text class="mm mid" x="155" y="316">PARTITIONS + CONSUMER GROUPS</text>
+  <rect class="box-a" x="320" y="270" width="250" height="64" rx="3"/>
+  <text class="t b mid" x="445" y="296">RabbitMQ</text>
+  <text class="mm mid" x="445" y="316">EXCHANGES + BINDINGS</text>
+  <rect class="box" x="610" y="270" width="250" height="64" rx="3"/>
+  <text class="t mid" x="735" y="296">SNS + SQS</text>
+  <text class="mm mid" x="735" y="316">SHEET 07 &middot; MANAGED, NO REPLAY</text>
+  <rect class="box" x="900" y="270" width="250" height="64" rx="3"/>
+  <text class="t mid" x="1025" y="296">Azure Service Bus</text>
+  <text class="mm mid" x="1025" y="316">SHEET 08 &middot; TOPICS + SUBSCRIPTIONS</text>
+  <path class="flow-b" d="M155,224 V264" marker-end="url(#s11-mb)"/>
+  <path class="flow-b" d="M445,224 V264" marker-end="url(#s11-mb)"/>
+  <path class="flow" d="M735,224 V264" marker-end="url(#s11-mc)"/>
+  <path class="flow" d="M1025,224 V264" marker-end="url(#s11-mc)"/>
+
+  <rect class="box-c" x="30" y="378" width="250" height="70" rx="3"/>
+  <text class="t mid" x="155" y="402">badge.requests</text>
+  <text class="mm mid" x="155" y="420">REPLAY AFTER A WORKER BUG,</text>
+  <text class="mm mid" x="155" y="438">ORDER PER SITE, 3 CONSUMERS</text>
+  <rect class="box-c" x="320" y="378" width="250" height="70" rx="3"/>
+  <text class="t mid" x="445" y="402">emergency revokes</text>
+  <text class="mm mid" x="445" y="420">PRIORITY 5 JUMPS 3 000 GRANTS &mdash;</text>
+  <text class="mm mid" x="445" y="438">KAFKA CANNOT DO THIS AT ALL</text>
+  <rect class="box-c" x="610" y="378" width="250" height="70" rx="3"/>
+  <text class="t mid" x="735" y="402">nightly audit report</text>
+  <text class="mm mid" x="735" y="420">LAMBDA FAN-OUT ON S3 PUT,</text>
+  <text class="mm mid" x="735" y="438">ALREADY IN THE ACCOUNT</text>
+  <rect class="box-c" x="900" y="378" width="250" height="70" rx="3"/>
+  <text class="t mid" x="1025" y="402">not used in BadgeDesk</text>
+  <text class="mm mid" x="1025" y="420">KNOW IT EXISTS AND HOW IT MAPS</text>
+  <text class="mm mid" x="1025" y="438">ONTO KAFKA VOCABULARY</text>
+  <path class="flow" d="M155,338 V372" marker-end="url(#s11-mc)"/>
+  <path class="flow" d="M445,338 V372" marker-end="url(#s11-mc)"/>
+  <path class="flow" d="M735,338 V372" marker-end="url(#s11-mc)"/>
+  <path class="flow" d="M1025,338 V372" marker-end="url(#s11-mc)"/>
+</svg>
+<figcaption>Drawing 11-M &mdash; which broker, and the real BadgeDesk decision at each leaf. <b>Brass</b> =
+the two you should be able to defend in an interview.</figcaption>
+</figure>
+
+<p><b>Which to learn first: Kafka.</b> Three reasons, in order of honesty. It appears in far more job
+descriptions than RabbitMQ, and at the SE3 level the questions asked are Kafka's questions &mdash;
+partitions, keys, consumer groups, offsets, lag. It runs free on your laptop in one container, so you can
+break it and watch what happens. And its model is strictly harder, which means the concepts transfer
+downward: once partitions and offsets are automatic, RabbitMQ's tutorials take an evening, whereas learning
+RabbitMQ first teaches you a queue mental model you then have to unlearn. Build the BadgeDesk seam on Kafka
+this week; do RabbitMQ tutorials 1&ndash;6 on the Saturday, specifically so you can answer &ldquo;why not
+RabbitMQ?&rdquo; with a real reason instead of a preference. SQS/SNS and Azure Service Bus are on
+<a href="aws.html">Sheet 07</a> and <a href="azure.html">Sheet 08</a>; the vocabulary maps almost
+one-to-one, which is exactly why the vocabulary was worth learning.</p>
+
+<div class="chips">
+  <span class="chip cy">badge.requests &mdash; kafka, keyed by site_id</span>
+  <span class="chip cy">badge.provisioned &mdash; kafka, fan-out</span>
+  <span class="chip">access.events &mdash; kafka, compacted rollups</span>
+  <span class="chip on">badge.requests.dlq &mdash; 30-day retention</span>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; choosing a broker</div>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=ByteByteGo*Kafka*vs*RabbitMQ*which*message*queue__;KysrKysr!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Ae2u17I$" target="_blank" rel="noopener"><span>ByteByteGo &mdash; Kafka vs RabbitMQ<i>The clearest short comparison. Watch it after you have written both code samples, not before.</i></span><span class="dur">8 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@gkcs__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5DE58G6B$" target="_blank" rel="noopener"><span>Gaurav Sen &mdash; message queues in system design<i>How this decision is actually presented and defended in a design round.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://docs.aws.amazon.com/whitepapers/latest/aws-overview/messaging.html__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Ick4TX8$" target="_blank" rel="noopener"><span>AWS &mdash; when to use SQS, SNS, EventBridge, MSK<i>The managed-service version of this decision tree. Read alongside Sheet 07.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-messaging-overview__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5JQA4qpp$" target="_blank" rel="noopener"><span>Azure Service Bus overview<i>Maps queues, topics, subscriptions and sessions onto the vocabulary in this sheet. Skim for Sheet 08.</i></span><span class="dur">docs</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="event">Designing an event</h2>
+<p class="sub">The broker is the easy part. The message is the API, and unlike an HTTP endpoint you cannot
+deprecate it on Friday &mdash; a consumer replaying last month's data is still calling last month's version.</p>
+
+<h3 id="e-naming">Naming</h3>
+<p>Three rules, and they are not cosmetic. <b>Past tense for events</b>
+(<code>badge.requested</code>, <code>badge.provisioned</code>, <code>badge.revoked</code>) because an event
+is a fact that already happened and cannot be rejected. <b>Domain first, then the thing, then what
+happened</b> &mdash; <code>badge.request.created</code> sorts and wildcard-matches sensibly, while
+<code>created_badge_request</code> does not. <b>Never name a topic after a consumer.</b> The moment you
+create <code>notifier.inbox</code> you have coupled the producer to today's consumer list, and the second
+reader has nowhere to go.</p>
+
+<h3 id="e-envelope">The envelope</h3>
+<p>Split every message into a fixed <b>envelope</b> that every consumer and every piece of infrastructure can
+read without knowing the domain, and a <b>payload</b> that only the domain cares about. Then generic tooling
+&mdash; logging, tracing, dead-letter inspectors, replay tools &mdash; works for every topic you will ever
+add.</p>
+
+<div class="code" data-lang="json">
+<header><b>a real badge.requested message on badge.requests, key = "BLR-01"</b></header>
+<pre><code>{
+  "id": "0f3c8b6e-5a41-4c8e-9d1f-2b7a6c4e10aa",
+  "type": "badge.requested",
+  "version": 2,
+  "occurred_at": "2026-09-01T09:14:03.221Z",
+  "producer": "core@1f4ab90",
+  "correlation_id": "01J9ZQ7K3MC8YV2N4X6RB1TQ5D",
+  "causation_id": "0f3c8b6e-0000-4c8e-9d1f-2b7a6c4e0000",
+  "payload": {
+    "request_id": "req-1",
+    "employee_id": "e-902",
+    "site_id": "BLR-01",
+    "starts_on": "2026-09-08",
+    "ends_on": "2026-09-12",
+    "reason": "Quarterly audit walkthrough",
+    "requested_by": "e-902",
+    "approval": {
+      "approved_by": "e-874",
+      "approved_at": "2026-09-01T09:13:58.004Z"
+    }
+  }
+}
+</code></pre>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Envelope field</th><th>Why it must be there</th></tr></thead>
+<tbody>
+<tr><td><code>id</code></td><td>The deduplication key. Generated by the producer, stable across every retry and every republish. This is the single most important field on the sheet &mdash; without it there is no idempotent consumer.</td></tr>
+<tr><td><code>type</code></td><td>Lets one topic carry several event types and lets a consumer dispatch without parsing the payload. Also what your DLQ triage tool groups by.</td></tr>
+<tr><td><code>version</code></td><td>The payload schema version. Consumers branch on it during a migration; without it every change is a coordinated deploy.</td></tr>
+<tr><td><code>occurred_at</code></td><td>When the fact happened in the business, which is <i>not</i> when the message was published or consumed. Use it for ordering decisions, never <code>now()</code>.</td></tr>
+<tr><td><code>producer</code></td><td>Service name and build SHA. When a malformed message appears in the DLQ, this tells you which deploy to roll back.</td></tr>
+<tr><td><code>correlation_id</code></td><td>The same id the gateway put on the HTTP request. It is how you follow one employee's click through four services and two topics in the logs &mdash; see <a href="apis.html">Sheet 05</a> and <a href="aws.html">Sheet 07</a>.</td></tr>
+<tr><td><code>causation_id</code></td><td>The id of the message that caused this one. Turns a pile of events into a traceable chain, and makes infinite event loops visible.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="e-state">Event-carrying state transfer versus thin events</h3>
+<div class="vs">
+  <div>
+    <div class="vh">Thin event &mdash; a notification</div>
+    <div class="vb">
+      <p><code>{"type":"badge.requested","payload":{"request_id":"req-1"}}</code></p>
+      <p><b>Consumer must call back</b> to <code>GET /access-requests/req-1</code> for the details. Small
+      messages, no duplicated schema, and the consumer always sees current state.</p>
+      <p><b>Cost:</b> you have reintroduced the synchronous coupling you removed. If <code>core</code> is
+      down, the worker cannot process anything &mdash; a message it already holds is useless. Plus one HTTP
+      call per message, so 4 000 messages is 4 000 calls, and a replay hammers the API. And the state you
+      fetch is <i>now</i>, not <i>then</i>: a request cancelled since publication reads back as cancelled,
+      which may be right or may hide a bug.</p>
+    </div>
+  </div>
+  <div>
+    <div class="vh">Event-carrying state transfer</div>
+    <div class="vb">
+      <p>The full payload above &mdash; employee, site, dates, reason, approver.</p>
+      <p><b>Consumer needs nobody.</b> It can provision a badge from the message alone, so it works while
+      <code>core</code> is being deployed, and replay reproduces exactly what was true at the time.</p>
+      <p><b>Cost:</b> bigger messages, the schema is now duplicated in every consumer, and the data is a
+      snapshot that can be stale by the time it is read. You need a version field and a rule for what wins.</p>
+      <p><b>Default to this</b> for BadgeDesk: the whole point of the seam is that the worker survives
+      <code>core</code> being unavailable. Use thin events only for large payloads &mdash; a badge photo goes
+      to S3 and the message carries the key, never the bytes.</p>
+    </div>
+  </div>
+</div>
+
+<h3 id="e-version">Versioning without breaking consumers</h3>
+<p>You cannot deploy every consumer at once, and replay means old and new payloads coexist forever. So the
+rules are strict and simple:</p>
+<ul>
+<li><b>Additive changes only.</b> Add optional fields with defaults. Never rename, never remove, never change
+a type, never repurpose a field's meaning &mdash; that last one is the worst because nothing breaks
+loudly.</li>
+<li><b>Tolerant reader.</b> Consumers ignore unknown fields. In Pydantic that is the default; make sure you
+have not set <code>extra="forbid"</code> on an event model, which turns every future producer change into an
+outage.</li>
+<li><b>A breaking change is a new event type or a new topic</b> &mdash; <code>badge.requested.v2</code> or
+<code>type: "badge.requested"</code> with <code>version: 3</code> &mdash; and the producer emits both for one
+retention period while consumers migrate. Then you delete the old one, having checked the metric that counts
+consumption of v1 rather than having asked people.</li>
+</ul>
+
+<div class="code" data-lang="python">
+<header><b>badgedesk/provisioning_worker/schema.py &mdash; a tolerant, versioned reader</b></header>
+<pre><code>from pydantic import BaseModel, Field, ConfigDict
+
+class RequestedV1(BaseModel):
+    model_config = ConfigDict(extra="ignore")     # tolerant reader, on purpose
+    request_id: str
+    employee_id: str
+    site_id: str
+    starts_on: str
+    ends_on: str
+
+class RequestedV2(RequestedV1):
+    # v2 added the approval block. Optional, so v1 messages still parse.
+    approval: dict | None = None
+    reason: str = ""
+
+HANDLERS = {1: RequestedV1, 2: RequestedV2}
+
+def parse(envelope: dict) -&gt; RequestedV1:
+    version = envelope.get("version", 1)
+    model = HANDLERS.get(version)
+    if model is None:
+        # A version from the future. Do not guess - park it and alarm.
+        raise Permanent(f"unknown envelope version {version}")
+    return model.model_validate(envelope["payload"])
+</code></pre>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Events versus commands &mdash; and why mixing them couples services</span>
+  <p>An <b>event</b> is a statement about the past: <i>badge.provisioned</i>. It has no intended recipient, it
+  cannot be refused, and the publisher does not care who listens or what they do. A <b>command</b> is an
+  instruction for the future: <i>provision this badge</i>. It has exactly one intended handler, it can be
+  rejected, and the sender usually wants to know the outcome. Both travel over the same broker, which is
+  why they get muddled.</p>
+  <p>The coupling appears the moment you publish a command dressed as an event. If <code>core</code> emits
+  <code>send_teams_message</code>, then <code>core</code> now knows that Teams exists, that the notifier
+  handles it, and that a message should be sent at all &mdash; three pieces of downstream knowledge that
+  should not be in the request service. Change the notification policy and you redeploy <code>core</code>.
+  Publish <code>badge.provisioned</code> instead and the notifier decides what to do with it, the
+  reconciler decides separately, and a fourth consumer next year needs no change anywhere upstream.</p>
+  <p>Commands are still legitimate &mdash; <code>badge.requests</code> is honestly a command topic, one
+  producer and one logical handler, and pretending otherwise is worse than naming it accurately. The rule is:
+  <b>commands go to one owner you already depend on; events are broadcast to whoever cares.</b> If you find
+  yourself adding a <code>target_service</code> field, you have written a command and should stop calling it
+  an event.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; event design</div>
+  <a class="r" href="https://urldefense.com/v3/__https://martinfowler.com/articles/201701-event-driven.html__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5EqSpKQ2$" target="_blank" rel="noopener"><span>Martin Fowler &mdash; What do you mean by &ldquo;event-driven&rdquo;?<i>The four patterns, including event-carrying state transfer, named properly. Twenty minutes that fixes your vocabulary permanently.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=Martin*Fowler*event*driven*architecture*the*many*meanings__;KysrKysrKw!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Gj4wx-F$" target="_blank" rel="noopener"><span>The Many Meanings of Event-Driven Architecture (talk)<i>The same material as a talk, with the failure modes of each pattern spelled out.</i></span><span class="dur">50 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://cloudevents.io/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5KuRJ-c5$" target="_blank" rel="noopener"><span>CloudEvents specification<i>A standard envelope with exactly the fields in the table above. Worth copying rather than inventing.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://docs.confluent.io/platform/current/schema-registry/fundamentals/avro.html__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Bu-IEC1$" target="_blank" rel="noopener"><span>Confluent &mdash; schema evolution and compatibility<i>The precise definitions of backward, forward and full compatibility, with what each permits.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@ArjanCodes__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Kk2obbL$" target="_blank" rel="noopener"><span>ArjanCodes &mdash; Pydantic models and boundaries<i>Practical Python for tolerant readers and versioned payloads.</i></span><span class="dur">20 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="connect">How the subtopics connect</h2>
+<p class="sub">Every idea on this sheet, assembled into the slice of BadgeDesk you ship this week. If you can
+narrate this drawing without notes &mdash; naming the guarantee at each hop and what happens when each box
+fails &mdash; Week 11 is done.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 540" role="img" aria-label="The finished BadgeDesk event flow. The gateway calls the core, which writes the access request row and an outbox row in one transaction. The outbox relay publishes to badge.requests. The provisioning worker consumes with manual commits and an idempotency ledger, calls the vendor with retries, dead-letters poison messages, and publishes badge.provisioned, which the notifier and the audit reconciler consume as separate groups. Consumer lag is alarmed in CloudWatch.">
+  <defs>
+    <marker id="s11-nc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s11-nb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s11-nr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <rect class="zone" x="202" y="44" width="214" height="192" rx="4"/>
+  <text class="mm c" x="206" y="38">ONE POSTGRES TRANSACTION</text>
+
+  <rect class="box-c" x="30" y="60" width="150" height="56" rx="3"/>
+  <text class="t mid" x="105" y="84">gateway</text>
+  <text class="mm mid" x="105" y="100">NESTJS &middot; SHEET 05</text>
+  <rect class="box-c" x="214" y="60" width="190" height="56" rx="3"/>
+  <text class="t mid" x="309" y="84">core</text>
+  <text class="mm mid" x="309" y="100">FASTAPI &middot; 202 IN 40 MS</text>
+  <rect class="box-a" x="470" y="60" width="250" height="56" rx="3"/>
+  <text class="t b mid" x="595" y="84">badge.requests</text>
+  <text class="mm mid" x="595" y="100">3 PARTITIONS &middot; KEY site_id</text>
+  <rect class="box" x="790" y="60" width="210" height="56" rx="3"/>
+  <text class="t mid" x="895" y="84">provisioning-worker</text>
+  <text class="mm mid" x="895" y="100">GROUP badge-provisioners</text>
+  <rect class="box-r" x="1030" y="60" width="140" height="56" rx="3"/>
+  <text class="t r mid" x="1100" y="84">badge.requests.dlq</text>
+  <text class="mm mid" x="1100" y="100">30-DAY RETENTION</text>
+
+  <rect class="box" x="214" y="170" width="190" height="56" rx="3"/>
+  <text class="t mid" x="309" y="194">PostgreSQL</text>
+  <text class="mm mid" x="309" y="210">access_requests + outbox</text>
+  <rect class="box-a" x="470" y="170" width="170" height="56" rx="3"/>
+  <text class="t b mid" x="555" y="194">outbox-relay</text>
+  <text class="mm mid" x="555" y="210">FOR UPDATE SKIP LOCKED</text>
+  <rect class="box-r" x="790" y="170" width="210" height="56" rx="3"/>
+  <text class="t r mid" x="895" y="194">Vendor access-control API</text>
+  <text class="mm mid" x="895" y="210">RETRY 1 / 4 / 16 S</text>
+
+  <rect class="box" x="214" y="280" width="190" height="56" rx="3"/>
+  <text class="t mid" x="309" y="304">audit-reconciler</text>
+  <text class="mm mid" x="309" y="320">GROUP badge-audit</text>
+  <rect class="box-a" x="470" y="280" width="250" height="56" rx="3"/>
+  <text class="t b mid" x="595" y="304">badge.provisioned</text>
+  <text class="mm mid" x="595" y="320">FAN-OUT &middot; TWO GROUPS</text>
+  <rect class="box" x="790" y="280" width="170" height="56" rx="3"/>
+  <text class="t mid" x="875" y="304">notifier</text>
+  <text class="mm mid" x="875" y="320">GROUP badge-notifiers</text>
+  <rect class="box" x="990" y="280" width="180" height="56" rx="3"/>
+  <text class="t mid" x="1080" y="304">Teams + webhook</text>
+  <text class="mm mid" x="1080" y="320">SIGNED &middot; SHEET 05</text>
+
+  <rect class="box" x="30" y="390" width="230" height="56" rx="3"/>
+  <text class="t mid" x="145" y="414">CloudWatch alarm</text>
+  <text class="mm mid" x="145" y="430">LAG + HEARTBEAT &middot; SHEET 07</text>
+  <rect class="box" x="470" y="390" width="250" height="56" rx="3"/>
+  <text class="t mid" x="595" y="414">processed_messages</text>
+  <text class="mm mid" x="595" y="430">IDEMPOTENCY LEDGER</text>
+
+  <path class="flow" d="M184,88 H208" marker-end="url(#s11-nc)"/>
+  <path class="flow" d="M309,116 V164" marker-end="url(#s11-nc)"/>
+  <path class="flow" d="M408,198 H464" marker-end="url(#s11-nc)"/>
+  <path class="flow-b" d="M555,166 V122" marker-end="url(#s11-nb)"/>
+  <path class="flow-b" d="M724,88 H784" marker-end="url(#s11-nb)"/>
+  <path class="flow" d="M895,116 V164" marker-end="url(#s11-nc)"/>
+  <path class="flow-r" d="M1004,88 H1024" marker-end="url(#s11-nr)"/>
+  <path class="flow-b" d="M786,94 H755 V308 H726" marker-end="url(#s11-nb)"/>
+  <path class="flow-b" d="M724,308 H784" marker-end="url(#s11-nb)"/>
+  <path class="flow" d="M964,308 H984" marker-end="url(#s11-nc)"/>
+  <path class="flow-b" d="M466,308 H408" marker-end="url(#s11-nb)"/>
+  <path class="flow" d="M786,108 H772 V416 H726" marker-end="url(#s11-nc)"/>
+  <path class="flow-b dash" d="M466,104 H440 V416 H266" marker-end="url(#s11-nb)"/>
+
+  <text class="mm b" x="600" y="150">PUBLISHED, NOT CALLED</text>
+  <text class="mm r" x="1030" y="52">AFTER 3 ATTEMPTS</text>
+  <text class="mm" x="790" y="376">CLAIM BEFORE THE VENDOR CALL</text>
+
+  <text class="mm b" x="30" y="490">BY SUNDAY: 202 IN 40 MS &middot; ONE OUTBOX TRANSACTION &middot; THREE CONSUMER GROUPS &middot; A DLQ WITH A REPLAY SCRIPT &middot; A LAG ALARM THAT FIRED ON PURPOSE</text>
+  <text class="mm r" x="30" y="514">TEST IT BY STOPPING THE VENDOR MOCK FOR TEN MINUTES. NOTHING MAY BE LOST, AND EVERYTHING MUST DRAIN WHEN IT RETURNS.</text>
+</svg>
+<figcaption>Drawing 11-N &mdash; the finished Week 11 slice. <b>Cyan</b> = synchronous and fast, inside your
+own VPC. <b>Brass</b> = the durable asynchronous spine. <b>Red</b> = the failure paths, all of them
+observable.</figcaption>
+</figure>
+
+<div class="grid g3">
+  <div class="card"><span class="cm">Ships &mdash; Mon/Tue</span><b class="ct">Kafka running, topics created</b>
+    <p>The Compose file up on the personal laptop, kafka-ui reachable on <code>:8080</code>, three topics
+    created with explicit partition counts, and a message produced and consumed from the CLI with the key
+    printed. Then delete a topic on purpose and recreate it, so the commands are in your fingers.</p></div>
+  <div class="card"><span class="cm">Ships &mdash; Wed/Thu</span><b class="ct">The seam, end to end</b>
+    <p><code>POST /access-requests</code> returns <code>202</code> in under 100 ms with a
+    <code>Location</code> header and never touches Kafka. The outbox relay publishes. The worker consumes
+    with manual commits, an idempotency claim and a mocked vendor that fails 20% of the time on purpose.</p></div>
+  <div class="card"><span class="cm">Ships &mdash; Saturday</span><b class="ct">Break it deliberately</b>
+    <p>Kill the worker mid-message and prove no request is lost. Publish a malformed message and watch it land
+    in the DLQ with headers. Stop the vendor mock, watch lag climb past the alarm, restart it, watch lag
+    drain. Then reset offsets and replay the day into a second consumer group.</p></div>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">In production</span>
+  <p>The part that always takes longer than expected is not Kafka, it is the API contract change. Every client
+  that expected a fully-populated badge in the <code>POST</code> response has to learn to poll, subscribe or
+  wait for a webhook, and the UI has to show a <i>provisioning</i> state that did not exist before &mdash;
+  including what it shows after ten minutes of a vendor outage. Do that part first, with the worker stubbed
+  out, and the messaging work becomes a two-day job instead of a two-week one.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="drill">Drill book</h2>
+<p class="sub">Answer out loud, standing up, without notes. Anything over 90 seconds is not ready. Draw
+11-A, 11-C and 11-G from memory as part of your answers &mdash; that is how these get asked.</p>
+
+<div class="drill">
+  <div class="dh">Drill &mdash; messaging fundamentals</div>
+  <details><summary>Why not just call the vendor API directly from the request handler?</summary>
+    <div class="ans"><p>Because their p99 is 30 seconds and 2% of calls fail, and a synchronous call makes
+    those numbers <i>my</i> availability numbers. Every worker in the API is parked on their socket, so their
+    slow day is my outage; and when the call fails the transaction rolls back and the request a human typed is
+    gone with no retry and no record. Writing a row plus an event and returning 202 in 40 ms means the intent
+    is durable in a system I operate, and a background consumer absorbs their latency with retries and a
+    dead-letter topic. The cost is honest: the API now promises the badge <i>will</i> exist, not that it does,
+    so the contract needs 202, a <code>Location</code> to poll, and a real state machine.</p></div></details>
+  <details><summary>At-least-once versus exactly-once &mdash; which do you build, and why?</summary>
+    <div class="ans"><p>At-least-once, always, plus an idempotent consumer. At-most-once loses messages
+    silently on any crash, which is unacceptable for a badge request. End-to-end exactly-once delivery does not
+    exist: if the network dies after I call the vendor but before the response arrives, I cannot know whether
+    the badge was created, so I must either risk losing it or risk duplicating it. Kafka's exactly-once
+    semantics are real but only cover consume-transform-produce inside Kafka, using the idempotent producer
+    and transactions &mdash; they cannot include a third-party HTTP call. So I deliver at-least-once and make
+    the second delivery a no-op, which gives exactly-once <i>effect</i>.</p></div></details>
+  <details><summary>How do you make a consumer idempotent?</summary>
+    <div class="ans"><p>Two layers. Mine: a <code>processed_messages</code> table keyed on
+    <code>(consumer_group, message_id)</code> where <code>message_id</code> is the producer-generated envelope
+    id, never the offset. I insert a claim row and let the unique constraint reject the duplicate &mdash; never
+    check-then-act, which races between pods. Theirs: an <code>Idempotency-Key</code> header on the vendor call
+    so their side collapses my retries onto one badge. The subtlety is a crash between the claim and the vendor
+    response, which leaves an <code>in_progress</code> row; I use a lease timeout so it can be retried without
+    two pods calling the vendor at once. Redis with <code>SET NX EX</code> works for cheap dedupe, but it evicts
+    and it is not durable, so I use Postgres when a duplicate means a physical badge.</p></div></details>
+  <details><summary>What does the Kafka partition key control?</summary>
+    <div class="ans"><p>Three things at once, which is why it is a design decision rather than a config value.
+    Placement: <code>hash(key) mod partitions</code> picks the partition. Ordering: records with the same key
+    are in one partition and therefore strictly ordered relative to each other; across partitions there is no
+    order at all. Distribution: a skewed key gives you a hot partition, whose consumer becomes the bottleneck
+    no matter how many pods you add. BadgeDesk keys on <code>site_id</code> so a revoke can never overtake the
+    grant for the same site and one worker owns a site's vendor session; the cost is that a large site's
+    throughput is capped at one consumer, and the escape hatch is a composite key like
+    <code>site_id:employee_id</code>. Also note you cannot add partitions later without breaking existing
+    key-to-partition affinity.</p></div></details>
+  <details><summary>A consumer dies halfway through a batch. What happens?</summary>
+    <div class="ans"><p>Depends entirely on when it committed. With auto-commit, offsets for everything
+    <code>poll()</code> returned may already be committed, so the unprocessed remainder is skipped &mdash;
+    silent loss. With manual commit after processing, nothing was committed, so after the session timeout the
+    coordinator reassigns the partition and the new owner re-reads from the last committed offset: every
+    message in that batch is re-delivered, including the ones already done. That is why the handler is
+    idempotent. In RabbitMQ the equivalent is the channel closing, which requeues every unacknowledged message
+    automatically. In both cases the correct fix is not to avoid duplicates but to make them harmless, and to
+    call <code>close()</code> on SIGTERM so a normal deploy commits and leaves the group cleanly instead of
+    waiting out a 45-second timeout.</p></div></details>
+  <details><summary>Why did my consumer group rebalance when I did not deploy anything?</summary>
+    <div class="ans"><p>Almost always because a consumer stopped calling <code>poll()</code> for longer than
+    <code>max.poll.interval.ms</code> &mdash; usually an in-process retry ladder or one very slow message
+    multiplied by a large <code>max.poll.records</code>. The coordinator declares the member dead, reassigns
+    its partitions, and its eventual commit is rejected, so the work repeats on another pod. Fixes: shrink the
+    batch, move long waits out of the handler by re-publishing to a delay topic instead of sleeping, use the
+    cooperative-sticky assignor so the whole group does not stop, and set <code>group.instance.id</code> for
+    static membership so rolling restarts do not each trigger a full rebalance. The other candidates are a
+    network partition to the coordinator and a broker restart.</p></div></details>
+  <details><summary>Queue or topic &mdash; how do you decide?</summary>
+    <div class="ans"><p>By asking whether the message is <i>work to be done once</i> or <i>a fact many people
+    may care about</i>. Work goes on a queue with competing consumers: one message, one taker, add consumers
+    for throughput. A fact goes on a topic with independent subscribers: every subscriber gets its own copy and
+    its own position, and adding a subscriber changes nothing for the others. In Kafka both are the same log
+    and the difference is only whether readers share a <code>group.id</code> &mdash; which is why getting it
+    wrong is silent. The tell is the name: <code>badge.requests</code> is work,
+    <code>badge.provisioned</code> is a fact. Building a fact as a work queue means two services steal each
+    other's messages and half your notifications disappear intermittently.</p></div></details>
+  <details><summary>What is the outbox pattern, and what problem does it solve?</summary>
+    <div class="ans"><p>It solves the dual-write problem: I must commit a row to Postgres and publish an event
+    to Kafka, and there is no shared transaction, so a crash between them leaves the two systems disagreeing
+    with nothing to detect it. Commit-then-publish loses the event; publish-then-commit produces an event for a
+    row that does not exist. So instead I insert the event into an <code>outbox</code> table in the <i>same</i>
+    transaction as the row &mdash; both commit or neither does &mdash; and a separate relay selects unsent rows
+    with <code>FOR UPDATE SKIP LOCKED</code>, publishes, and marks them sent. The relay still has two steps,
+    but its failure mode is a duplicate publish rather than a lost event, and duplicates are already handled by
+    the idempotent consumer. Log-based CDC with Debezium is the same pattern without polling.</p></div></details>
+  <details><summary>How do you handle a poison message?</summary>
+    <div class="ans"><p>Classify first. A permanent failure &mdash; unparseable bytes, a 400 or 422 from the
+    vendor, an unknown schema version &mdash; can never succeed, so retrying it forever just blocks the
+    partition and drives lag to infinity. It goes straight to <code>badge.requests.dlq</code> with the original
+    bytes untouched plus headers carrying the reason, attempt count, source topic, partition, offset and worker
+    build SHA, and then I commit the offset so the partition advances. A transient failure gets a bounded ladder
+    with exponential backoff and jitter &mdash; three attempts, then dead-letter. Two things make this real
+    rather than theatre: an alarm on the DLQ having any depth at all, and a replay script written in the same
+    week, because a dead-letter topic nobody reads is data loss with extra steps.</p></div></details>
+  <details><summary>Kafka or RabbitMQ for BadgeDesk badge provisioning? Defend it.</summary>
+    <div class="ans"><p>Kafka, for three specific reasons. Replay: when the provisioning worker has a bug I
+    want to fix it and re-read the last two days, which an acked RabbitMQ message cannot give me. Ordering by
+    key: partitioning on <code>site_id</code> guarantees a revoke never overtakes a grant, which RabbitMQ only
+    achieves with one queue and one consumer. Independent readers: the notifier, the reconciler and later the
+    policy indexer all need the same <code>badge.provisioned</code> stream, and consumer groups make that free.
+    What I give up is real: no per-message priority, so an emergency revoke cannot jump the queue, and no
+    native delayed delivery, so my retry ladder needs a delay topic. If the dominant requirement were
+    complex per-site routing, priorities and delays, RabbitMQ would be the better answer &mdash; and if the
+    team had nobody to operate a cluster, managed SQS plus SNS would beat both.</p></div></details>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="signoff">Sign-off</h2>
+<p class="sub">Tick only what you have run yourself, on your own machine, and can explain with the sheet
+closed.</p>
+
+<div class="signoff">
+  <div class="sh"><span>Week 11</span><span>Sheet 11</span></div>
+  <label><input type="checkbox"><span>Ran Kafka in KRaft mode with kafka-ui from the Compose file, and created <code>badge.requests</code> with three partitions from the CLI.</span></label>
+  <label><input type="checkbox"><span>Produced keyed messages from the console producer and consumed them printing key, partition and offset &mdash; and can explain why the same key always landed in the same partition, and why an unkeyed message did not.</span></label>
+  <label><input type="checkbox"><span>Changed <code>POST /access-requests</code> to return <code>202 Accepted</code> with a <code>Location</code> header, and added the <code>pending &rarr; provisioning &rarr; active | failed</code> state machine.</span></label>
+  <label><input type="checkbox"><span>Wrote the <code>outbox</code> table and insert both the request row and the event row in one transaction, with no Kafka client in the request handler.</span></label>
+  <label><input type="checkbox"><span>Built the outbox relay with <code>FOR UPDATE SKIP LOCKED</code>, ran two copies of it at once, and proved they never published the same row twice.</span></label>
+  <label><input type="checkbox"><span>Wrote the consumer with <code>enable.auto.commit=false</code> and a manual commit after processing, and can say what <code>commit(message=msg)</code> actually stores.</span></label>
+  <label><input type="checkbox"><span>Made the consumer idempotent with a <code>processed_messages</code> claim plus an <code>Idempotency-Key</code> on the vendor call, then killed the worker mid-message against a 20%-failure vendor mock and proved nothing was lost and nothing was provisioned twice.</span></label>
+  <label><input type="checkbox"><span>Published a malformed message, watched it land in <code>badge.requests.dlq</code> with the reason and offset in the headers, and then replayed it with a script after fixing the handler.</span></label>
+  <label><input type="checkbox"><span>Stopped the vendor mock for ten minutes, watched consumer lag climb with <code>kafka-consumer-groups --describe</code>, restarted it, and watched lag drain to zero.</span></label>
+  <label><input type="checkbox"><span>Started a third worker pod on a three-partition topic, then a fourth, and observed the rebalance and the idle consumer.</span></label>
+  <label><input type="checkbox"><span>Completed RabbitMQ tutorials 1&ndash;6 and can state, in one sentence each, what an exchange, a binding and <code>prefetch</code> do.</span></label>
+  <label><input type="checkbox"><span>Can draw Drawing 11-A from memory and answer all ten drill questions out loud in under 90 seconds each.</span></label>
+</div>
+
+
+</div><!-- /sheetbody -->
+</main>
+
+<aside class="toc" aria-label="Contents"></aside>
+</div>
+
+<script src="assets/js/nav-data.js"></script>
+<script src="assets/js/sheet.js"></script>
+</body>
+</html>

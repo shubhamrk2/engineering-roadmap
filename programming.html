@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheet 02 — Languages — BadgeDesk Roadmap</title>
+<link rel="stylesheet" href="assets/css/sheet.css">
+</head>
+<body data-sheet="02">
+<a class="skip" href="#main">Skip to sheet</a>
+<div class="wrap">
+<nav class="rail" aria-label="Sheet index"></nav>
+
+<main id="main">
+
+<header class="sheethead">
+  <div>
+    <div class="no">Sheet 02 &middot; Build the product &middot; Weeks 01&ndash;02</div>
+    <h1>Lang&shy;uages<span>.</span></h1>
+    <p class="lede">Python, JavaScript, TypeScript and Java. Four languages, but only <b>three ideas</b>:
+    when types are checked, how concurrency works, and how code is packaged and run. Learn those three and
+    the fourth language costs you a weekend instead of a month.</p>
+  </div>
+  <div class="specs">
+    <div><span>Weeks</span><span>01 &ndash; 02</span></div>
+    <div><span>Hours</span><span>28 &ndash; 32</span></div>
+    <div><span>Must know</span><span>Python, JS, TS</span></div>
+    <div><span>Nice to have</span><span>Java</span></div>
+    <div><span>Ships</span><span>CSV validator &times;3</span></div>
+  </div>
+</header>
+
+<div class="sheetbody">
+
+<!-- ===================================================================== -->
+<h2 id="map">Where the four languages sit</h2>
+<p class="sub">Before any syntax: understand the axes. Almost every language question in an interview is
+really a question about one of these two dimensions.</p>
+
+<figure class="dwg dwg--hero">
+<svg viewBox="0 0 1200 470" role="img" aria-label="A chart plotting Python, JavaScript, TypeScript and Java against how types are checked and when code is compiled.">
+  <defs><marker id="p-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  <marker id="p-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker></defs>
+
+  <line class="ln" x1="120" y1="400" x2="900" y2="400"/>
+  <line class="ln" x1="120" y1="400" x2="120" y2="50"/>
+  <line class="ln dash" x1="510" y1="50" x2="510" y2="400"/>
+  <line class="ln dash" x1="120" y1="225" x2="900" y2="225"/>
+
+  <text class="mm" x="120" y="424">TYPES CHECKED WHILE IT RUNS &nbsp;&rarr;&nbsp; TYPES CHECKED BEFORE IT RUNS</text>
+  <text class="mm" x="-330" y="42" transform="rotate(-90 0 0)" style="transform-box:view-box">RUNS FROM SOURCE &nbsp;&rarr;&nbsp; COMPILED FIRST</text>
+
+  <circle cx="215" cy="345" r="9" fill="#5fc4d8"/>
+  <text class="t" x="235" y="342">JavaScript</text>
+  <text class="mm" x="235" y="358">NO TYPE CHECK AT ALL &middot; JIT IN THE BROWSER</text>
+
+  <circle cx="305" cy="285" r="9" fill="#5fc4d8"/>
+  <text class="t" x="325" y="282">Python</text>
+  <text class="mm" x="325" y="298">TYPES EXIST AT RUNTIME &middot; HINTS ARE OPTIONAL</text>
+
+  <circle cx="640" cy="205" r="9" fill="#e8b33c"/>
+  <text class="t" x="660" y="202">TypeScript</text>
+  <text class="mm" x="660" y="218">CHECKED, THEN THE TYPES ARE DELETED</text>
+
+  <circle cx="800" cy="105" r="9" fill="#e8b33c"/>
+  <text class="t" x="820" y="102">Java</text>
+  <text class="mm" x="820" y="118">CHECKED &middot; COMPILED TO BYTECODE &middot; JIT ON JVM</text>
+
+  <path class="flow-b dash" d="M320,278 C420,250 520,230 630,210" marker-end="url(#p-ab)"/>
+  <text class="mm b" x="400" y="248">same journey, both directions: teams add types as systems grow</text>
+
+  <rect class="box" x="940" y="50" width="230" height="150" rx="3"/>
+  <text class="t" x="958" y="76">The only question</text>
+  <text class="m" x="958" y="100">When do you find out that</text>
+  <text class="m" x="958" y="118"><tspan class="b">request.employee_id</tspan> is</text>
+  <text class="m" x="958" y="136">actually <tspan class="r">None</tspan>?</text>
+  <text class="mm" x="958" y="162">JS / PYTHON: 2 A.M. IN PROD</text>
+  <text class="mm" x="958" y="178">TS / JAVA: IN YOUR EDITOR</text>
+
+  <rect class="box" x="940" y="220" width="230" height="180" rx="3"/>
+  <text class="t" x="958" y="246">Your order</text>
+  <text class="m" x="958" y="270">1 &nbsp;Python &mdash; backend + AI</text>
+  <text class="m" x="958" y="292">2 &nbsp;JavaScript &mdash; the runtime</text>
+  <text class="m" x="958" y="314">3 &nbsp;TypeScript &mdash; the type layer</text>
+  <text class="m" x="958" y="336">4 &nbsp;Java &mdash; read it, tour it</text>
+  <text class="mm" x="958" y="366">LEARN JS BEFORE TS. TS IS NOT</text>
+  <text class="mm" x="958" y="382">A LANGUAGE, IT IS A CHECKER.</text>
+
+  <circle class="bub" cx="215" cy="440" r="13"/><text class="bubt" x="215" y="444">1</text>
+  <path class="lead" d="M215,427 V356"/>
+  <circle class="bub" cx="640" cy="440" r="13"/><text class="bubt" x="640" y="444">2</text>
+  <path class="lead" d="M640,427 V216"/>
+  <circle class="bub" cx="880" cy="60" r="13"/><text class="bubt" x="880" y="64">3</text>
+  <path class="lead" d="M867,68 L812,98"/>
+</svg>
+<figcaption>Drawing 02-A &mdash; the language map. <b>Brass</b> = the compiler checks it for you.</figcaption>
+</figure>
+
+<div class="notes">
+  <div class="n"><b>1</b><div><b>Dynamic and untyped is fast to write and expensive to maintain.</b> JavaScript will
+  happily add a number to a string. That flexibility is why prototypes fly and why large JS codebases without
+  TypeScript get scary.</div></div>
+  <div class="n"><b>2</b><div><b>TypeScript is a checker, not a runtime.</b> <code>tsc</code> reads your types,
+  shouts at you, then throws every type away and emits plain JavaScript. Nothing about types exists when the
+  code runs. This single fact is the source of half of all TypeScript interview questions.</div></div>
+  <div class="n"><b>3</b><div><b>Java pays up front.</b> Compile step, verbose declarations, a JVM to start &mdash;
+  in exchange for catching whole classes of bug before deployment and for the best profiling tools in the
+  industry. You need to <i>read</i> it fluently; you do not need to be a Java expert.</div></div>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="python">Python</h2>
+<p class="sub">The language of the BadgeDesk core service and of everything on Sheet 12. Target: you can
+write idiomatic Python without looking things up, and explain what the interpreter is doing.</p>
+
+<h3 id="py-data">Data model and collections</h3>
+<p>Everything in Python is an object with a type and an identity. Variables are names bound to objects, not
+boxes holding values &mdash; which explains almost every surprising Python behaviour.</p>
+
+<div class="code" data-lang="python">
+<header><b>badgedesk/core/collections_tour.py</b></header>
+<pre><code># Names are labels. Two labels can point at the same list.
+sites = ["BLR-01", "BLR-02"]
+alias = sites
+alias.append("HYD-01")
+print(sites)                 # ['BLR-01', 'BLR-02', 'HYD-01']  the original changed too
+
+# The four containers you will use every day
+requests = ["req-1", "req-2", "req-2"]        # list  - ordered, changeable
+site_ids = {"BLR-01", "BLR-02"}               # set   - unique, fast membership test
+request  = {"id": "req-1", "site": "BLR-01"}  # dict  - key to value, ordered since 3.7
+window   = ("09:00", "18:00")                 # tuple - fixed, hashable, safe as a dict key
+
+print("req-2" in site_ids)   # False   set/dict membership is O(1)
+print("req-2" in requests)   # True    list membership scans, O(n)
+
+# Comprehensions: the idiomatic way to transform a collection
+pending = [r for r in requests if r.startswith("req")]
+by_id   = {r["id"]: r for r in [request]}
+unique  = {r for r in requests}               # {'req-1', 'req-2'}
+
+# Unpacking and starred assignment
+first, *rest = requests
+print(first, rest)           # req-1 ['req-2', 'req-2']
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the mutable default argument</span>
+  <p>The default value is evaluated <b>once</b>, when the function is defined, and then shared by every call.
+  This is asked in interviews constantly.</p>
+</div>
+
+<div class="code" data-lang="python">
+<header><b>the classic trap</b></header>
+<pre><code>def add_site(site, seen=[]):        # WRONG - one list, shared forever
+    seen.append(site)
+    return seen
+
+add_site("BLR-01")                  # ['BLR-01']
+add_site("HYD-01")                  # ['BLR-01', 'HYD-01']   surprise
+
+def add_site(site, seen=None):      # RIGHT
+    seen = [] if seen is None else seen
+    seen.append(site)
+    return seen
+</code></pre>
+</div>
+
+<h3 id="py-classes">Classes, dataclasses and the shape of your domain</h3>
+<p>BadgeDesk has an <code>AccessRequest</code>. In Python you model it with a dataclass, which gives you a
+constructor, equality and a readable <code>repr</code> for free.</p>
+
+<div class="code" data-lang="python">
+<header><b>badgedesk/core/models.py</b></header>
+<pre><code>from dataclasses import dataclass, field
+from datetime import date
+from enum import Enum
+
+class Status(str, Enum):            # str mixin -> serialises straight to JSON
+    PENDING   = "pending"
+    APPROVED  = "approved"
+    REJECTED  = "rejected"
+
+@dataclass
+class AccessRequest:
+    id: str
+    employee_id: str
+    site_id: str
+    starts_on: date
+    ends_on: date
+    status: Status = Status.PENDING
+    reasons: list[str] = field(default_factory=list)   # never `= []` here either
+
+    def __post_init__(self):
+        if self.ends_on &lt; self.starts_on:
+            raise ValueError("ends_on must not be before starts_on")
+
+    @property
+    def duration_days(self) -&gt; int:
+        return (self.ends_on - self.starts_on).days + 1
+
+    def approve(self) -&gt; None:
+        if self.status is not Status.PENDING:
+            raise RuntimeError(f"cannot approve a request that is {self.status}")
+        self.status = Status.APPROVED
+
+r = AccessRequest("req-1", "e-902", "BLR-01", date(2026, 9, 1), date(2026, 9, 5))
+print(r.duration_days)   # 5
+print(r)                 # AccessRequest(id='req-1', employee_id='e-902', ...)
+</code></pre>
+</div>
+
+<h3 id="py-errors">Errors, and why you raise your own</h3>
+<div class="code" data-lang="python">
+<header><b>badgedesk/core/errors.py</b></header>
+<pre><code>class BadgeDeskError(Exception):
+    """Base class - every custom error inherits from this."""
+
+class PolicyViolation(BadgeDeskError):
+    def __init__(self, site_id: str, rule: str):
+        super().__init__(f"{site_id} refuses this request: {rule}")
+        self.site_id, self.rule = site_id, rule
+
+def check(request, policy):
+    if request.duration_days &gt; policy["max_days"]:
+        raise PolicyViolation(request.site_id, "max_days")
+
+try:
+    check(r, {"max_days": 3})
+except PolicyViolation as e:            # catch the specific type, never bare `except:`
+    print(e.rule)                       # max_days
+except BadgeDeskError:
+    print("some other BadgeDesk problem")
+finally:
+    print("always runs - close files, release locks")
+</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p>&ldquo;What is the difference between <code>except Exception</code> and a bare <code>except:</code>?&rdquo;
+  A bare except also swallows <code>KeyboardInterrupt</code> and <code>SystemExit</code>, so your service
+  cannot be stopped cleanly. Always catch the narrowest type you can actually handle.</p>
+</div>
+
+<h3 id="py-async">Async, threads, and the GIL</h3>
+<p>The most valuable Python topic for a backend interview. The rule in one line: <b>async helps when you are
+waiting; processes help when you are computing.</b></p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 380" role="img" aria-label="Comparison of blocking sequential calls versus asyncio concurrency for three network calls, and a note that the GIL prevents threads from helping CPU-bound work.">
+  <defs><marker id="p2-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker></defs>
+
+  <text class="mm" x="30" y="30">BLOCKING &mdash; def check_three_sites()</text>
+  <rect class="box-r" x="30" y="44" width="230" height="26" rx="2"/><text class="m" x="44" y="62">wait for site BLR-01 &middot; 300 ms</text>
+  <rect class="box-r" x="262" y="44" width="230" height="26" rx="2"/><text class="m" x="276" y="62">wait for site BLR-02 &middot; 300 ms</text>
+  <rect class="box-r" x="494" y="44" width="230" height="26" rx="2"/><text class="m" x="508" y="62">wait for site HYD-01 &middot; 300 ms</text>
+  <line class="ln" x1="30" y1="84" x2="724" y2="84"/>
+  <text class="mm r" x="740" y="63">TOTAL 900 MS &mdash; THE CPU DID NOTHING FOR 0.9 S</text>
+
+  <text class="mm" x="30" y="132">ASYNC &mdash; async def check_three_sites() with asyncio.gather</text>
+  <rect class="box-c" x="30" y="146" width="230" height="26" rx="2"/><text class="m" x="44" y="164">await BLR-01</text>
+  <rect class="box-c" x="30" y="176" width="230" height="26" rx="2"/><text class="m" x="44" y="194">await BLR-02</text>
+  <rect class="box-c" x="30" y="206" width="230" height="26" rx="2"/><text class="m" x="44" y="224">await HYD-01</text>
+  <line class="ln" x1="30" y1="244" x2="260" y2="244"/>
+  <text class="mm c" x="276" y="196">TOTAL ~300 MS &mdash; ONE THREAD, THREE WAITS OVERLAPPED</text>
+  <text class="mm" x="276" y="216">THE EVENT LOOP PARKS EACH COROUTINE AT ITS `await`</text>
+  <text class="mm" x="276" y="232">AND RUNS THE NEXT ONE UNTIL A SOCKET IS READY</text>
+
+  <rect class="box" x="30" y="282" width="560" height="76" rx="3"/>
+  <text class="t" x="46" y="306">CPU-bound work: async and threads both fail</text>
+  <text class="m" x="46" y="328">The GIL lets only one thread run Python bytecode at a time. Hashing 10,000</text>
+  <text class="m" x="46" y="346">badge photos needs multiprocessing, or a library that releases the GIL (numpy).</text>
+
+  <rect class="box-a" x="612" y="282" width="558" height="76" rx="3"/>
+  <text class="t b" x="628" y="306">The one-line answer to give</text>
+  <text class="m" x="628" y="328">&ldquo;I/O-bound and lots of it &rarr; asyncio. I/O-bound and the library is blocking &rarr;</text>
+  <text class="m" x="628" y="346">threads. CPU-bound &rarr; multiprocessing or push it out of Python entirely.&rdquo;</text>
+</svg>
+<figcaption>Drawing 02-B &mdash; concurrency in Python. <b>Red</b> = time the machine wasted.</figcaption>
+</figure>
+
+<div class="code" data-lang="python">
+<header><b>badgedesk/core/policy_client.py</b></header>
+<pre><code>import asyncio, httpx
+
+async def fetch_policy(client: httpx.AsyncClient, site_id: str) -&gt; dict:
+    r = await client.get(f"/sites/{site_id}/policy", timeout=2.0)
+    r.raise_for_status()
+    return r.json()
+
+async def fetch_all(site_ids: list[str]) -&gt; list[dict]:
+    async with httpx.AsyncClient(base_url="<a href="https://urldefense.com/v3/__http://policy-svc__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5A8sx2HK$">http://policy-svc</a>") as client:
+        tasks = [fetch_policy(client, s) for s in site_ids]        # nothing runs yet
+        return await asyncio.gather(*tasks, return_exceptions=True) # now they all run
+
+policies = asyncio.run(fetch_all(["BLR-01", "BLR-02", "HYD-01"]))
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil</span>
+  <p>Calling a blocking function inside an <code>async def</code> freezes the entire event loop and every
+  other request the process is serving. <code>time.sleep(2)</code>, <code>requests.get(...)</code> and
+  <code>psycopg2</code> in an async handler are all the same bug. Use <code>asyncio.sleep</code>,
+  <code>httpx</code>, <code>asyncpg</code> &mdash; or push the blocking call to
+  <code>asyncio.to_thread(...)</code>.</p>
+</div>
+
+<h3 id="py-env">Environments, packaging and tests</h3>
+<div class="code" data-lang="bash">
+<header><b>terminal &mdash; every Python project starts this way</b></header>
+<pre><code>python -m venv .venv                  # an isolated interpreter for this project only
+.\.venv\Scripts\Activate.ps1          # Windows PowerShell
+source .venv/bin/activate             # WSL / macOS / Linux
+
+pip install fastapi httpx pytest
+pip freeze > requirements.txt         # pin what you actually have
+pytest -q                             # run tests
+python -m pytest --cov=badgedesk      # with coverage
+deactivate
+</code></pre>
+</div>
+
+<div class="code" data-lang="python">
+<header><b>tests/test_models.py</b></header>
+<pre><code>import pytest
+from datetime import date
+from badgedesk.core.models import AccessRequest, Status
+
+def test_duration_is_inclusive():
+    r = AccessRequest("req-1", "e-902", "BLR-01", date(2026, 9, 1), date(2026, 9, 5))
+    assert r.duration_days == 5
+
+def test_backwards_dates_are_rejected():
+    with pytest.raises(ValueError, match="ends_on"):
+        AccessRequest("req-2", "e-902", "BLR-01", date(2026, 9, 5), date(2026, 9, 1))
+
+@pytest.mark.parametrize("status", [Status.APPROVED, Status.REJECTED])
+def test_cannot_approve_twice(status):
+    r = AccessRequest("r", "e", "s", date(2026, 9, 1), date(2026, 9, 2), status=status)
+    with pytest.raises(RuntimeError):
+        r.approve()
+</code></pre>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; Python</div>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@coreyms/playlists__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5KJ_uef9$" target="_blank" rel="noopener"><span>Corey Schafer &mdash; Python Tutorials playlist<i>The single best structured Python series. Watch OOP, decorators, generators and context managers.</i></span><span class="dur">series</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=ArjanCodes*dataclasses*python__;Kys!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Nc2gUjk$" target="_blank" rel="noopener"><span>ArjanCodes &mdash; dataclasses and design in Python<i>Idiomatic, senior-level Python design decisions rather than syntax.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=mCoding*asyncio*event*loop*python__;KysrKw!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5PL_kWoR$" target="_blank" rel="noopener"><span>mCoding &mdash; asyncio and the event loop<i>Short and precise. The clearest explanation of what <code>await</code> actually does.</i></span><span class="dur">15 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=*22Python*GIL*22*explained*multiprocessing*vs*threading__;JSslKysrKw!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5AUDH4de$" target="_blank" rel="noopener"><span>The GIL, threading vs multiprocessing<i>Watch one before your first backend interview. Expect the question.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://docs.python.org/3/tutorial/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5DZBmIpG$" target="_blank" rel="noopener"><span>The official Python tutorial<i>Faster than any video for reference. Chapters 3&ndash;9 cover everything above.</i></span><span class="dur">docs</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="javascript">JavaScript</h2>
+<p class="sub">The runtime that Next.js, Express and NestJS all sit on. You cannot understand TypeScript,
+React or Node until you understand the event loop and closures.</p>
+
+<h3 id="js-loop">The event loop &mdash; the thing everything else rests on</h3>
+<p>JavaScript has one thread. It never waits. When you call something asynchronous, the runtime hands the
+work to the host (browser or Node), keeps running, and later pushes a callback onto a queue.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 420" role="img" aria-label="The JavaScript event loop: call stack, Web APIs, microtask queue for promises, and macrotask queue for timers, with the loop moving work back onto the stack only when it is empty.">
+  <defs><marker id="p3-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  <marker id="p3-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker></defs>
+
+  <rect class="box-c" x="40" y="60" width="220" height="200" rx="3"/>
+  <text class="t mid" x="150" y="86">Call stack</text>
+  <text class="mm mid" x="150" y="102">ONE FRAME AT A TIME</text>
+  <rect class="box" x="60" y="118" width="180" height="30" rx="2"/><text class="m mid" x="150" y="138">approve()</text>
+  <rect class="box" x="60" y="154" width="180" height="30" rx="2"/><text class="m mid" x="150" y="174">handleClick()</text>
+  <rect class="box" x="60" y="190" width="180" height="30" rx="2"/><text class="m mid" x="150" y="210">(main)</text>
+  <text class="mm mid" x="150" y="244">BLOCK THIS AND THE PAGE FREEZES</text>
+
+  <rect class="box" x="330" y="60" width="240" height="110" rx="3"/>
+  <text class="t mid" x="450" y="86">Host APIs</text>
+  <text class="m mid" x="450" y="110">fetch &middot; setTimeout &middot; fs.readFile</text>
+  <text class="mm mid" x="450" y="132">RUN OUTSIDE YOUR THREAD, IN C++</text>
+  <text class="mm mid" x="450" y="150">THIS IS WHY ONE THREAD IS ENOUGH</text>
+
+  <rect class="box-a" x="330" y="200" width="240" height="70" rx="3"/>
+  <text class="t b mid" x="450" y="226">Microtask queue</text>
+  <text class="m mid" x="450" y="248">.then / await / queueMicrotask</text>
+  <text class="mm mid" x="450" y="264">DRAINED COMPLETELY, EVERY TIME</text>
+
+  <rect class="box" x="330" y="300" width="240" height="70" rx="3"/>
+  <text class="t mid" x="450" y="326">Macrotask queue</text>
+  <text class="m mid" x="450" y="348">setTimeout &middot; setInterval &middot; I/O</text>
+  <text class="mm mid" x="450" y="364">ONE PER TURN OF THE LOOP</text>
+
+  <circle class="box-c" cx="720" cy="215" r="66"/>
+  <text class="t c mid" x="720" y="210">Event loop</text>
+  <text class="mm mid" x="720" y="230">IS THE STACK</text>
+  <text class="mm mid" x="720" y="246">EMPTY?</text>
+
+  <path class="flow" d="M264,140 H326" marker-end="url(#p3-ac)"/>
+  <path class="flow-b" d="M574,235 H650" marker-end="url(#p3-ab)"/>
+  <path class="flow" d="M574,335 C620,335 660,290 668,262" marker-end="url(#p3-ac)"/>
+  <path class="flow" d="M700,150 C640,60 400,20 150,44" marker-end="url(#p3-ac)"/>
+  <text class="mm c" x="330" y="34">PUSHED BACK ONTO THE STACK ONLY WHEN IT IS EMPTY</text>
+
+  <rect class="box" x="840" y="60" width="330" height="310" rx="3"/>
+  <text class="t" x="858" y="86">Predict the output</text>
+  <text class="m" x="858" y="112">console.log('1')</text>
+  <text class="m" x="858" y="132">setTimeout(() =&gt; console.log('2'), 0)</text>
+  <text class="m" x="858" y="152">Promise.resolve().then(() =&gt; console.log('3'))</text>
+  <text class="m" x="858" y="172">console.log('4')</text>
+  <line class="ln" x1="858" y1="192" x2="1152" y2="192"/>
+  <text class="t b" x="858" y="218">1 &nbsp; 4 &nbsp; 3 &nbsp; 2</text>
+  <text class="m" x="858" y="248">Synchronous lines run first (1, 4). Then the</text>
+  <text class="m" x="858" y="268">whole microtask queue drains (3). Only then</text>
+  <text class="m" x="858" y="288">does one macrotask run (2) &mdash; which is why</text>
+  <text class="m" x="858" y="308">setTimeout(fn, 0) is never actually zero.</text>
+  <text class="mm r" x="858" y="340">IF YOU CANNOT EXPLAIN THIS, YOU WILL</text>
+  <text class="mm r" x="858" y="356">FAIL A FRONTEND OR NODE SCREEN.</text>
+</svg>
+<figcaption>Drawing 02-C &mdash; the event loop. <b>Brass</b> = the microtask queue, which always wins.</figcaption>
+</figure>
+
+<h3 id="js-closures">Closures, scope and <code>this</code></h3>
+<p>A closure is a function that remembers the variables where it was <i>defined</i>, not where it is called.
+It is how React hooks, middleware and every &ldquo;private variable&rdquo; pattern in JS work.</p>
+
+<div class="code" data-lang="javascript">
+<header><b>badgedesk-web/lib/rateLimit.js</b></header>
+<pre><code>// `hits` lives on after makeLimiter returns - that is the closure.
+function makeLimiter(maxPerMinute) {
+  const hits = new Map();
+  return function allow(employeeId) {
+    const now = Date.now();
+    const recent = (hits.get(employeeId) ?? []).filter(t =&gt; now - t &lt; 60_000);
+    if (recent.length &gt;= maxPerMinute) return false;
+    recent.push(now);
+    hits.set(employeeId, recent);
+    return true;
+  };
+}
+
+const allow = makeLimiter(3);
+allow('e-902');  // true, true, true, then false
+
+// The loop trap: var is function-scoped, let is block-scoped
+for (var i = 0; i &lt; 3; i++) setTimeout(() =&gt; console.log(i), 0);   // 3 3 3
+for (let j = 0; j &lt; 3; j++) setTimeout(() =&gt; console.log(j), 0);   // 0 1 2
+
+// `this` depends on how a function is CALLED, unless it is an arrow function
+const service = {
+  name: 'badgedesk',
+  regular() { return this.name; },            // 'badgedesk'
+  arrow: () =&gt; (typeof this === 'undefined' ? 'no this' : 'outer this'),
+};
+const loose = service.regular;
+loose();                                       // undefined - `this` was lost
+service.regular.call({ name: 'bound' });       // 'bound'
+</code></pre>
+</div>
+
+<h3 id="js-async">Promises and async/await</h3>
+<div class="code" data-lang="javascript">
+<header><b>badgedesk-web/lib/api.js</b></header>
+<pre><code>async function getRequest(id) {
+  const res = await fetch(`/api/requests/${id}`);
+  if (!res.ok) throw new Error(`request ${id} failed: ${res.status}`);
+  return res.json();
+}
+
+// Sequential - 3 round trips, one after another. Usually a mistake.
+const a = await getRequest('req-1');
+const b = await getRequest('req-2');
+
+// Concurrent - all three start immediately
+const [x, y, z] = await Promise.all([
+  getRequest('req-1'), getRequest('req-2'), getRequest('req-3'),
+]);
+
+// Promise.all rejects if ANY reject. allSettled never rejects:
+const results = await Promise.allSettled([getRequest('req-1'), getRequest('bad')]);
+results.forEach(r =&gt; console.log(r.status));   // 'fulfilled' | 'rejected'
+
+// Timeouts are not built in - you race them
+const withTimeout = (p, ms) =&gt; Promise.race([
+  p,
+  new Promise((_, reject) =&gt; setTimeout(() =&gt; reject(new Error('timeout')), ms)),
+]);
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil</span>
+  <p><code>array.forEach(async (x) =&gt; { await save(x); })</code> does not wait for anything. <code>forEach</code>
+  ignores the returned promise, so the function finishes before a single save completes. Use a
+  <code>for...of</code> loop for sequential work, or <code>Promise.all(array.map(...))</code> for concurrent work.</p>
+</div>
+
+<h3 id="js-coercion">Equality, coercion and the parts to avoid</h3>
+<div class="code" data-lang="javascript">
+<header><b>the questions that get asked</b></header>
+<pre><code>0 == '0'          // true   - == converts types first
+0 === '0'         // false  - === compares type and value. Always use ===.
+null == undefined // true
+null === undefined// false
+NaN === NaN       // false  - use Number.isNaN(x)
+[] + {}           // '[object Object]'
+typeof null       // 'object'  - a 30-year-old bug that can never be fixed
+
+// ?? only falls back on null/undefined. || falls back on ANY falsy value.
+const limit1 = 0 || 10;   // 10  - probably a bug, 0 was a real answer
+const limit2 = 0 ?? 10;   // 0   - correct
+
+// Optional chaining stops at null/undefined instead of throwing
+const site = request?.employee?.defaultSite?.id;   // undefined, not a TypeError
+</code></pre>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; JavaScript</div>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=Philip*Roberts*What*the*heck*is*the*event*loop*anyway__;KysrKysrKysr!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5AsQ00jJ$" target="_blank" rel="noopener"><span>Philip Roberts &mdash; What the heck is the event loop anyway?<i>The single most useful JavaScript talk ever given. Watch it twice.</i></span><span class="dur">26 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=Jake*Archibald*in*the*loop*microtasks*macrotasks__;KysrKysr!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5BBWNLbY$" target="_blank" rel="noopener"><span>Jake Archibald &mdash; In The Loop<i>The sequel: microtasks, rendering and why <code>setTimeout(fn,0)</code> lies.</i></span><span class="dur">35 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@WebDevSimplified__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5C1hzVEz$" target="_blank" rel="noopener"><span>Web Dev Simplified<i>Short, focused videos on closures, <code>this</code>, promises and array methods.</i></span><span class="dur">10 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5E6w7H4c$" target="_blank" rel="noopener"><span>MDN JavaScript Guide<i>The reference. Bookmark it now; you will use it every week for the next three months.</i></span><span class="dur">docs</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="typescript">TypeScript &mdash; and how it differs from JavaScript</h2>
+<p class="sub">Same runtime, same semantics, one extra step. Every difference below exists only at compile
+time.</p>
+
+<div class="vs">
+  <div>
+    <div class="vh">JavaScript</div>
+    <div class="code" data-lang="javascript"><header><b>approve.js</b></header><pre><code>function approve(request, approver) {
+  if (request.status !== 'pending') {
+    throw new Error('not pending');
+  }
+  request.status = 'aproved';   // typo
+  request.approvedBy = approver.id;
+  return request;
+}
+
+// Runs fine. Ships fine. Breaks the
+// dashboard three days later because
+// nothing has status 'aproved'.
+approve({ status: 'pending' }, { id: 1 });
+</code></pre></div>
+    <div class="vb"><p><b>The error surfaces:</b> in production, as a bug report.</p></div>
+  </div>
+  <div>
+    <div class="vh">TypeScript</div>
+    <div class="code" data-lang="typescript"><header><b>approve.ts</b></header><pre><code>type Status = 'pending' | 'approved' | 'rejected';
+
+interface AccessRequest {
+  id: string;
+  status: Status;
+  approvedBy?: string;
+}
+
+function approve(req: AccessRequest, by: string): AccessRequest {
+  if (req.status !== 'pending') throw new Error('not pending');
+  req.status = 'aproved';
+  //           ~~~~~~~~~ Type '"aproved"' is not
+  //           assignable to type 'Status'.
+  req.approvedBy = by;
+  return req;
+}
+</code></pre></div>
+    <div class="vb"><p><b>The error surfaces:</b> red squiggle, before you save the file.</p></div>
+  </div>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Dimension</th><th>JavaScript</th><th>TypeScript</th></tr></thead>
+<tbody>
+<tr><td>What it is</td><td>A language with a runtime</td><td>A static type checker that emits JavaScript</td></tr>
+<tr><td>At runtime</td><td>What you wrote runs</td><td>Identical JS &mdash; all types are erased by <code>tsc</code></td></tr>
+<tr><td>Build step</td><td>None</td><td><code>tsc</code>, or esbuild/SWC inside Next.js and Vite</td></tr>
+<tr><td>Catches</td><td>Nothing until it executes</td><td>Wrong shapes, missing fields, null misuse, bad refactors</td></tr>
+<tr><td>Does not catch</td><td>&mdash;</td><td>Anything from outside: API responses, <code>JSON.parse</code>, <code>any</code>, <code>as</code> casts</td></tr>
+<tr><td>Refactoring</td><td>Search and hope</td><td>Rename a field and the compiler lists every call site</td></tr>
+<tr><td>Cost</td><td>Zero</td><td>Build config, slower CI, occasional fights with library types</td></tr>
+<tr><td>Use it when</td><td>A script, a one-file prototype</td><td>Anything more than one person will touch &mdash; so, always</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="ts-core">The type features you must be able to use</h3>
+<div class="code" data-lang="typescript">
+<header><b>badgedesk-web/types/domain.ts</b></header>
+<pre><code>// 1. Unions and literal types model states precisely
+type Status = 'pending' | 'approved' | 'rejected';
+
+// 2. Interfaces describe object shapes; type aliases can describe anything
+interface Employee { id: string; name: string; managerId?: string }
+type Ids = Employee['id'][];               // string[]
+
+// 3. Generics: one function, many types, no `any`
+async function getJson&lt;T&gt;(url: string): Promise&lt;T&gt; {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(res.statusText);
+  return res.json() as Promise&lt;T&gt;;
+}
+const emp = await getJson&lt;Employee&gt;('/api/employees/e-902');   // emp is Employee
+
+// 4. Narrowing: the compiler follows your `if`s
+function label(r: AccessRequest): string {
+  if (r.status === 'approved') return `approved by ${r.approvedBy ?? 'unknown'}`;
+  return r.status;                          // narrowed to 'pending' | 'rejected'
+}
+
+// 5. Discriminated unions - the most useful pattern in TypeScript
+type Result =
+  | { ok: true;  request: AccessRequest }
+  | { ok: false; error: string };
+
+function handle(res: Result) {
+  if (res.ok) return res.request.id;        // .error does not exist here
+  return res.error;                         // .request does not exist here
+}
+
+// 6. Utility types save you writing derivative types by hand
+type Draft   = Omit&lt;AccessRequest, 'id' | 'status'&gt;;
+type Patch   = Partial&lt;AccessRequest&gt;;
+type Frozen  = Readonly&lt;AccessRequest&gt;;
+type ById    = Record&lt;string, AccessRequest&gt;;
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the boundary lie</span>
+  <p><code>const emp = await getJson&lt;Employee&gt;(url)</code> does <b>not</b> verify anything. If the API returns
+  <code>{"nmae": "..."}</code> TypeScript still believes it is an <code>Employee</code>, because the check
+  happened at compile time and the data arrived at run time. At every boundary &mdash; HTTP responses,
+  <code>JSON.parse</code>, form input, environment variables &mdash; validate with <b>Zod</b> and derive the
+  type from the validator, so there is exactly one source of truth.</p>
+</div>
+
+<div class="code" data-lang="typescript">
+<header><b>the correct boundary</b></header>
+<pre><code>import { z } from 'zod';
+
+const EmployeeSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  managerId: z.string().optional(),
+});
+type Employee = z.infer&lt;typeof EmployeeSchema&gt;;    // type derived FROM the check
+
+async function getEmployee(id: string): Promise&lt;Employee&gt; {
+  const res = await fetch(`/api/employees/${id}`);
+  return EmployeeSchema.parse(await res.json());   // throws on a bad shape, at runtime
+}
+</code></pre>
+</div>
+
+<div class="drill">
+  <div class="dh">Drill &mdash; TypeScript</div>
+  <details><summary>Is TypeScript faster than JavaScript at runtime?</summary>
+    <div class="ans"><p>No. It compiles to the same JavaScript and the types are removed, so runtime
+    performance is identical. It makes <i>developers</i> faster, not programs.</p></div></details>
+  <details><summary>What is the difference between <code>interface</code> and <code>type</code>?</summary>
+    <div class="ans"><p><code>interface</code> describes object shapes and supports declaration merging
+    (you can reopen and extend it, which is how libraries let you augment their types). <code>type</code>
+    can alias anything &mdash; unions, tuples, primitives, mapped and conditional types &mdash; but cannot be
+    merged. Practical rule: interfaces for object contracts, types for everything else.</p></div></details>
+  <details><summary>What does <code>any</code> cost you, and what should you use instead?</summary>
+    <div class="ans"><p><code>any</code> switches off checking for that value and everything it touches, so it
+    spreads. Use <code>unknown</code> instead: it accepts anything but forces you to narrow before use, which
+    keeps the compiler working for you.</p></div></details>
+  <details><summary>What is <code>strict</code> mode in <code>tsconfig.json</code> and should you use it?</summary>
+    <div class="ans"><p>It enables <code>strictNullChecks</code>, <code>noImplicitAny</code> and friends. Yes,
+    always, from day one &mdash; <code>strictNullChecks</code> alone eliminates the largest single category of
+    JavaScript production bugs. Retrofitting it onto a large codebase later is painful.</p></div></details>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; TypeScript</div>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=Matt*Pocock*typescript*generics*tutorial__;KysrKw!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5N3aGY2R$" target="_blank" rel="noopener"><span>Matt Pocock &mdash; TypeScript tutorials<i>The clearest TypeScript teacher working today. Start with generics and narrowing.</i></span><span class="dur">short</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=Fireship*typescript*in*100*seconds__;KysrKw!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5FADaUTX$" target="_blank" rel="noopener"><span>Fireship &mdash; TypeScript in 100 Seconds<i>The orientation video. Watch before anything else.</i></span><span class="dur">2 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.typescriptlang.org/docs/handbook/2/everyday-types.html__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5BEG5oa9$" target="_blank" rel="noopener"><span>The TypeScript Handbook<i>Genuinely good official docs. &ldquo;Everyday Types&rdquo; and &ldquo;Narrowing&rdquo; cover 80% of daily use.</i></span><span class="dur">docs</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="java">Java &mdash; the tour</h2>
+<p class="sub">Two goals only: read Java confidently, and be able to say how it differs from Python when
+asked. Do not try to become a Java developer in Week 02.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 210" role="img" aria-label="Java build pipeline from source to bytecode to the JVM with JIT compilation, compared with Python which runs from source directly.">
+  <defs><marker id="p4-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+  <marker id="p4-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker></defs>
+  <text class="mm b" x="30" y="28">JAVA</text>
+  <rect class="box-a" x="30" y="40" width="190" height="52" rx="3"/><text class="t mid" x="125" y="63">Request.java</text><text class="mm mid" x="125" y="79">SOURCE</text>
+  <rect class="box-a" x="270" y="40" width="190" height="52" rx="3"/><text class="t mid" x="365" y="63">javac</text><text class="mm mid" x="365" y="79">TYPE CHECK + COMPILE</text>
+  <rect class="box-a" x="510" y="40" width="190" height="52" rx="3"/><text class="t mid" x="605" y="63">Request.class</text><text class="mm mid" x="605" y="79">PORTABLE BYTECODE</text>
+  <rect class="box-a" x="750" y="40" width="190" height="52" rx="3"/><text class="t mid" x="845" y="63">JVM</text><text class="mm mid" x="845" y="79">INTERPRETS, THEN JITs</text>
+  <rect class="box" x="990" y="40" width="180" height="52" rx="3"/><text class="t mid" x="1080" y="63">Native speed</text><text class="mm mid" x="1080" y="79">AFTER WARM-UP</text>
+  <path class="flow-b" d="M224,66 H264" marker-end="url(#p4-ab)"/>
+  <path class="flow-b" d="M464,66 H504" marker-end="url(#p4-ab)"/>
+  <path class="flow-b" d="M704,66 H744" marker-end="url(#p4-ab)"/>
+  <path class="flow-b" d="M944,66 H984" marker-end="url(#p4-ab)"/>
+
+  <text class="mm c" x="30" y="140">PYTHON</text>
+  <rect class="box-c" x="30" y="152" width="190" height="52" rx="3"/><text class="t mid" x="125" y="175">models.py</text><text class="mm mid" x="125" y="191">SOURCE</text>
+  <rect class="box-c" x="270" y="152" width="430" height="52" rx="3"/><text class="t mid" x="485" y="175">CPython compiles to bytecode in memory and interprets it</text><text class="mm mid" x="485" y="191">NO SEPARATE BUILD STEP &middot; NO TYPE CHECK &middot; ERRORS APPEAR WHEN THE LINE RUNS</text>
+  <rect class="box-c" x="750" y="152" width="190" height="52" rx="3"/><text class="t mid" x="845" y="175">Output</text><text class="mm mid" x="845" y="191">SLOWER, ALWAYS READY</text>
+  <path class="flow" d="M224,178 H264" marker-end="url(#p4-ac)"/>
+  <path class="flow" d="M704,178 H744" marker-end="url(#p4-ac)"/>
+  <text class="mm" x="990" y="172">MYPY IS OPTIONAL AND SITS</text>
+  <text class="mm" x="990" y="188">OUTSIDE THIS PIPELINE</text>
+</svg>
+<figcaption>Drawing 02-D &mdash; two build pipelines. The extra brass box is the whole trade-off.</figcaption>
+</figure>
+
+<div class="code" data-lang="java">
+<header><b>BadgeDesk.java &mdash; the same domain in Java</b></header>
+<pre><code>import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
+
+enum Status { PENDING, APPROVED, REJECTED }
+
+// A record is Java's dataclass: immutable, with equals/hashCode/toString free.
+record AccessRequest(String id, String employeeId, String siteId,
+                     LocalDate startsOn, LocalDate endsOn, Status status) {
+
+    AccessRequest {                                   // compact constructor = validation
+        if (endsOn.isBefore(startsOn))
+            throw new IllegalArgumentException("ends_on must not be before starts_on");
+    }
+
+    long durationDays() {
+        return java.time.temporal.ChronoUnit.DAYS.between(startsOn, endsOn) + 1;
+    }
+
+    AccessRequest approve() {                         // returns a NEW record
+        if (status != Status.PENDING)
+            throw new IllegalStateException("cannot approve a " + status + " request");
+        return new AccessRequest(id, employeeId, siteId, startsOn, endsOn, Status.APPROVED);
+    }
+}
+
+public class BadgeDesk {
+    public static void main(String[] args) {
+        var requests = List.of(
+            new AccessRequest("req-1", "e-902", "BLR-01",
+                LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 5), Status.PENDING),
+            new AccessRequest("req-2", "e-903", "HYD-01",
+                LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 2), Status.APPROVED));
+
+        // Streams are Java's list comprehension
+        List&lt;String&gt; longPending = requests.stream()
+            .filter(r -&gt; r.status() == Status.PENDING)
+            .filter(r -&gt; r.durationDays() &gt; 3)
+            .map(AccessRequest::id)
+            .collect(Collectors.toList());
+
+        System.out.println(longPending);               // [req-1]
+    }
+}
+</code></pre>
+</div>
+
+<div class="vs">
+  <div>
+    <div class="vh">Python thinking</div>
+    <div class="vb">
+      <p>Duck typing &mdash; if it has <code>.approve()</code>, it works. One file can hold anything.
+      Errors are exceptions you may ignore. <code>list</code>, <code>dict</code>, <code>set</code> are
+      built into the syntax. Concurrency means asyncio; the GIL blocks true CPU parallelism in threads.</p>
+    </div>
+  </div>
+  <div>
+    <div class="vh">Java thinking</div>
+    <div class="vb">
+      <p>Nominal typing &mdash; it works only if it declares the interface. One public class per file,
+      packages mirror folders. Checked exceptions must be declared or caught. Collections come from
+      <code>java.util</code> with explicit interfaces. Threads are real OS threads, so <code>synchronized</code>,
+      locks and the memory model actually matter.</p>
+    </div>
+  </div>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; Java</div>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@amigoscode__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5D2FODVy$" target="_blank" rel="noopener"><span>Amigoscode &mdash; Java and Spring Boot<i>Fast, practical, backend-oriented. The right depth for a two-week tour.</i></span><span class="dur">series</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@Telusko__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Enw-F3G$" target="_blank" rel="noopener"><span>Telusko &mdash; Java tutorials<i>Very approachable full Java course if you want one long structured run.</i></span><span class="dur">long</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=java*streams*api*tutorial*in*depth__;KysrKys!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5O1OBevZ$" target="_blank" rel="noopener"><span>Java Streams API in depth<i>Streams are what modern Java code looks like. Learn these before syntax details.</i></span><span class="dur">40 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="fourway">All four, side by side</h2>
+<p class="sub">The same task in four languages: take a list of access requests and return the IDs of pending
+requests longer than three days.</p>
+
+<div class="grid g2">
+<div class="code" data-lang="python"><header><b>Python</b></header><pre><code>long_pending = [
+    r.id for r in requests
+    if r.status is Status.PENDING
+    and r.duration_days &gt; 3
+]</code></pre></div>
+<div class="code" data-lang="javascript"><header><b>JavaScript</b></header><pre><code>const longPending = requests
+  .filter(r =&gt; r.status === 'pending')
+  .filter(r =&gt; durationDays(r) &gt; 3)
+  .map(r =&gt; r.id);</code></pre></div>
+<div class="code" data-lang="typescript"><header><b>TypeScript</b></header><pre><code>const longPending: string[] = requests
+  .filter((r: AccessRequest) =&gt; r.status === 'pending')
+  .filter(r =&gt; durationDays(r) &gt; 3)
+  .map(r =&gt; r.id);</code></pre></div>
+<div class="code" data-lang="java"><header><b>Java</b></header><pre><code>List&lt;String&gt; longPending = requests.stream()
+    .filter(r -&gt; r.status() == Status.PENDING)
+    .filter(r -&gt; r.durationDays() &gt; 3)
+    .map(AccessRequest::id)
+    .toList();</code></pre></div>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th></th><th>Python</th><th>JavaScript</th><th>TypeScript</th><th>Java</th></tr></thead>
+<tbody>
+<tr><td>Typing</td><td>Dynamic, strong</td><td>Dynamic, weak</td><td>Static (compile only)</td><td>Static, strong</td></tr>
+<tr><td>Runs via</td><td>CPython interpreter</td><td>V8 / Node</td><td>Compiled to JS, then V8</td><td>javac &rarr; JVM &rarr; JIT</td></tr>
+<tr><td>Concurrency</td><td>asyncio; GIL limits threads</td><td>Single-threaded event loop</td><td>Same as JS</td><td>Real threads, virtual threads (21+)</td></tr>
+<tr><td>Package manager</td><td>pip + venv, uv, poetry</td><td>npm / pnpm</td><td>npm / pnpm</td><td>Maven / Gradle</td></tr>
+<tr><td>Null handling</td><td><code>None</code>, checked at runtime</td><td><code>null</code> and <code>undefined</code></td><td><code>strictNullChecks</code> at compile time</td><td><code>null</code>, <code>Optional&lt;T&gt;</code></td></tr>
+<tr><td>Error style</td><td>Exceptions, all unchecked</td><td>Exceptions + rejected promises</td><td>Same as JS</td><td>Checked and unchecked exceptions</td></tr>
+<tr><td>You use it for</td><td>API core, data, AI</td><td>Browser, tooling</td><td>All frontend and Node services</td><td>Reading legacy and enterprise services</td></tr>
+<tr><td>Web framework</td><td>FastAPI, Django</td><td>Express</td><td>NestJS, Next.js</td><td>Spring Boot</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="connect">How the subtopics connect</h2>
+<p class="sub">The Week 01&ndash;02 build. Every idea above appears exactly once, in one small program you
+will actually finish.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 300" role="img" aria-label="The CSV validator pipeline: read a file, parse rows, validate against a policy, fetch site policies concurrently, and write a report, showing which language concept each stage exercises.">
+  <defs><marker id="p5-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  <marker id="p5-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker></defs>
+
+  <rect class="box" x="30" y="70" width="170" height="66" rx="3"/><text class="t mid" x="115" y="96">requests.csv</text><text class="mm mid" x="115" y="112">400 ROWS, SOME BAD</text>
+  <rect class="box-c" x="242" y="70" width="170" height="66" rx="3"/><text class="t mid" x="327" y="96">parse rows</text><text class="mm mid" x="327" y="112">FILE I/O &middot; COMPREHENSIONS</text>
+  <rect class="box-c" x="454" y="70" width="170" height="66" rx="3"/><text class="t mid" x="539" y="96">build models</text><text class="mm mid" x="539" y="112">DATACLASS &middot; ENUM &middot; VALIDATE</text>
+  <rect class="box-c" x="666" y="70" width="200" height="66" rx="3"/><text class="t mid" x="766" y="96">fetch site policies</text><text class="mm mid" x="766" y="112">ASYNC &middot; GATHER &middot; TIMEOUT</text>
+  <rect class="box-c" x="908" y="70" width="170" height="66" rx="3"/><text class="t mid" x="993" y="96">apply rules</text><text class="mm mid" x="993" y="112">CUSTOM EXCEPTIONS</text>
+
+  <rect class="box-a" x="454" y="204" width="382" height="60" rx="3"/><text class="t b mid" x="645" y="228">report.json + non-zero exit code</text><text class="mm mid" x="645" y="246">TESTED WITH PYTEST &middot; PARAMETRISED &middot; RUNS IN CI ON SHEET 09</text>
+
+  <rect class="box-r" x="908" y="204" width="262" height="60" rx="3"/><text class="t r mid" x="1039" y="228">rejected rows</text><text class="mm mid" x="1039" y="246">WITH THE REASON, NEVER SILENTLY DROPPED</text>
+
+  <path class="flow" d="M204,103 H236" marker-end="url(#p5-ac)"/>
+  <path class="flow" d="M416,103 H448" marker-end="url(#p5-ac)"/>
+  <path class="flow" d="M628,103 H660" marker-end="url(#p5-ac)"/>
+  <path class="flow" d="M870,103 H902" marker-end="url(#p5-ac)"/>
+  <path class="flow" d="M993,140 V174 H645 V198" marker-end="url(#p5-ac)"/>
+  <path class="flow-r" d="M1039,140 V198" marker-end="url(#p5-ar)"/>
+  <text class="mm" x="30" y="180">THEN REBUILD THE SAME PROGRAM IN TYPESCRIPT AND IN JAVA. THE THIRD TIME TAKES AN HOUR &mdash; THAT IS THE POINT OF THE EXERCISE.</text>
+</svg>
+<figcaption>Drawing 02-E &mdash; the Week 01&ndash;02 deliverable. Ships into Sheet 04 as the seed of the core service.</figcaption>
+</figure>
+
+<div class="panel panel--real">
+  <span class="ph">In production</span>
+  <p>This is not a toy. Bulk import from a spreadsheet is how every access-management system on earth is
+  actually fed, and &ldquo;row 214 was silently dropped&rdquo; is a real incident. Writing the rejected-rows
+  path is the part that makes it engineering rather than a script.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="drill">Drill book</h2>
+<p class="sub">Answer out loud, standing up, without notes. If an answer takes more than 90 seconds, it is
+not ready.</p>
+
+<div class="drill">
+  <div class="dh">Language fundamentals</div>
+  <details><summary>Explain the GIL and when it actually hurts you.</summary>
+    <div class="ans"><p>The Global Interpreter Lock lets only one thread execute Python bytecode at a time in
+    CPython. It does not hurt I/O-bound work, because a thread releases the lock while waiting on a socket
+    or disk. It completely blocks CPU-bound scaling across threads &mdash; for that you need
+    <code>multiprocessing</code>, a C extension that releases the GIL, or another runtime.</p></div></details>
+  <details><summary>What is the output order, and why: sync log, <code>setTimeout(fn, 0)</code>, <code>Promise.resolve().then</code>, sync log?</summary>
+    <div class="ans"><p>Both synchronous logs first, then the promise callback, then the timeout. Synchronous
+    code runs to completion on the stack; then the entire microtask queue drains; then exactly one macrotask
+    runs. A promise callback always beats a zero-delay timer.</p></div></details>
+  <details><summary>What is a closure and where have you used one?</summary>
+    <div class="ans"><p>A function bundled with the scope it was defined in, so it can still read those
+    variables after the outer function has returned. Real uses: the rate limiter above, Express middleware
+    configured with options, React <code>useState</code> setters, and any module-private counter.</p></div></details>
+  <details><summary>Why does <code>this</code> break when you pass a method as a callback?</summary>
+    <div class="ans"><p>In a regular function <code>this</code> is bound at call time by how it is called, not
+    where it is defined. Detaching a method loses the receiver, so <code>this</code> becomes
+    <code>undefined</code> in strict mode. Fix with an arrow function, which captures <code>this</code>
+    lexically, or with <code>.bind()</code>.</p></div></details>
+  <details><summary>Does adding types to your Python make it faster?</summary>
+    <div class="ans"><p>No. CPython ignores annotations at runtime; they are metadata for tools such as mypy,
+    Pyright and Pydantic. Pydantic uses them to validate, which is a runtime cost, not a saving. Types buy
+    correctness and editor support, not speed.</p></div></details>
+  <details><summary>You must add one language feature to a five-year-old JavaScript codebase to reduce bugs. What and why?</summary>
+    <div class="ans"><p>TypeScript with <code>strictNullChecks</code>, adopted file by file with
+    <code>allowJs</code> so nothing has to stop. The largest category of runtime errors in long-lived JS is
+    reading a property of something that is null or undefined, and that check finds them statically without
+    rewriting logic.</p></div></details>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="signoff">Sign-off</h2>
+<p class="sub">Tick only what you have typed yourself and can explain without the sheet open.</p>
+
+<div class="signoff">
+  <div class="sh"><span>Weeks 01&ndash;02</span><span>Sheet 02</span></div>
+  <label><input type="checkbox"><span>Wrote the mutable-default-argument bug from memory and explained why it happens.</span></label>
+  <label><input type="checkbox"><span>Built the <code>AccessRequest</code> dataclass with validation and three passing pytest tests.</span></label>
+  <label><input type="checkbox"><span>Converted three sequential HTTP calls to <code>asyncio.gather</code> and measured the difference.</span></label>
+  <label><input type="checkbox"><span>Can state when to use asyncio, threads and multiprocessing in one sentence each.</span></label>
+  <label><input type="checkbox"><span>Predicted the output of the four-line event-loop puzzle correctly before running it.</span></label>
+  <label><input type="checkbox"><span>Wrote a closure-based rate limiter and explained where the state lives.</span></label>
+  <label><input type="checkbox"><span>Converted a JS file to TypeScript with <code>strict: true</code> and fixed every error without using <code>any</code>.</span></label>
+  <label><input type="checkbox"><span>Used a discriminated union and a Zod schema at an API boundary.</span></label>
+  <label><input type="checkbox"><span>Read and explained the Java record + streams example line by line.</span></label>
+  <label><input type="checkbox"><span>Shipped the CSV validator in Python, then TypeScript, then Java.</span></label>
+</div>
+
+</div><!-- /sheetbody -->
+</main>
+
+<aside class="toc" aria-label="Contents"></aside>
+</div>
+
+<script src="assets/js/nav-data.js"></script>
+<script src="assets/js/sheet.js"></script>
+</body>
+</html>

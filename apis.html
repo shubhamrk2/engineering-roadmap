@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheet 05 &mdash; APIs &mdash; BadgeDesk Roadmap</title>
+<link rel="stylesheet" href="assets/css/sheet.css">
+</head>
+<body data-sheet="05">
+<a class="skip" href="#main">Skip to sheet</a>
+<div class="wrap">
+<nav class="rail" aria-label="Sheet index"></nav>
+
+<main id="main">
+
+<header class="sheethead">
+  <div>
+    <div class="no">Sheet 05 &middot; Build the product &middot; Weeks 05&ndash;06</div>
+    <h1>APIs<span>.</span></h1>
+    <p class="lede">REST, GraphQL and webhooks &mdash; the three ways BadgeDesk services talk to each other
+    and to the outside world. The thread running through all three: <b>an API is a promise you make to
+    someone whose code you cannot change.</b> Design is mostly about making promises you can keep while the
+    system underneath changes.</p>
+  </div>
+  <div class="specs">
+    <div><span>Weeks</span><span>05 &ndash; 06</span></div>
+    <div><span>Hours</span><span>26 &ndash; 30</span></div>
+    <div><span>Must know</span><span>REST, HTTP</span></div>
+    <div><span>Nice to have</span><span>gRPC</span></div>
+    <div><span>Pairs with</span><span><a href="backend.html">Sheet 04</a></span></div>
+  </div>
+</header>
+
+<div class="sheetbody">
+
+<!-- ===================================================================== -->
+<h2 id="contract">The API is the contract</h2>
+<p class="sub">BadgeDesk has three different API styles, and each one is there for a reason. Being able to
+say <i>why</i> each boundary uses what it uses is the difference between reciting definitions and designing
+systems.</p>
+
+<figure class="dwg dwg--hero">
+<svg viewBox="0 0 1200 430" role="img" aria-label="The BadgeDesk API surface: browser and mobile clients call a GraphQL gateway, which calls the core service and notifier over REST; the CCure vendor calls an inbound webhook receiver, which publishes to Kafka for the provisioning worker; core writes to PostgreSQL and notifier uses Redis.">
+  <defs>
+    <marker id="s05-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s05-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s05-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <text class="mm" x="30" y="40">CLIENTS</text>
+  <text class="mm c" x="300" y="40">EDGE &mdash; PUBLIC, AUTHENTICATED, VERSIONED</text>
+  <text class="mm" x="610" y="40">INTERNAL SERVICES</text>
+  <text class="mm" x="920" y="40">STORES AND CONSUMERS</text>
+
+  <rect class="box" x="30" y="90" width="200" height="56" rx="3"/>
+  <text class="t mid" x="130" y="113">Next.js web</text>
+  <text class="mm mid" x="130" y="129">MANY SCREENS, ONE ROUND TRIP</text>
+
+  <rect class="box" x="30" y="180" width="200" height="56" rx="3"/>
+  <text class="t mid" x="130" y="203">Mobile app</text>
+  <text class="mm mid" x="130" y="219">SLOW NETWORK, TIGHT PAYLOADS</text>
+
+  <rect class="box-r" x="30" y="300" width="200" height="56" rx="3"/>
+  <text class="t r mid" x="130" y="323">CCure</text>
+  <text class="mm mid" x="130" y="339">VENDOR &mdash; CALLS US</text>
+
+  <rect class="box-c" x="300" y="135" width="240" height="56" rx="3"/>
+  <text class="t mid" x="420" y="158">NestJS gateway</text>
+  <text class="mm mid" x="420" y="174">GRAPHQL &middot; :4000</text>
+
+  <rect class="box-a" x="300" y="300" width="240" height="56" rx="3"/>
+  <text class="t b mid" x="420" y="323">Webhook receiver</text>
+  <text class="mm mid" x="420" y="339">POST /webhooks/ccure</text>
+
+  <rect class="box-c" x="610" y="90" width="240" height="56" rx="3"/>
+  <text class="t mid" x="730" y="113">core</text>
+  <text class="mm mid" x="730" y="129">FASTAPI &middot; REST &middot; :8000</text>
+
+  <rect class="box-c" x="610" y="180" width="240" height="56" rx="3"/>
+  <text class="t mid" x="730" y="203">notifier</text>
+  <text class="mm mid" x="730" y="219">EXPRESS &middot; REST &middot; :4100</text>
+
+  <rect class="box-a" x="610" y="300" width="240" height="56" rx="3"/>
+  <text class="t b mid" x="730" y="323">Kafka</text>
+  <text class="mm mid" x="730" y="339">access.provisioned</text>
+
+  <rect class="box" x="920" y="90" width="250" height="56" rx="3"/>
+  <text class="t mid" x="1045" y="113">PostgreSQL</text>
+  <text class="mm mid" x="1045" y="129">SYSTEM OF RECORD</text>
+
+  <rect class="box" x="920" y="180" width="250" height="56" rx="3"/>
+  <text class="t mid" x="1045" y="203">Redis</text>
+  <text class="mm mid" x="1045" y="219">IDEMPOTENCY KEYS &middot; RATE LIMITS</text>
+
+  <rect class="box" x="920" y="300" width="250" height="56" rx="3"/>
+  <text class="t mid" x="1045" y="323">provisioning-worker</text>
+  <text class="mm mid" x="1045" y="339">CONSUMER GROUP</text>
+
+  <path class="flow" d="M234,118 H270 V163 H296" marker-end="url(#s05-ac)"/>
+  <path class="flow" d="M234,208 H270 V163 H296" marker-end="url(#s05-ac)"/>
+  <text class="mm c" x="246" y="110">GRAPHQL</text>
+
+  <path class="flow" d="M544,150 H575 V118 H606" marker-end="url(#s05-ac)"/>
+  <path class="flow" d="M544,176 H575 V208 H606" marker-end="url(#s05-ac)"/>
+  <text class="mm c" x="548" y="142">REST</text>
+
+  <path class="flow-r" d="M234,328 H296" marker-end="url(#s05-ar)"/>
+  <text class="mm r" x="238" y="320">WEBHOOK</text>
+
+  <path class="flow-b" d="M544,328 H606" marker-end="url(#s05-ab)"/>
+  <path class="flow-b" d="M606,132 H586 V314 H606" marker-end="url(#s05-ab)"/>
+  <text class="mm b" x="556" y="376">PUBLISH</text>
+
+  <path class="flow" d="M854,118 H916" marker-end="url(#s05-ac)"/>
+  <path class="flow" d="M854,208 H916" marker-end="url(#s05-ac)"/>
+  <path class="flow-b" d="M854,328 H916" marker-end="url(#s05-ab)"/>
+
+  <line class="ln dash" x1="20" y1="386" x2="1180" y2="386"/>
+  <text class="mm" x="30" y="408">GRAPHQL AT THE EDGE BECAUSE MANY DIFFERENT SCREENS WANT DIFFERENT SHAPES OF THE SAME DATA &middot; REST BETWEEN SERVICES BECAUSE THE CALLERS ARE FEW, KNOWN, AND WANT CACHING AND SIMPLE OPERATIONAL TOOLS</text>
+  <text class="mm" x="30" y="424">WEBHOOKS INBOUND BECAUSE CCURE DECIDES WHEN SOMETHING HAPPENS, NOT US &middot; KAFKA BEHIND THE WEBHOOK SO A SLOW CONSUMER CANNOT MAKE US TIME OUT ON THE VENDOR&rsquo;S CALL</text>
+
+  <circle class="bub" cx="420" cy="66" r="13"/><text class="bubt" x="420" y="70">1</text>
+  <path class="lead" d="M420,79 V131"/>
+  <circle class="bub" cx="730" cy="66" r="13"/><text class="bubt" x="730" y="70">2</text>
+  <path class="lead" d="M730,79 V86"/>
+  <circle class="bub" cx="130" cy="272" r="13"/><text class="bubt" x="130" y="276">3</text>
+  <path class="lead" d="M130,285 V296"/>
+  <circle class="bub" cx="890" cy="328" r="13"/><text class="bubt" x="890" y="332">4</text>
+  <path class="lead" d="M877,328 H858"/>
+</svg>
+<figcaption>Drawing 05-A &mdash; the BadgeDesk API surface. <b>Cyan</b> = we control both ends.
+<b>Brass</b> = asynchronous. <b>Red</b> = someone else's system, calling us.</figcaption>
+</figure>
+
+<div class="notes">
+  <div class="n"><b>1</b><div><b>GraphQL sits at the edge only.</b> A request list screen wants request plus
+  employee name plus site name; a mobile summary wants three fields. Rather than growing a
+  <code>?include=</code> parameter forever, let the client ask. This is the one place where the client
+  variety justifies the extra machinery.</div></div>
+  <div class="n"><b>2</b><div><b>REST between internal services.</b> There are two callers, both ours, and
+  they want boring things: HTTP caching, a URL in a log line, <code>curl</code> in an incident. GraphQL
+  service-to-service buys you nothing here and costs you tooling.</div></div>
+  <div class="n"><b>3</b><div><b>Webhooks are inbound because we are not in charge of the timing.</b> A door
+  controller provisions a badge when it provisions it. Polling CCure every thirty seconds to find out would
+  waste 99% of the calls and still be slower.</div></div>
+  <div class="n"><b>4</b><div><b>The webhook receiver does almost nothing.</b> Verify the signature, write the
+  event, publish to Kafka, return <code>202</code>. All real work happens in the worker. If the receiver did
+  the provisioning inline, a slow database would make CCure time out and retry, and now you have duplicates.
+  See <a href="messaging.html">Sheet 11</a>.</div></div>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="rest">REST</h2>
+<p class="sub">REST is not &ldquo;JSON over HTTP&rdquo;. It is a set of constraints, and the useful ones in
+practice are: resources have URLs, HTTP verbs mean what they say, and the server does not remember you
+between calls.</p>
+
+<h3 id="rest-resources">Resources, not remote procedure calls</h3>
+<p>The most common design mistake is naming URLs after functions. If your endpoints read like method names,
+you have written RPC and given it a REST-shaped costume.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Do not</th><th>Do</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td><code>POST /getAccessRequests</code></td><td><code>GET /v1/access-requests</code></td><td>A read should be a <code>GET</code>: cacheable, safe to retry, visible in logs and metrics as a read</td></tr>
+<tr><td><code>POST /createRequest</code></td><td><code>POST /v1/access-requests</code></td><td>The verb is already in the method. Repeating it in the path adds nothing.</td></tr>
+<tr><td><code>POST /approveRequest?id=42</code></td><td><code>POST /v1/access-requests/42/approve</code></td><td>Some operations genuinely are actions. Model them as a sub-resource of the thing they act on.</td></tr>
+<tr><td><code>GET /v1/request/42</code></td><td><code>GET /v1/access-requests/42</code></td><td>Collections are plural, consistently. Mixed conventions cost people minutes every day.</td></tr>
+<tr><td><code>GET /v1/employee/1/site/2/request</code></td><td><code>GET /v1/access-requests?employee_id=1&amp;site_id=2</code></td><td>Nest one level at most. Deeper hierarchies encode a relationship that will change.</td></tr>
+<tr><td><code>DELETE /v1/access-requests/42</code></td><td><code>POST /v1/access-requests/42/revoke</code></td><td>Audit-relevant records are never really deleted. Say what actually happens.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why the verbs matter operationally</span>
+  <p><code>GET</code> is safe (changes nothing) and idempotent. <code>PUT</code> and <code>DELETE</code> are
+  idempotent but not safe. <code>POST</code> is neither. This is not pedantry &mdash; every proxy, CDN,
+  browser, load balancer and retry library in the world reads those properties and acts on them. A
+  <code>GET</code> that mutates data <i>will</i> eventually be fired by a link prefetcher, a crawler or a
+  monitoring probe, and you will have no idea why records changed at 03:00.</p>
+</div>
+
+<h3 id="rest-status">Status codes that mean something</h3>
+<figure class="dwg">
+<svg viewBox="0 0 1200 360" role="img" aria-label="HTTP status code bands: 2xx success, 3xx redirection, 4xx caller error which should not be retried except 408 and 429, and 5xx server error which should be retried with exponential backoff. Specific codes are mapped to BadgeDesk operations.">
+  <rect class="box-c" x="30" y="56" width="270" height="270" rx="3"/>
+  <text class="t c mid" x="165" y="82">2xx &mdash; it worked</text>
+  <line class="ln" x1="46" y1="94" x2="284" y2="94"/>
+  <text class="m" x="46" y="118">200 OK</text>
+  <text class="mm" x="46" y="134">GET A REQUEST, LIST REQUESTS</text>
+  <text class="m" x="46" y="162">201 Created</text>
+  <text class="mm" x="46" y="178">NEW REQUEST &mdash; SET Location:</text>
+  <text class="m" x="46" y="206">202 Accepted</text>
+  <text class="mm" x="46" y="222">QUEUED, NOT DONE YET.</text>
+  <text class="mm" x="46" y="238">THE WEBHOOK RECEIVER&rsquo;S ANSWER.</text>
+  <text class="m" x="46" y="266">204 No Content</text>
+  <text class="mm" x="46" y="282">SUCCEEDED, NOTHING TO SAY</text>
+  <text class="mm b" x="46" y="310">RETRY? NOT NEEDED.</text>
+
+  <rect class="box-r" x="320" y="56" width="420" height="270" rx="3"/>
+  <text class="t r mid" x="530" y="82">4xx &mdash; the caller is wrong</text>
+  <line class="ln" x1="336" y1="94" x2="724" y2="94"/>
+  <text class="m" x="336" y="118">400 Bad Request</text>
+  <text class="mm" x="336" y="134">MALFORMED &mdash; ends_on IS NOT A DATE</text>
+  <text class="m" x="336" y="162">401 Unauthorized</text>
+  <text class="mm" x="336" y="178">WE DO NOT KNOW WHO YOU ARE. BADLY NAMED &mdash;</text>
+  <text class="mm" x="336" y="194">IT MEANS UNAUTHENTICATED.</text>
+  <text class="m" x="336" y="222">403 Forbidden</text>
+  <text class="mm" x="336" y="238">WE KNOW WHO YOU ARE. YOU MAY NOT.</text>
+  <text class="m" x="336" y="266">404 / 409 / 422 / 429</text>
+  <text class="mm" x="336" y="282">NOT FOUND &middot; CONFLICT &middot; UNPROCESSABLE &middot; TOO MANY</text>
+  <text class="mm r" x="336" y="310">RETRY? NO &mdash; THE SAME CALL WILL FAIL AGAIN. EXCEPT 408 AND 429.</text>
+
+  <rect class="box-a" x="760" y="56" width="410" height="270" rx="3"/>
+  <text class="t b mid" x="965" y="82">5xx &mdash; we are wrong</text>
+  <line class="ln" x1="776" y1="94" x2="1154" y2="94"/>
+  <text class="m" x="776" y="118">500 Internal Server Error</text>
+  <text class="mm" x="776" y="134">AN UNHANDLED EXCEPTION. NEVER LEAK THE STACK.</text>
+  <text class="m" x="776" y="162">502 Bad Gateway</text>
+  <text class="mm" x="776" y="178">CCURE RETURNED SOMETHING WE CANNOT USE</text>
+  <text class="m" x="776" y="206">503 Service Unavailable</text>
+  <text class="mm" x="776" y="222">OVERLOADED OR DRAINING &mdash; SEND Retry-After</text>
+  <text class="m" x="776" y="250">504 Gateway Timeout</text>
+  <text class="mm" x="776" y="266">CCURE DID NOT ANSWER IN TIME</text>
+  <text class="mm b" x="776" y="310">RETRY? YES &mdash; EXPONENTIAL BACKOFF PLUS JITTER, AND ONLY IF THE CALL IS IDEMPOTENT.</text>
+
+  <text class="mm" x="30" y="348">THE TEST: A 4xx MEANS &ldquo;DO NOT SEND THAT AGAIN&rdquo;. A 5xx MEANS &ldquo;SEND IT AGAIN IN A MOMENT&rdquo;. IF YOU RETURN 200 WITH {&ldquo;error&rdquo;: &hellip;} IN THE BODY, EVERY CLIENT LIBRARY, PROXY AND DASHBOARD BELIEVES YOU SUCCEEDED.</text>
+</svg>
+<figcaption>Drawing 05-B &mdash; status code bands and retry semantics. <b>Red</b> = do not retry.
+<b>Brass</b> = retry with backoff.</figcaption>
+</figure>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p>&ldquo;What is the difference between 401 and 403?&rdquo; &mdash; 401 means we could not establish who
+  you are: no token, expired token, bad signature; the correct response includes a
+  <code>WWW-Authenticate</code> header and the fix is to authenticate. 403 means we know exactly who you are
+  and you are not allowed; re-authenticating changes nothing. Bonus point: some systems return 404 instead
+  of 403 for resources you may not see, so that the existence of the record is not leaked.</p>
+  <p>&ldquo;400 or 422?&rdquo; &mdash; 400 for syntactically broken requests (not valid JSON, a date that is
+  not a date); 422 for well-formed requests that break a business rule (<code>ends_on</code> before
+  <code>starts_on</code>). Plenty of good APIs use 400 for both and that is defensible; what matters is
+  being consistent and saying which you chose.</p>
+</div>
+
+<h3 id="rest-idempotency">Idempotency, and why <code>POST</code> needs help</h3>
+<p>A mobile client submits an access request. The server creates it, then the connection drops before the
+response arrives. The client retries. Without protection, the employee now has two identical pending
+requests and an approver has to work out which is real.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 400" role="img" aria-label="Idempotency key flow: the first request stores its key and response in Redis before returning; a retry with the same key finds the stored response and returns it without re-executing the work, so only one access request is created.">
+  <defs><marker id="s05c-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  <marker id="s05c-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  <marker id="s05c-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker></defs>
+
+  <text class="mm" x="90" y="34">MOBILE CLIENT</text>
+  <text class="mm" x="450" y="34">core SERVICE</text>
+  <text class="mm" x="790" y="34">REDIS</text>
+  <text class="mm" x="1040" y="34">POSTGRES</text>
+  <line class="ln dash" x1="130" y1="44" x2="130" y2="372"/>
+  <line class="ln dash" x1="490" y1="44" x2="490" y2="372"/>
+  <line class="ln dash" x1="830" y1="44" x2="830" y2="372"/>
+  <line class="ln dash" x1="1080" y1="44" x2="1080" y2="372"/>
+
+  <path class="flow" d="M134,72 H486" marker-end="url(#s05c-ac)"/>
+  <text class="mm c" x="150" y="66">1 &mdash; POST /v1/access-requests &nbsp; Idempotency-Key: 8f2c1a...</text>
+
+  <path class="flow" d="M494,104 H826" marker-end="url(#s05c-ac)"/>
+  <text class="mm" x="510" y="98">2 &mdash; SET idem:8f2c1a &ldquo;in-progress&rdquo; NX EX 86400</text>
+  <path class="flow" d="M826,130 H494" marker-end="url(#s05c-ac)"/>
+  <text class="mm c" x="600" y="124">OK &mdash; KEY WAS NEW, WE OWN IT</text>
+
+  <path class="flow" d="M494,162 H1076" marker-end="url(#s05c-ac)"/>
+  <text class="mm" x="510" y="156">3 &mdash; INSERT access_request  ar_7f3a91</text>
+
+  <path class="flow" d="M494,194 H826" marker-end="url(#s05c-ac)"/>
+  <text class="mm" x="510" y="188">4 &mdash; SET idem:8f2c1a {201, body} EX 86400 &nbsp; STORE BEFORE REPLYING</text>
+
+  <path class="flow-r dash" d="M486,226 H180" marker-end="url(#s05c-ar)"/>
+  <text class="mm r" x="200" y="220">5 &mdash; 201 Created &hellip; CONNECTION DROPS. CLIENT SEES A TIMEOUT.</text>
+
+  <line class="ln dash" x1="20" y1="244" x2="1180" y2="244"/>
+
+  <path class="flow-b" d="M134,276 H486" marker-end="url(#s05c-ab)"/>
+  <text class="mm b" x="150" y="270">6 &mdash; RETRY. SAME BODY, SAME Idempotency-Key: 8f2c1a...</text>
+
+  <path class="flow-b" d="M494,308 H826" marker-end="url(#s05c-ab)"/>
+  <text class="mm" x="510" y="302">7 &mdash; GET idem:8f2c1a &rarr; HIT</text>
+
+  <path class="flow-b" d="M486,340 H134" marker-end="url(#s05c-ab)"/>
+  <text class="mm b" x="150" y="334">8 &mdash; 201 Created, ar_7f3a91 &mdash; THE STORED RESPONSE. POSTGRES NEVER TOUCHED.</text>
+
+  <rect class="box-a" x="640" y="356" width="530" height="30" rx="3"/>
+  <text class="mm b mid" x="905" y="376">ONE ACCESS REQUEST EXISTS. THE CLIENT CANNOT TELL WHICH ATTEMPT WON, AND DOES NOT NEED TO.</text>
+</svg>
+<figcaption>Drawing 05-C &mdash; the idempotency key. <b>Red</b> = the failure that causes the duplicate.
+<b>Brass</b> = the retry, served from the stored response.</figcaption>
+</figure>
+
+<div class="code" data-lang="python">
+<header><b>services/core/app/api/idempotency.py</b></header>
+<pre><code>import hashlib, json
+from fastapi import APIRouter, Header, HTTPException, Response, status
+
+router = APIRouter()
+TTL = 60 * 60 * 24            # 24 hours: longer than any client will retry
+
+@router.post("/v1/access-requests", status_code=status.HTTP_201_CREATED)
+async def create_access_request(
+    payload: AccessRequestCreate,
+    response: Response,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    db=Depends(get_db),
+    redis=Depends(get_redis),
+):
+    if idempotency_key is None:
+        raise HTTPException(400, "Idempotency-Key header is required")
+
+    # Fingerprint the body too. Reusing one key for a DIFFERENT payload is a
+    # client bug, and silently returning the old answer would hide it.
+    fingerprint = hashlib.sha256(
+        json.dumps(payload.model_dump(mode="json"), sort_keys=True).encode()
+    ).hexdigest()
+    key = f"idem:{idempotency_key}"
+
+    # SET NX is atomic: exactly one concurrent request can win the claim.
+    claimed = await redis.set(
+        key, json.dumps({"state": "in-progress", "fp": fingerprint}), nx=True, ex=TTL
+    )
+
+    if not claimed:
+        stored = json.loads(await redis.get(key))
+        if stored["fp"] != fingerprint:
+            raise HTTPException(422, "Idempotency-Key reused with a different body")
+        if stored["state"] == "in-progress":
+            # The first attempt is still running. Tell the client to wait
+            # rather than doing the work twice.
+            raise HTTPException(409, "request already in progress")
+        response.status_code = stored["status"]
+        return stored["body"]
+
+    try:
+        record = await create_request(db, payload)     # the real work
+    except Exception:
+        await redis.delete(key)                        # release, so a retry can proceed
+        raise
+
+    body = AccessRequestOut.model_validate(record).model_dump(mode="json")
+    # Store the response BEFORE returning it. If the process dies here,
+    # the retry redoes the work - which is far better than the reverse,
+    # where we return a body the client never receives and can never recover.
+    await redis.set(key, json.dumps({"state": "done", "status": 201,
+                                     "body": body, "fp": fingerprint}), ex=TTL)
+    return body</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil</span>
+  <p>The idempotency key must be generated by the <b>client</b>, once per logical operation, and kept across
+  retries &mdash; typically a UUID created when the user taps the button. If the client generates a fresh
+  key on each retry, the mechanism does nothing at all. This is the detail interviewers probe, because it is
+  the one people skip.</p>
+</div>
+
+<h3 id="rest-pagination">Pagination, filtering and sorting</h3>
+<div class="vs">
+  <div>
+    <div class="vh">Offset pagination</div>
+    <div class="code" data-lang="http"><header><b>simple, and wrong at scale</b></header><pre><code>GET /v1/access-requests?limit=50&amp;offset=10000
+
+-- the database must count past 10,000 rows
+SELECT * FROM access_requests
+ORDER BY created_at DESC
+LIMIT 50 OFFSET 10000;</code></pre></div>
+    <div class="vb"><p><b>Breaks two ways.</b> It gets slower the deeper you go, because the database walks
+    and discards every skipped row. And if a new request is inserted while the user pages, everything
+    shifts down by one &mdash; they see a duplicate on page 2 and miss a row entirely. Fine for an admin
+    screen over a few thousand rows.</p></div>
+  </div>
+  <div>
+    <div class="vh">Cursor pagination</div>
+    <div class="code" data-lang="http"><header><b>the one to reach for</b></header><pre><code>GET /v1/access-requests?limit=50
+GET /v1/access-requests?limit=50&amp;after=eyJjIjoiMjAyNi0wOC0yN...
+
+-- cursor decodes to (created_at, id); the index does the work
+SELECT * FROM access_requests
+WHERE (created_at, id) &lt; ('2026-08-27T09:14:02Z', 'ar_7f3a91')
+ORDER BY created_at DESC, id DESC
+LIMIT 50;</code></pre></div>
+    <div class="vb"><p><b>Constant time at any depth</b>, because it seeks straight into the index rather
+    than counting. Stable under inserts. The cost is that you cannot jump to page 47 &mdash; which real
+    users never do. Always tie-break on a unique column; <code>created_at</code> alone will skip rows that
+    share a timestamp.</p></div>
+  </div>
+</div>
+
+<div class="code" data-lang="json">
+<header><b>the response envelope &mdash; consistent across every collection</b></header>
+<pre><code>{
+  "data": [
+    { "id": "ar_7f3a91", "employee_id": "e_10422", "site_id": "BLR-01",
+      "status": "pending", "starts_on": "2026-09-01", "ends_on": "2026-09-30" }
+  ],
+  "page": {
+    "limit": 50,
+    "next": "eyJjIjoiMjAyNi0wOC0yN1QwOToxNDowMloiLCJpIjoiYXJfN2YzYTkxIn0",
+    "has_more": true
+  }
+}</code></pre>
+</div>
+<p>Return the <i>cursor</i>, never a full URL the client must parse, and never a total count on a large
+table &mdash; <code>SELECT count(*)</code> on ten million rows is the query that takes your database down at
+the worst moment. If the UI needs an approximate figure, use the planner's estimate from
+<code>pg_class.reltuples</code> and label it as approximate.</p>
+
+<h3 id="rest-errors">Errors clients can act on</h3>
+<div class="code" data-lang="json">
+<header><b>RFC 9457 problem details &mdash; use the standard rather than inventing one</b></header>
+<pre><code>HTTP/1.1 422 Unprocessable Content
+Content-Type: application/problem+json
+
+{
+  "type": "<a href="https://urldefense.com/v3/__https://badgedesk.example/problems/invalid-access-window__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5G3UmQb5$">https://badgedesk.example/problems/invalid-access-window</a>",
+  "title": "Access window is not valid",
+  "status": 422,
+  "detail": "ends_on must be on or after starts_on",
+  "instance": "/v1/access-requests",
+  "trace_id": "0af7651916cd43dd8448eb211c80319c",
+  "errors": [
+    { "field": "ends_on", "code": "before_start",
+      "message": "2026-08-20 is before starts_on 2026-09-01" }
+  ]
+}</code></pre>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Field</th><th>Audience</th><th>Rule</th></tr></thead>
+<tbody>
+<tr><td><code>type</code></td><td>Client code</td><td>A stable URI. This is what clients branch on &mdash; never the human message.</td></tr>
+<tr><td><code>title</code></td><td>Humans</td><td>Short, stable, does not include the specific values.</td></tr>
+<tr><td><code>detail</code></td><td>Humans</td><td>This occurrence. Safe to show a user. Never contains a stack trace, SQL or an internal hostname.</td></tr>
+<tr><td><code>errors[]</code></td><td>The form</td><td>Field-level, so the UI can highlight the offending input.</td></tr>
+<tr><td><code>trace_id</code></td><td>Support</td><td>The single most useful field in the whole payload. A user pastes it into a ticket and you find the exact request. Put it on 5xx responses too.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="rest-versioning">Versioning and evolution</h3>
+<p>The best version is the one you never need. Most changes can be made without a new version at all, if
+both sides follow one rule: <b>be conservative in what you send, liberal in what you accept.</b></p>
+
+<div class="grid g2">
+  <div class="card"><span class="cm">Safe &mdash; ship any time</span><b class="ct">Backwards compatible</b>
+    <p>Adding an optional request field with a default. Adding a new field to a response. Adding a new
+    endpoint. Adding a new enum value <i>if</i> clients were told to ignore unknown ones. Relaxing a
+    validation rule.</p></div>
+  <div class="card"><span class="cm">Breaking &mdash; needs a new version</span><b class="ct">Not compatible</b>
+    <p>Removing or renaming any response field. Making an optional request field required. Changing a type,
+    including <code>"42"</code> to <code>42</code>. Changing the meaning of an existing value. Tightening
+    validation. Changing a default.</p></div>
+</div>
+
+<div class="code" data-lang="text">
+<header><b>the deprecation sequence &mdash; how the field actually goes away</b></header>
+<pre><code>Week 0   Add the replacement alongside the old field. Both populated. Nothing breaks.
+         { "site_id": "BLR-01", "site": { "id": "BLR-01", "name": "Whitefield" } }
+
+Week 1   Announce. Add response headers on every call that touches the old shape:
+             Deprecation: true
+             Sunset: Wed, 31 Dec 2026 23:59:59 GMT
+             Link: &lt;<a href="https://urldefense.com/v3/__https://badgedesk.example/docs/migrate-site-id__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5IUqCkWg$">https://badgedesk.example/docs/migrate-site-id</a>&gt;; rel="deprecation"
+
+Week 2+  MEASURE. Log caller identity per deprecated field. You cannot remove
+         what you cannot see, and "nobody uses it" is never true.
+
+Month 3  Contact the remaining callers directly. There are always two.
+
+Month 6  Brownout: return 410 Gone for one hour, twice, announced in advance.
+         This finds the callers who ignored every email.
+
+Month 7  Remove.</code></pre>
+</div>
+<p>Put the version in the path &mdash; <code>/v1/</code>. Header and media-type versioning are more
+theoretically correct and worse in practice: harder to <code>curl</code>, harder to route at a load
+balancer, invisible in logs, and impossible to paste into a bug report.</p>
+
+<h3 id="rest-openapi">OpenAPI, generated not written</h3>
+<div class="code" data-lang="python">
+<header><b>services/core/app/main.py &mdash; the schema falls out of the types</b></header>
+<pre><code>from fastapi import FastAPI
+
+app = FastAPI(
+    title="BadgeDesk Core",
+    version="1.4.0",
+    description="Access requests, approvals and provisioning state.",
+)
+
+class AccessRequestCreate(BaseModel):
+    model_config = ConfigDict(json_schema_extra={
+        "examples": [{"employee_id": "e_10422", "site_id": "BLR-01",
+                      "starts_on": "2026-09-01", "ends_on": "2026-09-30",
+                      "reason": "Quarterly audit of the server room"}]
+    })
+    employee_id: str = Field(pattern=r"^e_\d{5}$")
+    site_id:     str = Field(pattern=r"^[A-Z]{3}-\d{2}$")
+    starts_on:   date
+    ends_on:     date
+    reason:      str = Field(min_length=20, max_length=500)
+
+# Docs at /docs, the raw schema at /openapi.json - both free, both always
+# in step with the code, because they ARE the code.</code></pre>
+</div>
+
+<div class="code" data-lang="bash">
+<header><b>the payoff: the client is generated, not hand-written</b></header>
+<pre><code># In the Next.js app, regenerate types whenever the API changes:
+npx openapi-typescript <a href="https://urldefense.com/v3/__http://localhost:8000/openapi.json__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5ER65ai5$">http://localhost:8000/openapi.json</a> -o web/src/api/types.ts
+
+# Now a removed field is a TypeScript compile error in CI, not a
+# production bug found by a user. Wire this into the pipeline on Sheet 09.
+
+# Contract test: does the running service still match the committed schema?
+npx @redocly/cli diff openapi.committed.json <a href="https://urldefense.com/v3/__http://localhost:8000/openapi.json__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5ER65ai5$">http://localhost:8000/openapi.json</a></code></pre>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; REST</div>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=rest*api*design*best*practices*resources*status*codes__;KysrKysrKw!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5JbPr2fu$" target="_blank" rel="noopener"><span>REST API design best practices<i>Look for one that covers resource naming, status codes and pagination together rather than a CRUD tutorial.</i></span><span class="dur">30 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://developer.mozilla.org/en-US/docs/Web/HTTP/Status__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5ALRUZqz$" target="_blank" rel="noopener"><span>MDN &mdash; HTTP response status codes<i>The reference. Read the 4xx list end to end once; you use more of it than you think.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://stripe.com/docs/api__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5KJyItnE$" target="_blank" rel="noopener"><span>Stripe API reference<i>The best-designed public REST API to read. Study their idempotency, pagination, versioning and error model &mdash; this sheet borrows from all four.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=idempotency*key*api*design*stripe*explained__;KysrKys!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5GHZRZT2$" target="_blank" rel="noopener"><span>Idempotency keys explained<i>Comes up in nearly every backend system design round. Be able to draw Drawing 05-C.</i></span><span class="dur">15 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.rfc-editor.org/rfc/rfc9457.html__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5HU4i3Dy$" target="_blank" rel="noopener"><span>RFC 9457 &mdash; Problem Details for HTTP APIs<i>Short, readable, and quoting it in an interview shows you read specifications.</i></span><span class="dur">docs</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="graphql">GraphQL</h2>
+<p class="sub">One endpoint, a typed schema, and the client states exactly which fields it wants. It solves
+a real problem &mdash; and it moves several hard problems from the client to your server.</p>
+
+<h3 id="gql-problem">The problem it actually solves</h3>
+<figure class="dwg">
+<svg viewBox="0 0 1200 330" role="img" aria-label="Over-fetching and under-fetching with REST: a screen needs three fields but the endpoint returns twenty, and it needs three round trips to assemble request, employee and site. With GraphQL one request returns exactly the requested fields.">
+  <defs><marker id="s05d-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  <marker id="s05d-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker></defs>
+
+  <text class="mm r" x="30" y="34">REST &mdash; THE MOBILE REQUEST LIST NEEDS: STATUS, EMPLOYEE NAME, SITE NAME</text>
+  <rect class="box" x="30" y="50" width="150" height="46" rx="3"/>
+  <text class="m mid" x="105" y="78">mobile</text>
+
+  <path class="flow-r" d="M184,73 H300" marker-end="url(#s05d-ar)"/>
+  <rect class="box-r" x="304" y="50" width="250" height="46" rx="3"/>
+  <text class="m r mid" x="429" y="72">GET /access-requests</text>
+  <text class="mm mid" x="429" y="88">RETURNS 20 FIELDS, WE WANT 1</text>
+
+  <path class="flow-r" d="M184,133 H300" marker-end="url(#s05d-ar)"/>
+  <rect class="box-r" x="304" y="110" width="250" height="46" rx="3"/>
+  <text class="m r mid" x="429" y="132">GET /employees/e_10422</text>
+  <text class="mm mid" x="429" y="148">ROUND TRIP 2 &mdash; FOR A NAME</text>
+
+  <path class="flow-r" d="M184,193 H300" marker-end="url(#s05d-ar)"/>
+  <rect class="box-r" x="304" y="170" width="250" height="46" rx="3"/>
+  <text class="m r mid" x="429" y="192">GET /sites/BLR-01</text>
+  <text class="mm mid" x="429" y="208">ROUND TRIP 3 &mdash; FOR A NAME</text>
+
+  <text class="mm r" x="30" y="248">OVER-FETCHING: 18 KB DOWN THE WIRE FOR 400 BYTES OF USEFUL DATA.</text>
+  <text class="mm r" x="30" y="264">UNDER-FETCHING: THREE SEQUENTIAL ROUND TRIPS. ON A 300 MS MOBILE</text>
+  <text class="mm r" x="30" y="280">CONNECTION THAT IS ALMOST A SECOND BEFORE ANYTHING RENDERS.</text>
+  <text class="mm" x="30" y="308">THE USUAL REST FIX &mdash; ?include=employee,site &mdash; WORKS, AND SLOWLY</text>
+  <text class="mm" x="30" y="324">TURNS INTO A QUERY LANGUAGE YOU DESIGNED BY ACCIDENT.</text>
+
+  <line class="ln dash" x1="600" y1="30" x2="600" y2="320"/>
+
+  <text class="mm c" x="640" y="34">GRAPHQL &mdash; SAME SCREEN</text>
+  <rect class="box" x="640" y="50" width="150" height="46" rx="3"/>
+  <text class="m mid" x="715" y="78">mobile</text>
+  <path class="flow" d="M794,73 H900" marker-end="url(#s05d-ac)"/>
+  <rect class="box-c" x="904" y="50" width="266" height="46" rx="3"/>
+  <text class="m mid" x="1037" y="72">POST /graphql</text>
+  <text class="mm mid" x="1037" y="88">ONE ROUND TRIP</text>
+
+  <rect class="box-c" x="640" y="120" width="530" height="150" rx="3"/>
+  <text class="m c" x="656" y="144">query {</text>
+  <text class="m c" x="656" y="164">&nbsp;&nbsp;accessRequests(status: PENDING, first: 20) {</text>
+  <text class="m c" x="656" y="184">&nbsp;&nbsp;&nbsp;&nbsp;status</text>
+  <text class="m c" x="656" y="204">&nbsp;&nbsp;&nbsp;&nbsp;employee { fullName }</text>
+  <text class="m c" x="656" y="224">&nbsp;&nbsp;&nbsp;&nbsp;site { name }</text>
+  <text class="m c" x="656" y="244">&nbsp;&nbsp;}</text>
+  <text class="m c" x="656" y="264">}</text>
+
+  <text class="mm c" x="640" y="296">EXACTLY THREE FIELDS BACK. THE RESPONSE SHAPE MIRRORS THE QUERY SHAPE,</text>
+  <text class="mm c" x="640" y="312">SO THE CLIENT NEVER GUESSES WHAT IT WILL RECEIVE.</text>
+</svg>
+<figcaption>Drawing 05-D &mdash; over- and under-fetching. <b>Red</b> = wasted bytes and wasted round
+trips.</figcaption>
+</figure>
+
+<h3 id="gql-schema">The schema is the contract</h3>
+<div class="code" data-lang="graphql">
+<header><b>services/gateway/src/schema.graphql</b></header>
+<pre><code>enum RequestStatus { PENDING APPROVED REJECTED PROVISIONED REVOKED }
+
+type AccessRequest {
+  id:        ID!                 # ! means non-null. The strongest documentation you have.
+  status:    RequestStatus!
+  startsOn:  Date!
+  endsOn:    Date!
+  reason:    String!
+  employee:  Employee!           # resolved separately - see the N+1 section
+  site:      Site!
+  approvals: [Approval!]!        # non-null list of non-null items
+}
+
+type Employee { id: ID!  fullName: String!  email: String!  manager: Employee }
+type Site     { id: ID!  name: String!  city: String!  timezone: String! }
+
+type AccessRequestConnection {
+  edges:    [AccessRequestEdge!]!
+  pageInfo: PageInfo!
+}
+type AccessRequestEdge { node: AccessRequest!  cursor: String! }
+type PageInfo { hasNextPage: Boolean!  endCursor: String }
+
+type Query {
+  accessRequest(id: ID!): AccessRequest
+  accessRequests(status: RequestStatus, siteId: ID,
+                 first: Int = 20, after: String): AccessRequestConnection!
+}
+
+# Mutations return a payload type, not a bare object, so that expected
+# business failures travel as DATA rather than as top-level errors.
+type Mutation {
+  approveAccessRequest(input: ApproveInput!): ApproveAccessRequestPayload!
+}
+
+input ApproveInput { requestId: ID!  note: String  clientMutationId: String }
+
+union ApproveError = NotFound | NotAuthorised | AlreadyDecided | WindowExpired
+
+type ApproveAccessRequestPayload {
+  request: AccessRequest
+  errors:  [ApproveError!]!
+}</code></pre>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why mutations return an errors field</span>
+  <p>GraphQL's top-level <code>errors</code> array is untyped and awkward to handle: it is designed for
+  things going wrong, not for &ldquo;this request was already approved by someone else&rdquo;. That is not an
+  exception, it is a normal outcome the UI must render. Putting expected failures in the typed payload means
+  the client gets compile-time knowledge of every case it must handle. Reserve top-level errors for genuine
+  faults.</p>
+</div>
+
+<h3 id="gql-n1">Resolvers and the N+1 problem</h3>
+<p>This is the defining GraphQL performance issue, and the question you should expect if GraphQL appears
+anywhere on your CV.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 350" role="img" aria-label="The N plus 1 problem: a query for twenty requests calls the employee resolver twenty times, producing twenty-one database queries. With a DataLoader the calls are batched within one tick of the event loop into a single query using where id in, giving two queries in total.">
+  <defs><marker id="s05e-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  <marker id="s05e-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker></defs>
+
+  <text class="mm r" x="30" y="34">WITHOUT A DATALOADER</text>
+  <rect class="box" x="30" y="50" width="230" height="46" rx="3"/>
+  <text class="m mid" x="145" y="78">accessRequests resolver</text>
+  <path class="flow-r" d="M264,73 H340" marker-end="url(#s05e-ar)"/>
+  <rect class="box-c" x="344" y="50" width="200" height="46" rx="3"/>
+  <text class="m mid" x="444" y="72">1 query</text>
+  <text class="mm mid" x="444" y="88">20 REQUESTS BACK</text>
+
+  <path class="flow-r" d="M145,100 V130 H340" marker-end="url(#s05e-ar)"/>
+  <rect class="box-r" x="344" y="112" width="200" height="34" rx="2"/><text class="m r mid" x="444" y="134">employee e_10422</text>
+  <rect class="box-r" x="344" y="152" width="200" height="34" rx="2"/><text class="m r mid" x="444" y="174">employee e_10422</text>
+  <rect class="box-r" x="344" y="192" width="200" height="34" rx="2"/><text class="m r mid" x="444" y="214">employee e_10891</text>
+  <text class="m r mid" x="444" y="246">&hellip; 17 more</text>
+
+  <text class="t r" x="30" y="292">21 queries</text>
+  <text class="mm r" x="30" y="312">THE RESOLVER RUNS ONCE PER ROW. TWO OF THEM ARE</text>
+  <text class="mm r" x="30" y="328">FOR THE SAME EMPLOYEE. AT 3 MS EACH THAT IS 63 MS</text>
+  <text class="mm r" x="30" y="344">OF SEQUENTIAL DATABASE TIME FOR ONE SCREEN.</text>
+
+  <line class="ln dash" x1="600" y1="30" x2="600" y2="340"/>
+
+  <text class="mm c" x="640" y="34">WITH A DATALOADER</text>
+  <rect class="box" x="640" y="50" width="230" height="46" rx="3"/>
+  <text class="m mid" x="755" y="78">accessRequests resolver</text>
+  <path class="flow" d="M874,73 H950" marker-end="url(#s05e-ac)"/>
+  <rect class="box-c" x="954" y="50" width="216" height="46" rx="3"/>
+  <text class="m mid" x="1062" y="72">1 query</text>
+  <text class="mm mid" x="1062" y="88">20 REQUESTS BACK</text>
+
+  <rect class="box-a" x="640" y="120" width="230" height="60" rx="3"/>
+  <text class="m b mid" x="755" y="144">DataLoader</text>
+  <text class="mm mid" x="755" y="162">COLLECTS 20 .load() CALLS</text>
+  <path class="flow" d="M755,100 V116" marker-end="url(#s05e-ac)"/>
+
+  <path class="flow" d="M874,150 H950" marker-end="url(#s05e-ac)"/>
+  <rect class="box-c" x="954" y="120" width="216" height="60" rx="3"/>
+  <text class="m mid" x="1062" y="144">1 query</text>
+  <text class="mm mid" x="1062" y="162">WHERE id IN (&hellip;13 ids)</text>
+
+  <text class="t c" x="640" y="292">2 queries</text>
+  <text class="mm c" x="640" y="312">THE LOADER WAITS ONE TICK OF THE EVENT LOOP, DEDUPLICATES</text>
+  <text class="mm c" x="640" y="328">THE IDS AND ISSUES ONE BATCHED QUERY. A PER-REQUEST CACHE</text>
+  <text class="mm c" x="640" y="344">MEANS THE REPEATED EMPLOYEE IS FETCHED ONCE.</text>
+</svg>
+<figcaption>Drawing 05-E &mdash; N+1 and the DataLoader fix. <b>Red</b> = one query per row.</figcaption>
+</figure>
+
+<div class="code" data-lang="typescript">
+<header><b>services/gateway/src/loaders/employee.loader.ts</b></header>
+<pre><code>import DataLoader from 'dataloader';
+
+// One loader instance PER REQUEST. A shared singleton would leak one user's
+// data into another user's response through the cache - a real, common bug.
+export function createEmployeeLoader(core: CoreClient) {
+  return new DataLoader&lt;string, Employee&gt;(async (ids) =&gt; {
+    const employees = await core.getEmployeesByIds([...ids]);   // one call
+    const byId = new Map(employees.map(e =&gt; [e.id, e]));
+
+    // CRITICAL: return results in the same order as the requested ids,
+    // with a null or Error for misses. DataLoader matches by position.
+    return ids.map(id =&gt; byId.get(id) ?? new Error(`employee ${id} not found`));
+  });
+}
+
+@Resolver(() =&gt; AccessRequest)
+export class AccessRequestResolver {
+  @ResolveField(() =&gt; Employee)
+  employee(@Parent() request: AccessRequest, @Context() ctx: GqlContext) {
+    return ctx.loaders.employee.load(request.employeeId);   // batched, deduped
+  }
+}</code></pre>
+</div>
+
+<h3 id="gql-costs">What GraphQL costs you</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Problem</th><th>Why it appears</th><th>What you do about it</th></tr></thead>
+<tbody>
+<tr><td>HTTP caching stops working</td><td>Every query is a <code>POST</code> to one URL, so CDNs and browsers cannot cache by URL</td><td>Persisted queries turned into <code>GET</code>s with a hash, plus a client cache such as Apollo or urql. You are rebuilding what REST had for free.</td></tr>
+<tr><td>A single query can be catastrophically expensive</td><td>Nesting is client-controlled: <code>employee { manager { manager { &hellip; } } }</code></td><td>Depth limit, complexity scoring with a per-caller budget, and an allow-list of persisted queries in production.</td></tr>
+<tr><td>Rate limiting by request count is meaningless</td><td>One request may be a thousand times more expensive than another</td><td>Charge by computed complexity, not by call.</td></tr>
+<tr><td>Monitoring is harder</td><td>Every request is <code>POST /graphql</code>, so a latency chart tells you nothing</td><td>Instrument per operation name and per resolver, and reject anonymous operations.</td></tr>
+<tr><td>Authorisation must be per field</td><td>A client can reach <code>employee.salary</code> from anywhere it can reach an employee</td><td>Enforce in the resolver, or a field-level directive. Endpoint-level checks are not enough.</td></tr>
+<tr><td>File upload and binary data are awkward</td><td>Not part of the specification</td><td>Keep a REST endpoint for uploads. Mixing the two is normal and fine.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; GraphQL</div>
+  <a class="r" href="https://urldefense.com/v3/__https://graphql.org/learn/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5F1MEmu3$" target="_blank" rel="noopener"><span>graphql.org &mdash; Learn<i>The official introduction. Schema, queries, mutations and execution in about an hour.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=graphql*n*1*problem*dataloader*explained__;KysrKys!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5IxkbkJJ$" target="_blank" rel="noopener"><span>The N+1 problem and DataLoader<i>The single most likely GraphQL interview question. Watch one, then implement the loader above yourself.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.apollographql.com/docs/apollo-server/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5DCn11pa$" target="_blank" rel="noopener"><span>Apollo Server docs<i>Practical detail on context, error handling, persisted queries and caching.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=when*not*to*use*graphql*rest*vs*graphql*tradeoffs__;KysrKysrKys!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Ni30VXz$" target="_blank" rel="noopener"><span>When <i>not</i> to use GraphQL<i>Being able to argue against it is worth more in an interview than being able to argue for it.</i></span><span class="dur">20 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="compare">REST, GraphQL and gRPC side by side</h2>
+<div class="tw">
+<table>
+<thead><tr><th>Dimension</th><th>REST</th><th>GraphQL</th><th>gRPC</th></tr></thead>
+<tbody>
+<tr><td>Shape of the contract</td><td>URLs plus an OpenAPI document</td><td>A typed schema, introspectable at runtime</td><td>Protobuf <code>.proto</code> files, compiled</td></tr>
+<tr><td>Who decides the response shape</td><td>The server</td><td>The client</td><td>The server</td></tr>
+<tr><td>Over-fetching</td><td>Common</td><td>Solved by design</td><td>Common, but payloads are tiny</td></tr>
+<tr><td>Round trips for related data</td><td>Several, or a bespoke <code>?include=</code></td><td>One</td><td>Several, but each is very fast</td></tr>
+<tr><td>Wire format</td><td>JSON &mdash; readable, verbose</td><td>JSON &mdash; readable, verbose</td><td>Binary protobuf &mdash; small, unreadable without tooling</td></tr>
+<tr><td>HTTP caching</td><td>Works, for free</td><td>Effectively not, without persisted queries</td><td>Not applicable</td></tr>
+<tr><td>Streaming</td><td>SSE or WebSockets, bolted on</td><td>Subscriptions, extra infrastructure</td><td>Native, bidirectional</td></tr>
+<tr><td>Browser support</td><td>Native</td><td>Native</td><td>Needs a gRPC-Web proxy</td></tr>
+<tr><td>Debugging in an incident</td><td><code>curl</code> the URL</td><td>Paste the query into a playground</td><td><code>grpcurl</code> plus the proto file</td></tr>
+<tr><td>Typical latency at p50</td><td>Baseline</td><td>Baseline plus resolver overhead</td><td>Roughly half of REST for small messages</td></tr>
+<tr><td>Best fit</td><td>Public APIs, service-to-service, anything cacheable</td><td>Many varied clients over one domain model</td><td>High-volume internal calls where latency matters</td></tr>
+<tr><td>In BadgeDesk</td><td>gateway &rarr; core, gateway &rarr; notifier</td><td>browser and mobile &rarr; gateway</td><td>Not used &mdash; the traffic does not justify the tooling cost</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p>&ldquo;Would you use GraphQL for BadgeDesk?&rdquo; &mdash; the answer they want is a decision with a
+  reason attached. Mine: yes at the edge, because a web client and a mobile client want different shapes of
+  the same domain and the alternative is a growing pile of bespoke endpoints; no internally, because there
+  are two known callers and REST gives us caching, plain URLs in logs and <code>curl</code> during an
+  incident. An answer of &ldquo;GraphQL is better&rdquo; or &ldquo;REST is simpler&rdquo; without the context
+  scores nothing.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="webhooks">Webhooks</h2>
+<p class="sub">An HTTP callback from a system you do not control. Simple to describe, and full of failure
+modes that only appear in production.</p>
+
+<h3 id="wh-why">Push instead of poll</h3>
+<figure class="dwg">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Webhook delivery: CCure signs the payload with HMAC and posts it; the receiver verifies the signature and timestamp, stores the delivery id for deduplication, publishes to Kafka and returns 202 quickly. If the receiver is slow or errors, CCure retries with exponential backoff, so the same event may arrive more than once.">
+  <defs><marker id="s05f-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  <marker id="s05f-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  <marker id="s05f-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker></defs>
+
+  <rect class="box-r" x="30" y="60" width="210" height="70" rx="3"/>
+  <text class="t r mid" x="135" y="86">CCure</text>
+  <text class="mm mid" x="135" y="104">BADGE PROVISIONED</text>
+  <text class="mm mid" x="135" y="120">AT 09:14:02</text>
+
+  <rect class="box-a" x="330" y="60" width="250" height="70" rx="3"/>
+  <text class="t b mid" x="455" y="86">POST /webhooks/ccure</text>
+  <text class="mm mid" x="455" y="104">X-CCure-Signature: t=&hellip;,v1=&hellip;</text>
+  <text class="mm mid" x="455" y="120">X-CCure-Delivery: dl_88f1</text>
+
+  <rect class="box-c" x="670" y="60" width="250" height="70" rx="3"/>
+  <text class="t mid" x="795" y="86">Receiver</text>
+  <text class="mm mid" x="795" y="104">VERIFY &middot; DEDUPE &middot; PUBLISH</text>
+  <text class="mm mid" x="795" y="120">TARGET: UNDER 200 MS</text>
+
+  <rect class="box-a" x="1000" y="60" width="170" height="70" rx="3"/>
+  <text class="t b mid" x="1085" y="94">Kafka</text>
+  <text class="mm mid" x="1085" y="112">THEN 202</text>
+
+  <path class="flow-r" d="M244,95 H326" marker-end="url(#s05f-ar)"/>
+  <path class="flow-b" d="M584,95 H666" marker-end="url(#s05f-ab)"/>
+  <path class="flow" d="M924,95 H996" marker-end="url(#s05f-ac)"/>
+
+  <text class="mm" x="670" y="160">THE FOUR CHECKS, IN THIS ORDER:</text>
+  <text class="mm" x="670" y="180">1 HMAC OVER THE RAW BODY &mdash; CONSTANT-TIME COMPARE</text>
+  <text class="mm" x="670" y="200">2 TIMESTAMP WITHIN 5 MINUTES &mdash; BLOCKS REPLAY</text>
+  <text class="mm" x="670" y="220">3 DELIVERY ID UNSEEN &mdash; BLOCKS DUPLICATES</text>
+  <text class="mm" x="670" y="240">4 SCHEMA VALID &mdash; THEN, AND ONLY THEN, ACCEPT</text>
+
+  <line class="ln dash" x1="20" y1="262" x2="1180" y2="262"/>
+  <text class="mm r" x="30" y="286">WHEN THE RECEIVER IS SLOW OR RETURNS 5xx, CCURE RETRIES. YOU DO NOT CONTROL THE SCHEDULE.</text>
+
+  <rect class="box-r" x="30" y="300" width="150" height="40" rx="2"/><text class="mm mid" x="105" y="325">TRY 1 &mdash; 504</text>
+  <rect class="box-r" x="200" y="300" width="150" height="40" rx="2"/><text class="mm mid" x="275" y="325">TRY 2 &mdash; +5 s</text>
+  <rect class="box-r" x="370" y="300" width="150" height="40" rx="2"/><text class="mm mid" x="445" y="325">TRY 3 &mdash; +30 s</text>
+  <rect class="box-r" x="540" y="300" width="150" height="40" rx="2"/><text class="mm mid" x="615" y="325">TRY 4 &mdash; +5 min</text>
+  <rect class="box-r" x="710" y="300" width="150" height="40" rx="2"/><text class="mm mid" x="785" y="325">TRY 5 &mdash; +1 h</text>
+  <rect class="box" x="880" y="300" width="290" height="40" rx="2"/><text class="mm mid" x="1025" y="325">THEN GIVES UP &mdash; EVENT LOST FOREVER</text>
+
+  <text class="mm b" x="30" y="368">CONSEQUENCES YOU MUST DESIGN FOR: DELIVERY IS AT-LEAST-ONCE, SO HANDLE DUPLICATES &middot; ORDER IS NOT GUARANTEED, SO A revoked MAY ARRIVE BEFORE ITS provisioned</text>
+  <text class="mm b" x="30" y="388">&middot; A 200 IS A PROMISE YOU STORED IT, NOT THAT YOU PROCESSED IT &middot; GIVING UP IS REAL, SO RECONCILE PERIODICALLY AGAINST THE VENDOR&rsquo;S API RATHER THAN TRUSTING THE STREAM</text>
+  <text class="mm" x="30" y="412">THIS IS WHY THE RECEIVER PUBLISHES TO KAFKA AND RETURNS IMMEDIATELY: OUR SLOW DATABASE MUST NEVER BECOME CCURE&rsquo;S TIMEOUT.</text>
+</svg>
+<figcaption>Drawing 05-F &mdash; webhook delivery, verification and retry. <b>Red</b> = outside your
+control.</figcaption>
+</figure>
+
+<h3 id="wh-verify">Verifying the signature</h3>
+<div class="code" data-lang="python">
+<header><b>services/core/app/api/webhooks.py &mdash; every line here matters</b></header>
+<pre><code>import hmac, hashlib, time
+from fastapi import APIRouter, Request, Header, HTTPException, status
+
+router = APIRouter()
+TOLERANCE = 300      # 5 minutes
+
+@router.post("/webhooks/ccure", status_code=status.HTTP_202_ACCEPTED)
+async def receive_ccure_event(
+    request: Request,
+    signature: str = Header(alias="X-CCure-Signature"),
+    delivery_id: str = Header(alias="X-CCure-Delivery"),
+    redis=Depends(get_redis),
+    producer=Depends(get_kafka_producer),
+):
+    # 1. The RAW body. Never re-serialise before verifying: a reordered key
+    #    or different whitespace produces a different digest, and you will
+    #    spend a day on it.
+    raw = await request.body()
+
+    # Header format:  t=1756370042,v1=5257a869e7...
+    parts = dict(p.split("=", 1) for p in signature.split(","))
+    timestamp, provided = parts["t"], parts["v1"]
+
+    # 2. Timestamp check FIRST - a valid old signature is a valid replay.
+    if abs(time.time() - int(timestamp)) &gt; TOLERANCE:
+        raise HTTPException(400, "signature timestamp outside tolerance")
+
+    expected = hmac.new(
+        key=settings.ccure_webhook_secret.encode(),
+        msg=f"{timestamp}.".encode() + raw,      # timestamp is INSIDE the digest
+        digestmod=hashlib.sha256,
+    ).hexdigest()
+
+    # 3. compare_digest, not ==. A normal comparison returns early on the
+    #    first differing byte, and that timing difference is enough to
+    #    recover the signature byte by byte.
+    if not hmac.compare_digest(expected, provided):
+        raise HTTPException(401, "invalid signature")
+
+    # 4. Deduplicate. At-least-once delivery means this WILL fire.
+    if not await redis.set(f"wh:ccure:{delivery_id}", "1", nx=True, ex=86400):
+        return {"status": "duplicate ignored"}       # still a 2xx - do not make it retry
+
+    # 5. Hand off and return. No database writes, no vendor calls, no
+    #    email sending on this code path.
+    await producer.send("access.provisioned", key=delivery_id, value=raw)
+    return {"status": "accepted"}</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; four ways to get this wrong</span>
+  <p><b>Comparing with <code>==</code></b> leaks the signature through timing. <b>Skipping the timestamp
+  check</b> means a captured request can be replayed forever. <b>Verifying the parsed body</b> rather than
+  the raw bytes fails intermittently and inexplicably. <b>Returning 500 for a duplicate</b> makes the sender
+  retry harder, turning your bug into a self-inflicted denial of service. All four appear in real
+  code; the last two are the ones that get shipped.</p>
+</div>
+
+<h3 id="wh-send">If you are the one sending</h3>
+<p>BadgeDesk also notifies partner facilities systems. Everything the drawing above says about CCure now
+applies to you, in reverse.</p>
+<div class="tw">
+<table>
+<thead><tr><th>Obligation</th><th>What good looks like</th></tr></thead>
+<tbody>
+<tr><td>Sign every payload</td><td>HMAC-SHA256 over <code>timestamp.body</code>, secret per subscriber, rotatable with an overlap period where both keys verify</td></tr>
+<tr><td>Send from a queue, never inline</td><td>A partner being down must not slow your API. The send is a Kafka consumer, not part of the request.</td></tr>
+<tr><td>Retry with backoff and jitter</td><td>Roughly 5s, 30s, 5m, 1h, 6h. Jitter matters: without it, every event queued during an outage stampedes the moment they recover.</td></tr>
+<tr><td>Include a stable delivery id and an event id</td><td>Delivery id changes per attempt; event id does not. Receivers deduplicate on the event id.</td></tr>
+<tr><td>Give up, visibly</td><td>After the last attempt, move to a dead letter store and alert. Silent loss is the worst outcome.</td></tr>
+<tr><td>Offer a replay endpoint</td><td><code>POST /v1/webhook-deliveries/{id}/replay</code>. Support will need it in the first month.</td></tr>
+<tr><td>Publish your source IPs</td><td>Corporate receivers will need to allow-list them.</td></tr>
+<tr><td>Time out fast</td><td>10 seconds. A receiver that takes longer is broken, and holding the connection helps nobody.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; webhooks</div>
+  <a class="r" href="https://urldefense.com/v3/__https://stripe.com/docs/webhooks__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5GAxQHwm$" target="_blank" rel="noopener"><span>Stripe &mdash; webhooks documentation<i>The reference implementation of everything above: signing scheme, tolerance window, retry schedule, replay. Read it even though you are not building payments.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=webhook*signature*verification*hmac*replay*attack*explained__;KysrKysr!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5FP1NnDn$" target="_blank" rel="noopener"><span>HMAC signature verification and replay attacks<i>Watch specifically for the timing-attack explanation of <code>compare_digest</code>.</i></span><span class="dur">18 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://webhook.site/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5CVZuLGO$" target="_blank" rel="noopener"><span>webhook.site<i>A throwaway URL that shows you exactly what a provider sends, headers and all. Use it before writing any receiver code.</i></span><span class="dur">tool</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://github.com/localtunnel/localtunnel__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5OygymQu$" target="_blank" rel="noopener"><span>localtunnel / ngrok<i>Expose your local receiver so a real provider can reach it. Personal laptop only &mdash; see <a href="setup.html">Sheet 01</a>.</i></span><span class="dur">tool</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="connect">How the subtopics connect</h2>
+<p class="sub">One access request, from tap to badge, crossing all three API styles.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 420" role="img" aria-label="End to end trace of one access request: a GraphQL mutation from the browser reaches the gateway, which makes an idempotent REST call to core; core writes to PostgreSQL and publishes to Kafka; the provisioning worker calls the CCure vendor API; CCure later calls the inbound webhook, which publishes a completion event that updates the request and notifies the employee.">
+  <defs><marker id="s05g-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  <marker id="s05g-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+  <marker id="s05g-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker></defs>
+
+  <rect class="box" x="30" y="66" width="200" height="56" rx="3"/>
+  <text class="t mid" x="130" y="89">1 &middot; Browser</text>
+  <text class="mm mid" x="130" y="105">MANAGER CLICKS APPROVE</text>
+
+  <rect class="box-c" x="280" y="66" width="220" height="56" rx="3"/>
+  <text class="t mid" x="390" y="89">2 &middot; Gateway</text>
+  <text class="mm mid" x="390" y="105">GRAPHQL MUTATION</text>
+
+  <rect class="box-c" x="550" y="66" width="220" height="56" rx="3"/>
+  <text class="t mid" x="660" y="89">3 &middot; core</text>
+  <text class="mm mid" x="660" y="105">REST + IDEMPOTENCY-KEY</text>
+
+  <rect class="box" x="820" y="66" width="160" height="56" rx="3"/>
+  <text class="t mid" x="900" y="89">4 &middot; Postgres</text>
+  <text class="mm mid" x="900" y="105">STATUS = APPROVED</text>
+
+  <rect class="box-a" x="1010" y="66" width="160" height="56" rx="3"/>
+  <text class="t b mid" x="1090" y="89">5 &middot; Kafka</text>
+  <text class="mm mid" x="1090" y="105">access.approved</text>
+
+  <rect class="box-a" x="1010" y="170" width="160" height="56" rx="3"/>
+  <text class="t b mid" x="1090" y="193">6 &middot; worker</text>
+  <text class="mm mid" x="1090" y="209">CONSUMES</text>
+
+  <rect class="box-r" x="760" y="170" width="220" height="56" rx="3"/>
+  <text class="t r mid" x="870" y="193">7 &middot; CCure API</text>
+  <text class="mm mid" x="870" y="209">REST OUT &middot; RETRY + BACKOFF</text>
+
+  <rect class="box-r" x="760" y="274" width="220" height="56" rx="3"/>
+  <text class="t r mid" x="870" y="297">8 &middot; CCure webhook</text>
+  <text class="mm mid" x="870" y="313">MINUTES LATER, UNPROMPTED</text>
+
+  <rect class="box-a" x="470" y="274" width="240" height="56" rx="3"/>
+  <text class="t b mid" x="590" y="297">9 &middot; Receiver</text>
+  <text class="mm mid" x="590" y="313">HMAC &middot; DEDUPE &middot; 202</text>
+
+  <rect class="box-c" x="190" y="274" width="230" height="56" rx="3"/>
+  <text class="t mid" x="305" y="297">10 &middot; notifier</text>
+  <text class="mm mid" x="305" y="313">EMAIL: BADGE IS READY</text>
+
+  <path class="flow" d="M234,94 H276" marker-end="url(#s05g-ac)"/>
+  <path class="flow" d="M504,94 H546" marker-end="url(#s05g-ac)"/>
+  <path class="flow" d="M774,94 H816" marker-end="url(#s05g-ac)"/>
+  <path class="flow-b" d="M984,94 H1006" marker-end="url(#s05g-ab)"/>
+  <path class="flow-b" d="M1090,126 V166" marker-end="url(#s05g-ab)"/>
+  <path class="flow-r" d="M1006,198 H984" marker-end="url(#s05g-ar)"/>
+  <path class="flow-r" d="M870,230 V270" marker-end="url(#s05g-ar)"/>
+  <path class="flow-b" d="M756,302 H714" marker-end="url(#s05g-ab)"/>
+  <path class="flow" d="M466,302 H424" marker-end="url(#s05g-ac)"/>
+
+  <line class="ln dash" x1="20" y1="352" x2="1180" y2="352"/>
+  <text class="mm" x="30" y="374">STEP 3 IS THE ONLY PLACE THE OPERATION IS MADE IDEMPOTENT &mdash; EVERY LATER STEP DEPENDS ON THAT &middot; STEPS 5 TO 8 ARE ASYNCHRONOUS, SO THE MANAGER&rsquo;S UI RETURNS AT STEP 4</text>
+  <text class="mm" x="30" y="392">AND SHOWS &ldquo;APPROVED, PROVISIONING&rdquo; &middot; STEP 7 MAY RUN MORE THAN ONCE, SO THE VENDOR CALL CARRIES ITS OWN KEY &middot; STEP 8 MAY ARRIVE TWICE OR NEVER</text>
+  <text class="mm b" x="30" y="414">A NIGHTLY RECONCILER COMPARES OUR PROVISIONED SET WITH CCURE&rsquo;S, BECAUSE STEP 8 IS ALLOWED TO BE LOST AND EVENTUALLY WILL BE.</text>
+</svg>
+<figcaption>Drawing 05-G &mdash; one request across three API styles. <b>Cyan</b> = synchronous.
+<b>Brass</b> = asynchronous. <b>Red</b> = the vendor boundary.</figcaption>
+</figure>
+
+<div class="panel panel--real">
+  <span class="ph">In production</span>
+  <p>Propagate one <code>traceparent</code> header from step 1 and put the trace id in every log line at
+  every step, including the Kafka message headers. When a manager says &ldquo;I approved this an hour ago
+  and nothing happened&rdquo;, you paste one id and see exactly which of the ten steps it stopped at. Without
+  it, you are grepping ten services by timestamp. This costs about an hour to add and it is the difference
+  between a five-minute investigation and an afternoon.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="drill">Drill book</h2>
+<p class="sub">Answer out loud. If it takes more than 90 seconds, it is not ready.</p>
+
+<div class="drill">
+  <div class="dh">API design</div>
+  <details><summary>What actually makes an API RESTful?</summary>
+    <div class="ans"><p>The constraints: a uniform interface, statelessness, cacheability,
+    client&ndash;server separation, and a layered system. In practice the ones with teeth are that resources
+    have URLs and the HTTP verbs keep their meanings, and that the server holds no client session between
+    calls &mdash; which is what lets you put six instances behind a load balancer without sticky sessions.
+    Most &ldquo;REST&rdquo; APIs, including good ones, are not fully RESTful because they skip HATEOAS, and
+    that is fine.</p></div></details>
+  <details><summary>Which methods are idempotent, and why does anyone care?</summary>
+    <div class="ans"><p><code>GET</code>, <code>PUT</code>, <code>DELETE</code>, <code>HEAD</code> and
+    <code>OPTIONS</code> are idempotent: doing them twice leaves the same state as doing them once.
+    <code>POST</code> and <code>PATCH</code> are not. It matters because networks fail after the request has
+    arrived but before the response gets back, so retries are unavoidable &mdash; and a client library, load
+    balancer or service mesh will retry idempotent methods automatically. For <code>POST</code> you have to
+    supply idempotency yourself with a client-generated key.</p></div></details>
+  <details><summary>Design pagination for ten million access requests.</summary>
+    <div class="ans"><p>Cursor-based, on <code>(created_at DESC, id DESC)</code> with a matching composite
+    index, cursor opaque and base64-encoded so clients cannot construct one. Offset pagination degrades
+    linearly with depth and skips or duplicates rows when data is inserted mid-scroll. No total count on a
+    table that size &mdash; if the UI needs a figure, use the planner estimate and label it approximate.</p></div></details>
+  <details><summary>How do you version an API without breaking clients?</summary>
+    <div class="ans"><p>Prefer not to version: additive changes are safe if clients ignore unknown fields.
+    When a breaking change is unavoidable, add <code>/v2</code> in the path, run both, and drive migration
+    with <code>Deprecation</code> and <code>Sunset</code> headers plus per-caller metrics on the old shape.
+    Announce, contact the stragglers, run a short brownout returning 410, then remove. Path versioning over
+    header versioning because it survives contact with load balancers, logs and bug reports.</p></div></details>
+  <details><summary>What is the N+1 problem in GraphQL and how do you fix it?</summary>
+    <div class="ans"><p>Field resolvers run once per parent object, so a list of twenty requests calls the
+    employee resolver twenty times &mdash; twenty-one queries for one screen. The fix is a DataLoader: it
+    collects <code>.load(id)</code> calls made within a single tick of the event loop, deduplicates the ids
+    and issues one batched <code>WHERE id IN (&hellip;)</code>. Create it per request, never as a singleton,
+    or its cache will leak data between users.</p></div></details>
+  <details><summary>Why is caching harder in GraphQL than REST?</summary>
+    <div class="ans"><p>REST caches on the URL, so browsers, CDNs and reverse proxies do it for free. In
+    GraphQL every query is a <code>POST</code> to one URL with the real request in the body, so none of that
+    infrastructure can help. You recover some of it with persisted queries &mdash; the client sends a hash,
+    the server holds the text, and it can be a cacheable <code>GET</code> &mdash; plus a normalised client
+    cache. That is real work you get for nothing in REST.</p></div></details>
+  <details><summary>Walk through securing an inbound webhook.</summary>
+    <div class="ans"><p>Verify an HMAC-SHA256 over the raw body concatenated with the timestamp, using a
+    shared secret, compared in constant time. Reject anything older than about five minutes, so a captured
+    request cannot be replayed. Deduplicate on the provider's delivery id, because delivery is at-least-once.
+    Validate the schema. Then do the minimum &mdash; publish to a queue and return 202 &mdash; so a slow
+    downstream cannot cause the sender to time out and retry.</p></div></details>
+  <details><summary>A webhook provider says they sent an event and you have no record. What now?</summary>
+    <div class="ans"><p>Check their delivery log first for the response we returned: a 4xx means we rejected
+    it and the reason is ours to fix; a 5xx or timeout means we were down and their retries have since
+    expired. That is precisely why the stream is never the only source of truth &mdash; a nightly
+    reconciliation job compares our provisioned set against their API and repairs the difference. Then add
+    an alert on the gap so the reconciler finding something is itself a signal.</p></div></details>
+  <details><summary>Should a failed operation ever return HTTP 200?</summary>
+    <div class="ans"><p>For REST, no &mdash; the status code is the machine-readable outcome, and every
+    proxy, client library, retry policy and dashboard between you and the caller reads it. Returning
+    <code>200 {"success": false}</code> means your error rate graph is flat during an outage. GraphQL is the
+    documented exception: it returns 200 with an <code>errors</code> array because one response may be
+    partially successful, and that mismatch with HTTP semantics is one of its genuine costs.</p></div></details>
+  <details><summary>How do you rate limit fairly, and what do you return?</summary>
+    <div class="ans"><p>Token bucket or sliding window in Redis, keyed by API key or user rather than IP,
+    because IP punishes everyone behind one corporate NAT. Return <code>429</code> with
+    <code>Retry-After</code> and the <code>RateLimit-Limit</code>, <code>-Remaining</code> and
+    <code>-Reset</code> headers so a well-behaved client can pace itself instead of hammering. For GraphQL,
+    charge by computed query complexity rather than request count, since one request can be a thousand
+    times more expensive than another.</p></div></details>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="signoff">Sign-off</h2>
+<p class="sub">Tick only what you have built yourself and can explain with the sheet closed.</p>
+
+<div class="signoff">
+  <div class="sh"><span>Weeks 05&ndash;06</span><span>Sheet 05</span></div>
+  <label><input type="checkbox"><span>Designed the BadgeDesk REST surface on paper, with resource URLs and a status code for every outcome, before writing a handler.</span></label>
+  <label><input type="checkbox"><span>Implemented <code>Idempotency-Key</code> with Redis and proved it by firing the same request twice with the connection killed in between.</span></label>
+  <label><input type="checkbox"><span>Replaced offset pagination with cursor pagination and confirmed the query plan uses the composite index.</span></label>
+  <label><input type="checkbox"><span>Returned RFC 9457 problem details with a <code>trace_id</code> from every error path.</span></label>
+  <label><input type="checkbox"><span>Generated TypeScript types from <code>/openapi.json</code> and broke the build on purpose by removing a field.</span></label>
+  <label><input type="checkbox"><span>Written a GraphQL schema with a connection type and a mutation payload carrying typed errors.</span></label>
+  <label><input type="checkbox"><span>Reproduced N+1 with query logging on, then fixed it with a per-request DataLoader and counted the queries before and after.</span></label>
+  <label><input type="checkbox"><span>Added a depth limit and complexity scoring to the gateway.</span></label>
+  <label><input type="checkbox"><span>Verified an HMAC webhook signature with a timestamp tolerance and <code>compare_digest</code>, and tested that a tampered body is rejected.</span></label>
+  <label><input type="checkbox"><span>Made the receiver idempotent and proved a replayed delivery is ignored with a 2xx.</span></label>
+  <label><input type="checkbox"><span>Sent an outbound webhook with retry, jitter and a dead letter store.</span></label>
+  <label><input type="checkbox"><span>Can argue, with reasons, why the gateway is GraphQL and the internal calls are REST.</span></label>
+</div>
+
+</div><!-- /sheetbody -->
+</main>
+
+<aside class="toc" aria-label="Contents"></aside>
+</div>
+
+<script src="assets/js/nav-data.js"></script>
+<script src="assets/js/sheet.js"></script>
+</body>
+</html>

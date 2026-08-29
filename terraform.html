@@ -1,0 +1,2673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheet 10 — Terraform — BadgeDesk Roadmap</title>
+<link rel="stylesheet" href="assets/css/sheet.css">
+</head>
+<body data-sheet="10">
+<a class="skip" href="#main">Skip to sheet</a>
+<div class="wrap">
+<nav class="rail" aria-label="Sheet index"></nav>
+
+<main id="main">
+
+<header class="sheethead">
+  <div>
+    <div class="no">Sheet 10 &middot; Ship it and run it &middot; Week 10</div>
+    <h1>Terra&shy;form<span>.</span></h1>
+    <p class="lede">You already built the BadgeDesk AWS environment by hand on <a href="aws.html">Sheet 07</a>.
+    This sheet rebuilds it as a few hundred lines of code you can review, diff and destroy. It is marked
+    <b>good to have, not a must</b> on your list, so it is deliberately short: one mental model, the language
+    features you will actually type, and the state file &mdash; because <b>every Terraform problem you will
+    ever have is a disagreement about state</b>.</p>
+  </div>
+  <div class="specs">
+    <div><span>Weeks</span><span>10</span></div>
+    <div><span>Hours</span><span>8 &ndash; 10</span></div>
+    <div><span>Must know</span><span>state &middot; plan &middot; for_each</span></div>
+    <div><span>Nice to have</span><span>CDKTF &middot; policy engines</span></div>
+    <div><span>Ships</span><span>Sheet 07, as code</span></div>
+  </div>
+</header>
+
+<div class="sheetbody">
+
+<!-- ===================================================================== -->
+<h2 id="agree">Three things must agree</h2>
+<p class="sub">Terraform is not a deployment tool and it is not a wrapper around the AWS CLI. It is a
+reconciliation loop over three separate pictures of your infrastructure. Learn this one drawing and you can
+debug Terraform for the rest of your career without reading a single blog post.</p>
+
+<figure class="dwg dwg--hero">
+<svg viewBox="0 0 1200 560" role="img" aria-label="The Terraform mental model: your configuration files, the state file and the real cloud are three separate pictures of your infrastructure. Plan refreshes state from the cloud and prints the difference between configuration and state. Apply changes the cloud to match the configuration and then rewrites state. Someone clicking in the AWS console changes the cloud without changing configuration or state, which is drift.">
+  <defs>
+    <marker id="s10a-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s10a-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s10a-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <text class="mm" x="30" y="30">THREE PICTURES OF THE SAME INFRASTRUCTURE &mdash; THEY DRIFT APART ON THEIR OWN</text>
+
+  <rect class="box-a" x="30" y="70" width="320" height="84" rx="3"/>
+  <text class="t mid" x="190" y="100">Your configuration</text>
+  <text class="m mid" x="190" y="120">*.tf, in Git, reviewed</text>
+  <text class="mm mid" x="190" y="140">WHAT YOU SAY YOU WANT</text>
+
+  <rect class="box-c" x="430" y="70" width="320" height="84" rx="3"/>
+  <text class="t mid" x="590" y="100">The state file</text>
+  <text class="m mid" x="590" y="120">terraform.tfstate, in S3</text>
+  <text class="mm mid" x="590" y="140">WHAT TERRAFORM BELIEVES EXISTS</text>
+
+  <rect class="box" x="850" y="70" width="320" height="84" rx="3"/>
+  <text class="t mid" x="1010" y="100">The real cloud</text>
+  <text class="m mid" x="1010" y="120">the AWS API, right now</text>
+  <text class="mm mid" x="1010" y="140">WHAT ACTUALLY EXISTS</text>
+
+  <path class="flow" d="M846,112 H756" marker-end="url(#s10a-ac)"/>
+  <text class="mm c mid" x="801" y="134">REFRESH</text>
+
+  <rect class="box-a" x="170" y="250" width="380" height="90" rx="3"/>
+  <text class="t b mid" x="360" y="282">terraform plan</text>
+  <text class="m mid" x="360" y="304">diff 1 against 2, after syncing 2 from 3</text>
+  <text class="mm mid" x="360" y="324">CHANGES NOTHING &middot; READ IT LIKE A DIFF</text>
+
+  <rect class="box-a" x="650" y="250" width="380" height="90" rx="3"/>
+  <text class="t b mid" x="840" y="282">terraform apply</text>
+  <text class="m mid" x="840" y="304">make 3 match 1, then rewrite 2</text>
+  <text class="mm mid" x="840" y="324">THE ONLY STEP THAT COSTS MONEY</text>
+
+  <path class="flow" d="M190,158 V244" marker-end="url(#s10a-ac)"/>
+  <path class="flow" d="M560,158 V200 H420 V244" marker-end="url(#s10a-ac)"/>
+  <path class="flow-b" d="M554,295 H644" marker-end="url(#s10a-ab)"/>
+  <text class="mm b mid" x="600" y="360">YOU APPROVE</text>
+
+  <path class="flow-b" d="M700,246 V162" marker-end="url(#s10a-ab)"/>
+  <text class="mm b" x="712" y="200">THEN WRITE THE NEW STATE</text>
+  <path class="flow-b" d="M990,246 V162" marker-end="url(#s10a-ab)"/>
+  <text class="mm b end" x="1170" y="190">CREATE &middot; UPDATE</text>
+  <text class="mm b end" x="1170" y="206">REPLACE &middot; DESTROY</text>
+
+  <rect class="box" x="30" y="420" width="780" height="96" rx="3"/>
+  <text class="t" x="48" y="448">Almost every Terraform problem is one of these three</text>
+  <text class="m" x="48" y="472">2 says it exists, 3 does not &nbsp;&rarr;&nbsp; plan wants to create it all over again</text>
+  <text class="m" x="48" y="490">3 has it, 2 does not &nbsp;&rarr;&nbsp; apply fails AlreadyExists; you need terraform import</text>
+  <text class="m" x="48" y="508">two people write 2 at once &nbsp;&rarr;&nbsp; a torn state file; which is why locking exists</text>
+
+  <rect class="box-r" x="850" y="420" width="320" height="96" rx="3"/>
+  <text class="t r mid" x="1010" y="448">Someone clicks in the console</text>
+  <text class="m mid" x="1010" y="470">widens a security group at 02:00</text>
+  <text class="mm r mid" x="1010" y="490">3 CHANGED. 1 AND 2 DID NOT.</text>
+  <text class="mm r mid" x="1010" y="506">THIS IS DRIFT.</text>
+  <path class="flow-r" d="M1130,416 V160" marker-end="url(#s10a-ar)"/>
+
+  <circle class="bub" cx="190" cy="36" r="13"/><text class="bubt" x="190" y="40">1</text>
+  <path class="lead" d="M190,49 V66"/>
+  <circle class="bub" cx="590" cy="36" r="13"/><text class="bubt" x="590" y="40">2</text>
+  <path class="lead" d="M590,49 V66"/>
+  <circle class="bub" cx="1010" cy="36" r="13"/><text class="bubt" x="1010" y="40">3</text>
+  <path class="lead" d="M1010,49 V66"/>
+  <circle class="bub" cx="140" cy="295" r="13"/><text class="bubt" x="140" y="299">4</text>
+  <path class="lead" d="M153,295 H166"/>
+  <circle class="bub" cx="1060" cy="295" r="13"/><text class="bubt" x="1060" y="299">5</text>
+  <path class="lead" d="M1047,295 H1034"/>
+  <circle class="bub" cx="828" cy="468" r="13"/><text class="bubt" x="828" y="472">6</text>
+  <path class="lead" d="M841,468 H846"/>
+  <circle class="bub" cx="60" cy="398" r="13"/><text class="bubt" x="60" y="402">7</text>
+  <path class="lead" d="M60,411 V416"/>
+
+  <text class="mm" x="30" y="545">TERRAFORM NEVER LOOKS AT THE CLOUD UNLESS STATE POINTS AT IT. A RESOURCE MISSING FROM STATE IS INVISIBLE, NO MATTER HOW EXPENSIVE IT IS.</text>
+</svg>
+<figcaption>Drawing 10-A &mdash; the three pictures. <b>Brass</b> = the things you write and the writes Terraform
+makes. <b>Cyan</b> = reads. <b>Red</b> = drift, the change nobody wrote down.</figcaption>
+</figure>
+
+<div class="notes">
+  <div class="n"><b>1</b><div><b>Your configuration is desired state, not instructions.</b> A <code>.tf</code>
+  file is a description of the end result: &ldquo;there is a VPC with this CIDR, and four subnets in it.&rdquo;
+  You never write &ldquo;create a VPC&rdquo;. Terraform decides whether creating is what is needed. This is
+  the single largest mental shift coming from shell scripts.</div></div>
+  <div class="n"><b>2</b><div><b>State is a cache with authority.</b> It maps each address in your config
+  (<code>aws_vpc.main</code>) to a real resource ID (<code>vpc-0f3a1c9e</code>) plus a full snapshot of that
+  resource's attributes. Without it, Terraform cannot tell &ldquo;create this&rdquo; from &ldquo;this already
+  exists and is correct&rdquo;. It is not a log and it is not a backup &mdash; it is the index.</div></div>
+  <div class="n"><b>3</b><div><b>The cloud is the only picture that is actually true</b>, and it is the one
+  Terraform looks at least often. It changes without asking you: an autoscaler resizes something, AWS
+  deprecates a default, a colleague fixes an outage at 02:00 in the console.</div></div>
+  <div class="n"><b>4</b><div><b><code>plan</code> is a three-way diff and it writes nothing.</b> First it
+  refreshes: for every resource in state, it calls the API and updates its snapshot. Then it compares that
+  refreshed state against your configuration and prints what it would take to close the gap. Running
+  <code>plan</code> a hundred times costs you a hundred sets of API calls and nothing else.</div></div>
+  <div class="n"><b>5</b><div><b><code>apply</code> is the reconciliation.</b> It walks the dependency graph,
+  calls create/update/delete APIs in order, and after each resource succeeds it writes the new state. Two
+  writes per resource, in effect: one to the cloud, one to state. An apply that dies halfway leaves both
+  half-done &mdash; and that is fine, because the next <code>plan</code> just diffs again.</div></div>
+  <div class="n"><b>6</b><div><b>Drift is a change to picture 3 that pictures 1 and 2 never heard about.</b>
+  The next <code>plan</code> refreshes, notices the security group is wider than state remembers, and offers
+  to narrow it back &mdash; silently undoing the 02:00 fix. This is why &ldquo;who has console write access in
+  prod&rdquo; is a Terraform question, not just a security question.</div></div>
+  <div class="n"><b>7</b><div><b>Three failure shapes, and you will hit all three.</b> Someone deleted a
+  resource by hand, so state is stale and Terraform recreates it. Someone created a resource by hand, so
+  apply collides with it and you must <code>import</code>. Or two people applied at once and the state file
+  now describes a system that never existed. Locking prevents the third; nothing prevents the first two
+  except discipline.</div></div>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p>&ldquo;What does <code>terraform plan</code> actually do?&rdquo; The weak answer is &ldquo;it shows you
+  what will change.&rdquo; The answer that lands: &ldquo;It refreshes the state file against the live API,
+  then diffs the refreshed state against my configuration, then prints the ordered set of create, update,
+  replace and destroy operations needed to close the gap. It takes no write locks on the cloud and changes
+  nothing &mdash; but it does read every resource in state, so on a large workspace it is slow and it does
+  hit API rate limits.&rdquo;</p>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why this exists &mdash; and what you may skip</span>
+  <p>Terraform is a &ldquo;nice to have&rdquo; on your list, so spend the week on the 20% that gets asked
+  about and used: the model above, <code>plan</code> output, remote state and locking, modules, and
+  <code>for_each</code>. <b>Skip for now:</b> writing your own provider, CDK for Terraform, Sentinel and
+  OPA policy-as-code, Terraform Cloud/HCP run tasks, dynamic provider configuration, and anything involving
+  clever meta-programming in HCL. If you find yourself writing <code>dynamic</code> blocks inside
+  <code>for_each</code> inside a module, you have gone past the useful part of this sheet.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="why">Why infrastructure as code</h2>
+<p class="sub">You built Sheet 07's environment by clicking. It works. Here is precisely what you lost by
+doing it that way, and why the industry converged on declarative IaC rather than shell scripts.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Dimension</th><th>Console clicking</th><th>Shell script over the CLI</th><th>Declarative IaC</th></tr></thead>
+<tbody>
+<tr><td>Repeatability</td><td>None. You will forget a checkbox in staging.</td><td>Good the first time, bad the second &mdash; re-running creates duplicates or fails.</td><td>Idempotent by construction. Run it ten times, get one environment.</td></tr>
+<tr><td>Review</td><td>Nothing to review. The change is a screenshot in Slack, at best.</td><td>Reviewable, but the reviewer must simulate the script in their head.</td><td>A diff in a PR, plus a machine-generated <code>plan</code> of the actual effect.</td></tr>
+<tr><td>Disaster recovery</td><td>A wiki page from 2023 and whoever still remembers.</td><td>Re-run and hope the ordering assumptions still hold.</td><td><code>terraform apply</code> in a new region or account. Hours, not weeks.</td></tr>
+<tr><td>Drift detection</td><td>Impossible. There is no record of intent.</td><td>Impossible. The script records actions, not intent.</td><td><code>plan</code> in CI on a schedule shows you every hand-edit.</td></tr>
+<tr><td>Onboarding</td><td>&ldquo;Click around prod and see.&rdquo;</td><td>Read 600 lines of <code>aws ec2 create-&hellip;</code> and infer the shape.</td><td>Read <code>network.tf</code>. The architecture <i>is</i> the file listing.</td></tr>
+<tr><td>Deletion</td><td>Orphaned ENIs, forgotten NAT gateways, a $40/month surprise.</td><td>A second script nobody wrote.</td><td><code>terraform destroy</code>, in reverse dependency order.</td></tr>
+<tr><td>Honest weakness</td><td>Fast for one-off investigation. Still the right tool for reading.</td><td>Fine for genuinely one-shot tasks.</td><td>A state file to look after, a new language, and slow feedback.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="why-declarative">Declarative versus imperative, concretely</h3>
+<p>The difference is not syntax. It is who owns the decision about <i>what to do</i>. In the imperative
+version you own it, so you must handle every starting condition. In the declarative version the tool owns it,
+so you only describe the destination.</p>
+
+<div class="vs">
+  <div>
+    <div class="vh">Imperative &mdash; you write the steps</div>
+    <div class="code" data-lang="bash"><header><b>scripts/create-reports-bucket.sh</b></header><pre><code>#!/usr/bin/env bash
+set -euo pipefail
+B=badgedesk-prod-audit-reports
+
+# Does it already exist? You must ask, and handle both answers.
+if aws s3api head-bucket --bucket "$B" 2&gt;/dev/null; then
+  echo "exists, skipping create"
+else
+  aws s3api create-bucket --bucket "$B" \
+    --create-bucket-configuration LocationConstraint=ap-south-1
+fi
+
+# Is versioning already on? Turning it on twice is fine here,
+# but you have no idea whether it was on before you ran this.
+aws s3api put-bucket-versioning --bucket "$B" \
+  --versioning-configuration Status=Enabled
+
+aws s3api put-public-access-block --bucket "$B" \
+  --public-access-block-configuration \
+  "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
+
+# And there is no way to answer "what does this script
+# believe the bucket looks like right now?"
+</code></pre></div>
+  </div>
+  <div>
+    <div class="vh">Declarative &mdash; you write the destination</div>
+    <div class="code" data-lang="hcl"><header><b>data.tf</b></header><pre><code>resource "aws_s3_bucket" "reports" {
+  bucket = "badgedesk-prod-audit-reports"
+}
+
+resource "aws_s3_bucket_versioning" "reports" {
+  bucket = aws_s3_bucket.reports.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "reports" {
+  bucket                  = aws_s3_bucket.reports.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# No `if`. No ordering. No "does it exist".
+# `plan` answers "what is different"; the graph
+# answers "in what order".
+</code></pre></div>
+  </div>
+</div>
+
+<p><b>Which and when:</b> use declarative IaC for anything that persists &mdash; networks, databases, roles,
+buckets, clusters. Keep imperative scripts for genuinely one-shot operations that have no desired end state:
+rotating a key today, running a backfill, taking a manual snapshot before a risky migration.</p>
+
+<h3 id="why-tools">Terraform versus the alternatives</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th>Tool</th><th>Language</th><th>Scope</th><th>State</th><th>It wins when&hellip;</th></tr></thead>
+<tbody>
+<tr><td><b>Terraform</b> / OpenTofu</td><td>HCL, declarative</td><td>Every cloud, plus Datadog, GitHub, Cloudflare, Postgres roles</td><td>Yours to host and protect</td><td>You are multi-cloud, or want one language and one hiring pool for all infrastructure. The default answer.</td></tr>
+<tr><td>CloudFormation</td><td>YAML/JSON, declarative</td><td>AWS only</td><td>AWS-managed, invisible, free</td><td>You are AWS-only and want zero state to look after. Also the substrate SAM and CDK compile to.</td></tr>
+<tr><td>AWS CDK</td><td>TypeScript / Python</td><td>AWS only (synthesises CloudFormation)</td><td>AWS-managed</td><td>Your team is strong in a real programming language and wants loops, classes and unit tests over infrastructure.</td></tr>
+<tr><td>Pulumi</td><td>TypeScript / Python / Go</td><td>Every cloud</td><td>Pulumi Cloud or self-hosted</td><td>You want CDK's programming model but not the AWS lock-in.</td></tr>
+<tr><td>Bicep</td><td>Bicep DSL, declarative</td><td>Azure only (ARM template output)</td><td>Azure-managed</td><td>You are Azure-only. It is what ARM should always have been &mdash; see <a href="azure.html">Sheet 08</a>.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><b>Pick Terraform</b> for this roadmap: it is what most job adverts name, it teaches the state and graph
+concepts the others hide, and the same file creates an AWS VPC and an Azure VNet. OpenTofu is a drop-in fork
+after HashiCorp's licence change; the syntax on this sheet is identical in both.</p>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil</span>
+  <p>&ldquo;Terraform is a programming language&rdquo; is the wrong model and it produces the worst codebases.
+  HCL has no mutable variables, no ordered execution, no early returns and only anaemic loops, on purpose.
+  If your answer to a problem is a 40-line nested <code>for</code> expression building a map of maps, the
+  correct answer was almost always &ldquo;write the four resources out longhand.&rdquo; Explicit and boring
+  beats clever and unreadable, because the reviewer's job is to spot the security group you widened.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; why IaC at all</div>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@TechWorldwithNana__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5CyCI6xD$" target="_blank" rel="noopener"><span>TechWorld with Nana &mdash; Terraform course<i>The clearest end-to-end Terraform explanation on YouTube. Watch the first hour before anything else on this sheet.</i></span><span class="dur">long</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=Fireship*terraform*in*100*seconds__;KysrKw!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5MiL9ji9$" target="_blank" rel="noopener"><span>Fireship &mdash; Terraform in 100 Seconds<i>The orientation video. Watch it, then come back to Drawing 10-A.</i></span><span class="dur">2 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://developer.hashicorp.com/terraform/intro__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5DkxarbE$" target="_blank" rel="noopener"><span>HashiCorp &mdash; What is Terraform?<i>Official introduction. Short, and the &ldquo;use cases&rdquo; page is the honest version of the table above.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@DevOpsToolkit__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5MH2dEQx$" target="_blank" rel="noopener"><span>DevOps Toolkit &mdash; IaC tool comparisons<i>Opinionated head-to-heads between Terraform, Pulumi, CDK and Crossplane. Good for &ldquo;why not the other one&rdquo;.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://opentofu.org/docs/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5G8NX2tL$" target="_blank" rel="noopener"><span>OpenTofu docs<i>Read the migration page once so you can answer the licence question if it comes up.</i></span><span class="dur">docs</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="language">The language</h2>
+<p class="sub">HCL has about eight constructs. This section is all of them, in the order you will meet them,
+with the two that cause real damage &mdash; <code>count</code> and <code>lifecycle</code> &mdash; given proper
+space.</p>
+
+<h3 id="lang-providers">Providers, and why you pin versions</h3>
+<p>A provider is a plugin that translates HCL into API calls. <code>terraform init</code> downloads it. The
+<code>terraform</code> block is the only place in the language that cannot use variables &mdash; it is read
+before anything is evaluated.</p>
+
+<div class="code" data-lang="hcl">
+<header><b>envs/prod/00-provider.tf</b></header>
+<pre><code>terraform {
+  required_version = "~&gt; 1.10"          # 1.10.x only. Not 1.11.
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~&gt; 5.60"               # 5.60 up to but excluding 6.0
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~&gt; 3.6"
+    }
+  }
+}
+
+provider "aws" {
+  region = var.region
+
+  # Applied to every resource that supports tags. Do this once, here,
+  # not on 60 individual resources.
+  default_tags {
+    tags = {
+      Project     = "badgedesk"
+      Environment = var.environment
+      ManagedBy   = "terraform"
+      Repo        = "badgedesk-infra"
+    }
+  }
+}
+
+# A second provider instance for a different region, addressed by alias.
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"                  # ACM certs for CloudFront live here
+}
+</code></pre>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why you pin, and why you commit the lock file</span>
+  <p><code>~&gt; 5.60</code> means &ldquo;any 5.x at or above 5.60&rdquo;. Without it, a colleague running
+  <code>init</code> next Tuesday gets provider 6.0, which renames an argument, and their <code>plan</code>
+  proposes to replace your production database. <code>terraform init</code> writes
+  <code>.terraform.lock.hcl</code> with the exact versions and their checksums &mdash;
+  <b>commit that file</b>, exactly like <code>package-lock.json</code>. It is what makes CI and your laptop
+  produce the same plan. Upgrade deliberately with <code>terraform init -upgrade</code>, in its own PR,
+  where the plan is the review.</p>
+</div>
+
+<h3 id="lang-resources">Resources, addresses, and data sources</h3>
+<p>A <code>resource</code> block says &ldquo;this thing exists and I own it&rdquo;. Its <b>address</b> is
+<code>type.name</code> &mdash; the first string is fixed by the provider, the second is a label you choose
+that must be unique in the module. That address is the key in the state file, the thing you type in
+<code>state mv</code>, and the thing that appears in every plan.</p>
+
+<div class="code" data-lang="hcl">
+<header><b>resource, data, and the difference between them</b></header>
+<pre><code># Terraform CREATES, UPDATES and DELETES this. Address: aws_vpc.main
+resource "aws_vpc" "main" {
+  cidr_block           = var.vpc_cidr
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+  tags                 = { Name = "badgedesk-${var.environment}" }
+}
+
+# Terraform only READS this. It is looked up on every plan and never changed.
+# Use data sources for things someone else owns: shared accounts, AMIs,
+# the account id, a certificate the platform team manages.
+data "aws_caller_identity" "current" {}
+
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+data "aws_ssm_parameter" "vendor_api_host" {
+  name = "/platform/access-control/host"     # owned by the platform team
+}
+
+output "account_id" {
+  value = data.aws_caller_identity.current.account_id
+}
+
+# Referencing an attribute of another resource does two things:
+#   1. substitutes the value at apply time
+#   2. creates an edge in the dependency graph
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.main.id                   # &lt;- both, from one expression
+}
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; renaming is not free</span>
+  <p>Changing <code>resource "aws_vpc" "main"</code> to <code>resource "aws_vpc" "core"</code> does not rename
+  anything in AWS. Terraform sees one address disappear and a new one appear, so the plan is <b>destroy the
+  VPC and create another one</b>. The label is part of the identity. If you must rename, add a
+  <code>moved</code> block (shown in the state section) or use <code>terraform state mv</code>; never just
+  edit the label and apply.</p>
+</div>
+
+<h3 id="lang-vars">Variables, locals and outputs</h3>
+<p>Three different jobs that beginners mix up. <b>Variables</b> are the module's inputs &mdash; things a
+caller sets. <b>Locals</b> are named expressions to stop repeating yourself; they are computed, not settable.
+<b>Outputs</b> are the module's return values.</p>
+
+<div class="code" data-lang="hcl">
+<header><b>envs/prod/variables.tf</b></header>
+<pre><code>variable "region" {
+  description = "AWS region. BadgeDesk is Mumbai; BLR-01 and HYD-01 are both in-country."
+  type        = string
+  default     = "ap-south-1"
+}
+
+variable "environment" {
+  description = "dev | staging | prod. Drives sizing, backups and deletion protection."
+  type        = string                        # no default: must be supplied
+
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "environment must be one of dev, staging, prod."
+  }
+}
+
+variable "vpc_cidr" {
+  type    = string
+  default = "10.20.0.0/16"
+
+  validation {
+    condition     = can(cidrnetmask(var.vpc_cidr))
+    error_message = "vpc_cidr must be a valid IPv4 CIDR block."
+  }
+}
+
+# Object types make bad input a plan-time error rather than an apply-time one.
+variable "db" {
+  type = object({
+    instance_class    = string
+    allocated_storage = number
+    multi_az          = bool
+  })
+  default = {
+    instance_class    = "db.t4g.micro"
+    allocated_storage = 20
+    multi_az          = false
+  }
+}
+
+variable "vendor_api_token" {
+  type      = string
+  sensitive = true       # redacted in plan output and in the CLI. NOT in state.
+}
+</code></pre>
+</div>
+
+<div class="code" data-lang="hcl">
+<header><b>envs/prod/locals.tf</b></header>
+<pre><code>locals {
+  name = "badgedesk-${var.environment}"
+
+  azs = slice(data.aws_availability_zones.available.names, 0, 2)
+
+  # A map, not a list. The keys become part of the resource address,
+  # so they must be stable for the life of the infrastructure.
+  public_subnets = {
+    a = { cidr = cidrsubnet(var.vpc_cidr, 8, 0), az = local.azs[0] }
+    b = { cidr = cidrsubnet(var.vpc_cidr, 8, 1), az = local.azs[1] }
+  }
+
+  private_subnets = {
+    a = { cidr = cidrsubnet(var.vpc_cidr, 8, 10), az = local.azs[0] }
+    b = { cidr = cidrsubnet(var.vpc_cidr, 8, 11), az = local.azs[1] }
+  }
+
+  is_prod = var.environment == "prod"
+}
+</code></pre>
+</div>
+
+<div class="code" data-lang="hcl">
+<header><b>envs/prod/outputs.tf</b></header>
+<pre><code>output "vpc_id" {
+  value = aws_vpc.main.id
+}
+
+output "private_subnet_ids" {
+  description = "Feeds the RDS subnet group and the Lambda VPC config."
+  value       = [for s in aws_subnet.private : s.id]
+}
+
+output "db_endpoint" {
+  value = aws_db_instance.core.endpoint
+}
+
+output "db_password" {
+  value     = random_password.db.result
+  sensitive = true            # `terraform output` hides it; state stores it in clear
+}
+</code></pre>
+</div>
+
+<h3 id="lang-foreach">for_each versus count &mdash; the one that will bite you</h3>
+<p>Both create several copies of a resource. They differ in what the copies are <b>named</b>, and that naming
+decides whether a small edit is a one-resource change or a cascade.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 430" role="img" aria-label="Comparison of count and for_each resource addressing. With count the address is the list index, so removing the middle element shifts every later element and Terraform replaces two subnets. With for_each over a map the address is a stable key, so removing one entry destroys exactly one subnet.">
+  <defs>
+    <marker id="s10b-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s10b-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+    <marker id="s10b-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+  </defs>
+
+  <text class="mm r" x="30" y="26">COUNT &mdash; THE ADDRESS IS A POSITION IN A LIST</text>
+
+  <text class="mm" x="30" y="70">BEFORE</text>
+  <rect class="box-c" x="110" y="40" width="240" height="50" rx="3"/>
+  <text class="m mid" x="230" y="62">aws_subnet.private[0]</text>
+  <text class="mm mid" x="230" y="80">10.20.10.0/24 &middot; AZ-A</text>
+  <rect class="box-c" x="380" y="40" width="240" height="50" rx="3"/>
+  <text class="m mid" x="500" y="62">aws_subnet.private[1]</text>
+  <text class="mm mid" x="500" y="80">10.20.11.0/24 &middot; AZ-B</text>
+  <rect class="box-c" x="650" y="40" width="240" height="50" rx="3"/>
+  <text class="m mid" x="770" y="62">aws_subnet.private[2]</text>
+  <text class="mm mid" x="770" y="80">10.20.12.0/24 &middot; AZ-C</text>
+
+  <path class="flow-r" d="M230,94 V106" marker-end="url(#s10b-ar)"/>
+  <path class="flow-r" d="M500,94 V106" marker-end="url(#s10b-ar)"/>
+  <path class="flow-r" d="M770,94 V106" marker-end="url(#s10b-ar)"/>
+
+  <text class="mm" x="30" y="142">AFTER</text>
+  <text class="mm" x="30" y="158">YOU DELETE</text>
+  <text class="mm" x="30" y="174">THE MIDDLE</text>
+  <text class="mm" x="30" y="190">CIDR</text>
+  <rect class="box-c" x="110" y="112" width="240" height="50" rx="3"/>
+  <text class="m mid" x="230" y="134">aws_subnet.private[0]</text>
+  <text class="mm mid" x="230" y="152">10.20.10.0/24 &middot; NO CHANGE</text>
+  <rect class="box-r" x="380" y="112" width="240" height="50" rx="3"/>
+  <text class="m r mid" x="500" y="134">aws_subnet.private[1]</text>
+  <text class="mm r mid" x="500" y="152">NOW 10.20.12.0/24 &middot; REPLACED</text>
+  <rect class="box-r" x="650" y="112" width="240" height="50" rx="3"/>
+  <text class="m r mid" x="770" y="134">aws_subnet.private[2]</text>
+  <text class="mm r mid" x="770" y="152">GONE &middot; DESTROYED</text>
+
+  <rect class="box-r" x="920" y="40" width="250" height="122" rx="3"/>
+  <text class="t r" x="938" y="66">One list edit</text>
+  <text class="m" x="938" y="88">1 subnet removed, but</text>
+  <text class="m" x="938" y="106">2 subnets destroyed and</text>
+  <text class="m" x="938" y="124">1 recreated. Anything</text>
+  <text class="m" x="938" y="142">attached to them &mdash; RDS,</text>
+  <text class="m" x="938" y="156">ENIs &mdash; goes with them.</text>
+
+  <line class="ln dash" x1="30" y1="205" x2="1170" y2="205"/>
+
+  <text class="mm b" x="30" y="238">FOR_EACH OVER A MAP &mdash; THE ADDRESS IS A KEY YOU CHOSE</text>
+
+  <text class="mm" x="30" y="282">BEFORE</text>
+  <rect class="box-c" x="110" y="252" width="240" height="50" rx="3"/>
+  <text class="m mid" x="230" y="274">aws_subnet.private["a"]</text>
+  <text class="mm mid" x="230" y="292">10.20.10.0/24 &middot; AZ-A</text>
+  <rect class="box-c" x="380" y="252" width="240" height="50" rx="3"/>
+  <text class="m mid" x="500" y="274">aws_subnet.private["b"]</text>
+  <text class="mm mid" x="500" y="292">10.20.11.0/24 &middot; AZ-B</text>
+  <rect class="box-c" x="650" y="252" width="240" height="50" rx="3"/>
+  <text class="m mid" x="770" y="274">aws_subnet.private["c"]</text>
+  <text class="mm mid" x="770" y="292">10.20.12.0/24 &middot; AZ-C</text>
+
+  <path class="flow-b" d="M230,306 V318" marker-end="url(#s10b-ab)"/>
+  <path class="flow-r" d="M500,306 V318" marker-end="url(#s10b-ar)"/>
+  <path class="flow-b" d="M770,306 V318" marker-end="url(#s10b-ab)"/>
+
+  <text class="mm" x="30" y="354">AFTER</text>
+  <text class="mm" x="30" y="370">YOU DELETE</text>
+  <text class="mm" x="30" y="386">KEY &ldquo;B&rdquo;</text>
+  <rect class="box-c" x="110" y="324" width="240" height="50" rx="3"/>
+  <text class="m mid" x="230" y="346">aws_subnet.private["a"]</text>
+  <text class="mm mid" x="230" y="364">UNTOUCHED</text>
+  <rect class="box-r" x="380" y="324" width="240" height="50" rx="3"/>
+  <text class="m r mid" x="500" y="346">aws_subnet.private["b"]</text>
+  <text class="mm r mid" x="500" y="364">DESTROYED &middot; ONLY THIS ONE</text>
+  <rect class="box-c" x="650" y="324" width="240" height="50" rx="3"/>
+  <text class="m mid" x="770" y="346">aws_subnet.private["c"]</text>
+  <text class="mm mid" x="770" y="364">UNTOUCHED &middot; STILL "C"</text>
+
+  <rect class="box-a" x="920" y="252" width="250" height="122" rx="3"/>
+  <text class="t b" x="938" y="278">One map edit</text>
+  <text class="m" x="938" y="300">1 entry removed, exactly</text>
+  <text class="m" x="938" y="318">1 subnet destroyed. The</text>
+  <text class="m" x="938" y="336">plan says "1 to destroy"</text>
+  <text class="m" x="938" y="354">and you can believe it</text>
+  <text class="m" x="938" y="368">without reading further.</text>
+
+  <text class="mm" x="30" y="416">USE COUNT ONLY FOR ZERO-OR-ONE (COUNT = VAR.ENABLE_NAT ? 1 : 0). USE FOR_EACH FOR EVERYTHING WITH MORE THAN ONE INSTANCE.</text>
+</svg>
+<figcaption>Drawing 10-B &mdash; resource addressing. <b>Red</b> = destroyed or replaced by a change you did
+not intend. <b>Brass</b> = untouched, which is the whole point.</figcaption>
+</figure>
+
+<div class="code" data-lang="hcl">
+<header><b>the same four subnets, both ways</b></header>
+<pre><code># count - indexed by position. Avoid for collections that change.
+resource "aws_subnet" "private" {
+  count             = length(var.private_cidrs)
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = var.private_cidrs[count.index]
+  availability_zone = local.azs[count.index % length(local.azs)]
+}
+# addresses: aws_subnet.private[0] [1] [2]
+
+# for_each over a map - keyed by a name you control. Almost always right.
+resource "aws_subnet" "private" {
+  for_each          = local.private_subnets
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = each.value.cidr
+  availability_zone = each.value.az
+  tags              = { Name = "${local.name}-private-${each.key}", Tier = "private" }
+}
+# addresses: aws_subnet.private["a"] ["b"]
+
+# for_each also accepts a SET of strings, where the key is the value itself
+resource "aws_ssm_parameter" "site_policy" {
+  for_each = toset(["BLR-01", "BLR-02", "HYD-01"])
+  name     = "/badgedesk/sites/${each.key}/policy"
+  type     = "String"
+  value    = jsonencode({ max_days = 30 })
+}
+# addresses: aws_ssm_parameter.site_policy["BLR-01"] ...
+
+# The one legitimate use of count: a conditional single resource.
+resource "aws_nat_gateway" "main" {
+  count         = local.is_prod ? 1 : 0        # dev saves $32/month
+  allocation_id = aws_eip.nat[0].id
+  subnet_id     = aws_subnet.public["a"].id
+}
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; for_each keys must not be computed</span>
+  <p><code>for_each</code> keys become resource addresses, so Terraform must know them at <b>plan</b> time.
+  Key a <code>for_each</code> off something that only exists after apply &mdash; an ARN, a generated id, a
+  <code>random_id.result</code> &mdash; and you get <i>&ldquo;the for_each value depends on resource attributes
+  that cannot be determined until apply&rdquo;</i>. The fix is always the same: key off something you wrote
+  down yourself (a site code, an environment name, a subnet letter) and put the computed value in
+  <code>each.value</code>, not in the key.</p>
+</div>
+
+<h3 id="lang-expr">Expressions, functions and dynamic blocks</h3>
+<p>There is no standard library to learn. About a dozen functions cover everything you will write this week.</p>
+
+<div class="code" data-lang="hcl">
+<header><b>the functions you actually use</b></header>
+<pre><code># String interpolation and templating
+name        = "badgedesk-${var.environment}-audit"
+bucket_path = "reports/${formatdate("YYYY-MM-DD", timestamp())}/summary.json"
+
+# Networking maths - never hand-calculate a CIDR again
+cidrsubnet("10.20.0.0/16", 8, 10)      # "10.20.10.0/24"
+cidrhost("10.20.10.0/24", 1)           # "10.20.10.1"
+
+# Collections
+toset(["BLR-01", "BLR-02"])            # list -> set, drops order and duplicates
+slice(local.all_azs, 0, 2)             # first two AZs
+merge(local.base_tags, { Tier = "private" })
+lookup(local.sizes, var.environment, "db.t4g.micro")   # with a default
+coalesce(var.override_host, data.aws_ssm_parameter.vendor_api_host.value)
+flatten([for s in aws_subnet.private : s.id])
+
+# Encoding - jsonencode is how you write IAM policies and Lambda env vars
+jsonencode({ max_days = 30, sites = ["BLR-01"] })
+filebase64sha256("${path.module}/build/audit-reconciler.zip")
+
+# Guards
+can(cidrnetmask(var.vpc_cidr))         # true/false instead of an error
+try(var.db.multi_az, false)
+
+# Conditionals and comprehensions
+instance_class = local.is_prod ? "db.r6g.large" : "db.t4g.micro"
+subnet_ids     = [for k, s in aws_subnet.private : s.id if s.tags.Tier == "private"]
+by_site        = { for r in var.requests : r.site_id =&gt; r.id... }   # group by key
+</code></pre>
+</div>
+
+<p><code>dynamic</code> blocks generate <i>nested</i> blocks from a collection. Use them sparingly &mdash;
+they are the fastest way to make a Terraform file unreadable &mdash; but they are the only option when a
+provider models something as repeated blocks rather than a list argument.</p>
+
+<div class="code" data-lang="hcl">
+<header><b>dynamic &mdash; when a nested block must repeat</b></header>
+<pre><code>locals {
+  report_lifecycle = {
+    expire-old-reports  = { days = 400, prefix = "reports/" }
+    expire-temp-exports = { days = 7,   prefix = "tmp/" }
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "reports" {
+  bucket = aws_s3_bucket.reports.id
+
+  dynamic "rule" {
+    for_each = local.report_lifecycle
+    content {
+      id     = rule.key                  # &lt;block label&gt;.key
+      status = "Enabled"
+      filter {
+        prefix = rule.value.prefix       # &lt;block label&gt;.value
+      }
+      expiration {
+        days = rule.value.days
+      }
+    }
+  }
+}
+</code></pre>
+</div>
+
+<h3 id="lang-lifecycle">lifecycle &mdash; three seatbelts</h3>
+
+<div class="code" data-lang="hcl">
+<header><b>lifecycle in anger</b></header>
+<pre><code>resource "aws_db_instance" "core" {
+  identifier = "${local.name}"
+  # ... engine, size, credentials ...
+
+  lifecycle {
+    # 1. Refuse to destroy this, ever, from any plan. A `destroy` that
+    #    touches it fails with an error instead of dropping your Postgres.
+    #    Removing this line is a deliberate, reviewable commit.
+    prevent_destroy = true
+
+    # 2. Do not diff these attributes. AWS rotates the password out from
+    #    under us and the maintenance window drifts; we do not care.
+    ignore_changes = [
+      password,
+      engine_version,          # patch upgrades applied by AWS
+    ]
+  }
+}
+
+resource "aws_security_group" "core" {
+  name_prefix = "${local.name}-core-"     # not `name` - see below
+  vpc_id      = aws_vpc.main.id
+
+  lifecycle {
+    # 3. When a change forces replacement, make the NEW one before
+    #    destroying the old one. Without this, replacing a security group
+    #    fails: AWS will not delete one that still has ENIs attached,
+    #    and the ENIs cannot move until the replacement exists.
+    create_before_destroy = true
+  }
+}
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; ignore_changes as a rug</span>
+  <p><code>ignore_changes</code> does not fix drift, it hides it. Adding <code>ignore_changes = [tags]</code>
+  because a plan is noisy means that from now on nobody &mdash; including you at 03:00 &mdash; can see tag
+  drift on that resource. Use it only where <b>another system legitimately owns the field</b>: an autoscaler
+  owning <code>desired_count</code>, AWS owning a rotated password, a deployment pipeline owning an image tag.
+  And never reach for <code>ignore_changes = all</code>; at that point the resource is not managed, and you
+  should say so out loud.</p>
+</div>
+
+<h3 id="lang-graph">The dependency graph</h3>
+<p>You never specify order. Terraform builds a directed acyclic graph from your references and walks it,
+creating up to ten resources in parallel by default and destroying in exactly reverse order.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 470" role="img" aria-label="The dependency graph Terraform builds for the BadgeDesk VPC. The VPC and an availability-zones data source are roots. Subnets, the internet gateway and security groups depend on the VPC. The route table depends on the gateway, the route table association depends on both the public subnet and the route table, the database subnet group depends on the private subnets, and the database instance depends on the subnet group and the security group. A separate pair of nodes shows a depends_on edge asserted by hand between an IAM role policy and a Lambda function.">
+  <defs>
+    <marker id="s10c-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s10c-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+  </defs>
+
+  <text class="mm" x="30" y="24">EDGES COME FROM REFERENCES. YOU WROTE NO ORDER AT ALL.</text>
+
+  <rect class="box" x="30" y="40" width="210" height="52" rx="3"/>
+  <text class="m mid" x="135" y="62">data.aws_availability</text>
+  <text class="m mid" x="135" y="78">_zones.available</text>
+
+  <rect class="box-a" x="30" y="190" width="210" height="52" rx="3"/>
+  <text class="t b mid" x="135" y="214">aws_vpc.main</text>
+  <text class="mm mid" x="135" y="230">THE ROOT OF EVERYTHING</text>
+
+  <rect class="box-c" x="300" y="40" width="210" height="52" rx="3"/>
+  <text class="m mid" x="405" y="62">aws_internet_gateway</text>
+  <text class="m mid" x="405" y="78">.igw</text>
+
+  <rect class="box-c" x="300" y="126" width="210" height="52" rx="3"/>
+  <text class="m mid" x="405" y="148">aws_subnet.public</text>
+  <text class="mm mid" x="405" y="164">["A"] AND ["B"]</text>
+
+  <rect class="box-c" x="300" y="206" width="210" height="52" rx="3"/>
+  <text class="m mid" x="405" y="228">aws_subnet.private</text>
+  <text class="mm mid" x="405" y="244">["A"] AND ["B"]</text>
+
+  <rect class="box-c" x="300" y="286" width="210" height="52" rx="3"/>
+  <text class="m mid" x="405" y="308">aws_security_group</text>
+  <text class="mm mid" x="405" y="324">.CORE AND .DB</text>
+
+  <rect class="box-c" x="570" y="80" width="210" height="52" rx="3"/>
+  <text class="m mid" x="675" y="102">aws_route_table</text>
+  <text class="mm mid" x="675" y="118">.PUBLIC</text>
+
+  <rect class="box-c" x="570" y="200" width="210" height="52" rx="3"/>
+  <text class="m mid" x="675" y="222">aws_db_subnet_group</text>
+  <text class="mm mid" x="675" y="238">.CORE</text>
+
+  <rect class="box-c" x="840" y="140" width="210" height="52" rx="3"/>
+  <text class="m mid" x="945" y="162">aws_route_table</text>
+  <text class="m mid" x="945" y="178">_association.public</text>
+
+  <rect class="box-a" x="840" y="250" width="210" height="52" rx="3"/>
+  <text class="t b mid" x="945" y="274">aws_db_instance.core</text>
+  <text class="mm mid" x="945" y="290">CREATED LAST, DESTROYED FIRST</text>
+
+  <path class="flow" d="M244,200 H262 V66 H294" marker-end="url(#s10c-ac)"/>
+  <path class="flow" d="M244,210 H272 V152 H294" marker-end="url(#s10c-ac)"/>
+  <path class="flow" d="M244,222 H294" marker-end="url(#s10c-ac)"/>
+  <path class="flow" d="M244,234 H282 V312 H294" marker-end="url(#s10c-ac)"/>
+  <path class="flow" d="M244,66 H254 V140 H294" marker-end="url(#s10c-ac)"/>
+  <path class="flow" d="M244,74 H248 V232 H294" marker-end="url(#s10c-ac)"/>
+
+  <path class="flow" d="M514,66 H540 V106 H564" marker-end="url(#s10c-ac)"/>
+  <path class="flow" d="M514,232 H564" marker-end="url(#s10c-ac)"/>
+  <path class="flow" d="M514,146 H820 V160 H834" marker-end="url(#s10c-ac)"/>
+  <path class="flow" d="M784,106 H812 V166 H834" marker-end="url(#s10c-ac)"/>
+  <path class="flow" d="M784,226 H812 V276 H834" marker-end="url(#s10c-ac)"/>
+  <path class="flow" d="M514,312 H800 V290 H834" marker-end="url(#s10c-ac)"/>
+
+  <line class="ln dash" x1="30" y1="360" x2="1170" y2="360"/>
+
+  <text class="mm b" x="30" y="392">AN EDGE NO REFERENCE</text>
+  <text class="mm b" x="30" y="408">CAN EXPRESS &mdash; SO YOU</text>
+  <text class="mm b" x="30" y="424">ASSERT IT BY HAND</text>
+
+  <rect class="box" x="300" y="386" width="240" height="52" rx="3"/>
+  <text class="m mid" x="420" y="408">aws_cloudwatch_log</text>
+  <text class="m mid" x="420" y="424">_group.audit</text>
+
+  <rect class="box-a" x="620" y="386" width="240" height="52" rx="3"/>
+  <text class="m b mid" x="740" y="408">aws_lambda_function</text>
+  <text class="m b mid" x="740" y="424">.audit</text>
+
+  <path class="flow-b dash" d="M544,412 H614" marker-end="url(#s10c-ab)"/>
+  <text class="mm b mid" x="579" y="380">depends_on</text>
+
+  <text class="mm" x="890" y="400">THE LAMBDA NEVER MENTIONS THE LOG</text>
+  <text class="mm" x="890" y="416">GROUP, BUT IF IT STARTS FIRST IT</text>
+  <text class="mm" x="890" y="432">CREATES ONE WITH NO RETENTION.</text>
+</svg>
+<figcaption>Drawing 10-C &mdash; the graph Terraform builds for the BadgeDesk VPC. <b>Cyan</b> = an edge
+inferred from a reference. <b>Brass dashed</b> = an edge you asserted with <code>depends_on</code>.</figcaption>
+</figure>
+
+<div class="code" data-lang="bash">
+<header><b>terminal &mdash; look at your own graph</b></header>
+<pre><code>terraform graph | dot -Tsvg &gt; graph.svg     # needs graphviz; big but readable
+
+# The far more useful daily version - what depends on what, in the plan
+terraform plan -out=tfplan
+terraform show -json tfplan | jq -r '
+  .resource_changes[] | "\(.change.actions[0])  \(.address)"'
+# create  aws_subnet.private["b"]
+# update  aws_s3_bucket_lifecycle_configuration.reports
+# replace aws_db_subnet_group.core
+</code></pre>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">In production</span>
+  <p><code>depends_on</code> is for real ordering that references cannot see: the log group above, an IAM
+  policy that must exist before a service assumes the role, a NAT gateway that needs the internet gateway
+  attached first even though it only references the EIP. It is <b>not</b> a fix for &ldquo;my apply failed
+  once&rdquo;. Every unnecessary <code>depends_on</code> serialises a branch of the graph and makes your apply
+  slower, and on a module it forces the entire module to wait for the entire target.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; the language</div>
+  <a class="r" href="https://urldefense.com/v3/__https://developer.hashicorp.com/terraform/language__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5EhKWeKb$" target="_blank" rel="noopener"><span>Terraform language documentation<i>The reference you will keep open all week. &ldquo;Expressions&rdquo; and &ldquo;Meta-Arguments&rdquo; are the two pages that matter.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://registry.terraform.io/providers/hashicorp/aws/latest/docs__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5JTneG9D$" target="_blank" rel="noopener"><span>AWS provider registry docs<i>Every argument for every resource, with examples. Bookmark <code>aws_vpc</code>, <code>aws_db_instance</code>, <code>aws_lambda_function</code>.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=terraform*count*vs*for_each*explained__;KysrKw!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5LsZoMGm$" target="_blank" rel="noopener"><span>count vs for_each, explained<i>Watch one of these until Drawing 10-B is obvious. It is the most common real-world Terraform mistake.</i></span><span class="dur">15 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@AntonPutra__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5KbA-kUS$" target="_blank" rel="noopener"><span>Anton Putra &mdash; Terraform tutorials<i>Short, precise, AWS-focused episodes. Good for one specific resource type at a time.</i></span><span class="dur">series</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://developer.hashicorp.com/terraform/language/functions__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5GuJZHqo$" target="_blank" rel="noopener"><span>Function reference<i>Skim it once end to end. You will recognise three functions you were about to reimplement badly.</i></span><span class="dur">docs</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="state">State</h2>
+<p class="sub">The file at the centre of Drawing 10-A. Understand what is in it, where it must live, and what
+to do when it is wrong, and you have covered most of what senior engineers actually get asked about
+Terraform.</p>
+
+<h3 id="state-file">What is actually in the file</h3>
+<p>JSON. A serial number, a lineage id, your outputs, and one entry per resource instance holding its real
+identifier, a full snapshot of every attribute, and the list of addresses it depended on.</p>
+
+<div class="code" data-lang="json">
+<header><b>terraform.tfstate &mdash; annotated fragment</b></header>
+<pre><code>{
+  "version": 4,
+  "terraform_version": "1.10.5",
+  "serial": 118,                  // bumped on every write. Detects lost updates.
+  "lineage": "8f1c4b2a-7d3e-4f19-9c02-1a5be7d4c831",   // identifies THIS state's
+                                                       // history; a mismatch means
+                                                       // you are pointed at the
+                                                       // wrong state file entirely
+  "outputs": {
+    "db_password": {
+      "value": "hunter2-but-32-random-chars",  // sensitive:true hides it from
+      "type": "string",                        // `terraform output`, NOT from here
+      "sensitive": true
+    }
+  },
+  "resources": [
+    {
+      "mode": "managed",          // "data" for data sources
+      "type": "aws_db_instance",
+      "name": "core",             // together: address aws_db_instance.core
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 2,    // provider's own migration version
+          "attributes": {
+            "id": "badgedesk-prod",
+            "address": "badgedesk-prod.c9x1.ap-south-1.rds.amazonaws.com",
+            "username": "badgedesk",
+            "password": "hunter2-but-32-random-chars",   // IN CLEAR TEXT
+            "multi_az": true,
+            "storage_encrypted": true
+          },
+          "dependencies": [        // how `destroy` knows the reverse order
+            "aws_db_subnet_group.core",
+            "aws_security_group.db"
+          ]
+        }
+      ]
+    }
+  ]
+}
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; state contains your secrets, in plain text</span>
+  <p>Look at <code>password</code> above. Terraform stores every attribute it manages, including generated
+  passwords, private keys, and the plaintext of any <code>aws_secretsmanager_secret_version</code> you
+  create. <code>sensitive = true</code> only redacts CLI output; it does nothing to the file. So the state
+  file is <b>a credentials file</b> and must be treated as one: never in Git, never in a public bucket,
+  encrypted at rest, versioned, and with a bucket policy that lists the handful of roles allowed to read it.
+  The corollary: it is better to have Terraform create an <i>empty</i> secret and let the application write
+  the value, or reference a secret created outside Terraform with a <code>data</code> source, than to have
+  Terraform generate every credential.</p>
+</div>
+
+<h3 id="state-remote">Remote state and locking</h3>
+<p>The default backend writes <code>terraform.tfstate</code> next to your files. That is fine for one person
+learning and untenable for two people. Two laptops each holding their own copy of the truth means the second
+apply silently deletes what the first one built.</p>
+
+<div class="code" data-lang="hcl">
+<header><b>envs/prod/00-provider.tf &mdash; the S3 backend</b></header>
+<pre><code>terraform {
+  backend "s3" {
+    bucket = "badgedesk-tfstate"          # versioning ON, public access BLOCKED,
+    key    = "prod/infra.tfstate"         # SSE-KMS, and a bucket policy that
+    region = "ap-south-1"                 # lists exactly who may read it
+    encrypt = true
+
+    # Terraform 1.10+: locking via a conditional-write .tflock object in S3.
+    use_lockfile = true
+
+    # Before 1.10 you needed a DynamoDB table with a "LockID" string
+    # partition key, and this line instead:
+    # dynamodb_table = "badgedesk-tfstate-locks"
+  }
+}
+</code></pre>
+</div>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 420" role="img" aria-label="A sequence diagram of two engineers running terraform apply at the same time. Engineer A acquires the lock with a conditional write, reads and writes state. Engineer B tries to acquire the lock, is refused because A holds it, and blocks and retries. When A finishes and releases the lock, B acquires it and plans against A's new state.">
+  <defs>
+    <marker id="s10d-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s10d-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s10d-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <rect class="box-c" x="30" y="30" width="180" height="46" rx="3"/>
+  <text class="t mid" x="120" y="52">Engineer A</text>
+  <text class="mm mid" x="120" y="68">TERRAFORM APPLY</text>
+
+  <rect class="box-a" x="370" y="30" width="180" height="46" rx="3"/>
+  <text class="t b mid" x="460" y="52">The lock</text>
+  <text class="mm mid" x="460" y="68">S3 .TFLOCK OBJECT</text>
+
+  <rect class="box" x="670" y="30" width="180" height="46" rx="3"/>
+  <text class="t mid" x="760" y="52">State object</text>
+  <text class="mm mid" x="760" y="68">PROD/INFRA.TFSTATE</text>
+
+  <rect class="box-c" x="990" y="30" width="180" height="46" rx="3"/>
+  <text class="t mid" x="1080" y="52">Engineer B</text>
+  <text class="mm mid" x="1080" y="68">TERRAFORM APPLY, 3S LATER</text>
+
+  <line class="ln dash" x1="120" y1="80" x2="120" y2="390"/>
+  <line class="ln dash" x1="460" y1="80" x2="460" y2="390"/>
+  <line class="ln dash" x1="760" y1="80" x2="760" y2="390"/>
+  <line class="ln dash" x1="1080" y1="80" x2="1080" y2="390"/>
+
+  <text class="mm c" x="132" y="104">PUT .TFLOCK IF-NONE-MATCH &mdash; A CONDITIONAL WRITE, SO ONLY ONE CAN WIN</text>
+  <path class="flow" d="M120,112 H454" marker-end="url(#s10d-ac)"/>
+
+  <text class="mm b end" x="448" y="140">LOCK ACQUIRED &middot; ID 4f2b, HELD BY A</text>
+  <path class="flow-b dash" d="M460,148 H126" marker-end="url(#s10d-ab)"/>
+
+  <text class="mm c" x="132" y="176">READ STATE &middot; REFRESH 41 RESOURCES FROM THE AWS API</text>
+  <path class="flow" d="M120,184 H754" marker-end="url(#s10d-ac)"/>
+
+  <text class="mm c end" x="1068" y="212">PUT .TFLOCK IF-NONE-MATCH</text>
+  <path class="flow" d="M1080,220 H466" marker-end="url(#s10d-ac)"/>
+
+  <text class="mm r" x="472" y="248">412 PRECONDITION FAILED &mdash; LOCK IS HELD BY ENGINEER A SINCE 14:02:11</text>
+  <path class="flow-r" d="M460,256 H1074" marker-end="url(#s10d-ar)"/>
+
+  <rect class="box-r" x="900" y="272" width="270" height="46" rx="3"/>
+  <text class="m r mid" x="1035" y="294">B blocks and retries</text>
+  <text class="mm mid" x="1035" y="310">-LOCK-TIMEOUT=120S, NOT AN ERROR</text>
+
+  <text class="mm b" x="132" y="340">WRITE NEW STATE, SERIAL 118 &rarr; 119, THEN DELETE .TFLOCK</text>
+  <path class="flow-b" d="M120,348 H754" marker-end="url(#s10d-ab)"/>
+  <path class="flow-b" d="M120,348 V366 H454" marker-end="url(#s10d-ab)"/>
+
+  <text class="mm b end" x="1068" y="386">B NOW ACQUIRES IT AND PLANS AGAINST SERIAL 119</text>
+  <path class="flow-b" d="M460,394 H1074" marker-end="url(#s10d-ab)"/>
+
+  <text class="mm r" x="30" y="414">WITHOUT THE LOCK: BOTH READ SERIAL 118, BOTH WRITE 119, AND THE LOSER'S RESOURCES ARE NOW ORPHANED IN AWS AND ABSENT FROM STATE.</text>
+</svg>
+<figcaption>Drawing 10-D &mdash; two applies, one lock. <b>Cyan</b> = a request someone is waiting on.
+<b>Brass</b> = the lock granted and the state written. <b>Red</b> = the refusal that saves you.</figcaption>
+</figure>
+
+<div class="panel panel--real">
+  <span class="ph">In production</span>
+  <p>Locks get stranded: someone's laptop sleeps mid-apply, or CI is cancelled between acquiring the lock and
+  releasing it. Terraform prints the lock id and tells you to run
+  <code>terraform force-unlock 4f2b&hellip;</code>. Before you do, <b>find the human</b>. Force-unlocking a
+  lock that is genuinely still held is how you get the corruption the lock existed to prevent. And enable S3
+  versioning on the state bucket on day one &mdash; it is the only undo you have.</p>
+</div>
+
+<h3 id="state-commands">Operating on state</h3>
+
+<div class="code" data-lang="bash">
+<header><b>terminal &mdash; the five state commands worth knowing</b></header>
+<pre><code># What does Terraform think it owns?
+terraform state list
+# module.network.aws_subnet.private["a"]
+# aws_db_instance.core
+# aws_s3_bucket.reports
+
+# The full recorded attributes of one resource
+terraform state show 'aws_db_instance.core'
+
+# Rename an address WITHOUT touching AWS. Same real resource, new label.
+terraform state mv 'aws_subnet.private[0]' 'aws_subnet.private["a"]'
+
+# Forget a resource: Terraform stops managing it, AWS keeps it running.
+# Use when handing something over to another team or another workspace.
+terraform state rm 'aws_iam_role.legacy_audit'
+
+# Always take a copy before surgery. This is your undo.
+terraform state pull &gt; backup-$(date +%F-%H%M).tfstate
+
+# Read-only drift check: refresh state, show what changed in the cloud,
+# and do not propose to change anything back.
+terraform plan -refresh-only
+</code></pre>
+</div>
+
+<p>Prefer <code>moved</code> blocks to <code>state mv</code> where you can. They are code, so they get
+reviewed, and they run for everyone including CI &mdash; nobody has to remember to type a command.</p>
+
+<div class="code" data-lang="hcl">
+<header><b>moved.tf &mdash; migrating count to for_each safely</b></header>
+<pre><code># Declares "this used to be called that". Terraform rewrites the address in
+# state during the next apply and plans zero changes. Delete the block a
+# release later, once every workspace has applied it.
+moved {
+  from = aws_subnet.private[0]
+  to   = aws_subnet.private["a"]
+}
+
+moved {
+  from = aws_subnet.private[1]
+  to   = aws_subnet.private["b"]
+}
+
+# Also works when you extract resources into a module - the single most
+# common refactor and the one that used to require ten `state mv` calls.
+moved {
+  from = aws_vpc.main
+  to   = module.network.aws_vpc.main
+}
+</code></pre>
+</div>
+
+<h3 id="state-import">Adopting resources that already exist</h3>
+<p>You built Sheet 07 by clicking. Those resources exist and Terraform has never heard of them. Importing is
+how you take them over without deleting and rebuilding.</p>
+
+<div class="code" data-lang="hcl">
+<header><b>import.tf &mdash; the declarative form, Terraform 1.5+</b></header>
+<pre><code># Step 1: write the import block. `id` is whatever the provider docs say
+# the import id is - a bucket name, an instance id, an ARN, sometimes a
+# compound string like "vpc-0f3a1c9e/sg-04b2".
+import {
+  to = aws_s3_bucket.reports
+  id = "badgedesk-prod-audit-reports"
+}
+
+import {
+  to = aws_db_instance.core
+  id = "badgedesk-prod"
+}
+</code></pre>
+</div>
+
+<div class="code" data-lang="bash">
+<header><b>terminal &mdash; the import loop</b></header>
+<pre><code># Step 2: let Terraform write the matching config for you.
+terraform plan -generate-config-out=generated.tf
+
+# Step 3: read generated.tf. It is verbose and includes computed fields
+# you must delete. Move the parts you want into data.tf, keep the arguments
+# that describe intent, drop the ones AWS filled in.
+
+# Step 4: plan until it says "no changes". THIS IS THE WHOLE JOB.
+terraform plan
+# Plan: 2 to import, 0 to add, 0 to change, 0 to destroy.
+
+terraform apply       # records them in state, changes nothing in AWS
+
+# The older imperative form still works and is handy for one-offs:
+terraform import 'aws_s3_bucket.reports' badgedesk-prod-audit-reports
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; and never edit state by hand</span>
+  <p>Two rules. First: <b>an import is not finished until <code>plan</code> reports no changes.</b> If you
+  apply while the plan still shows <code>~ 14 to change</code>, you have just reverted a year of console
+  tweaks on live infrastructure. Second: <b>do not open the state file in an editor.</b> Every field you might
+  want to change has a command &mdash; <code>state mv</code>, <code>state rm</code>, <code>import</code>,
+  <code>taint</code>/<code>-replace</code>. Hand-editing breaks the serial and lineage bookkeeping and turns a
+  recoverable mess into an unrecoverable one.</p>
+</div>
+
+<h3 id="state-drift">Drift, and detecting it before it bites</h3>
+
+<div class="code" data-lang="bash">
+<header><b>terminal &mdash; drift detection you can run nightly in CI</b></header>
+<pre><code>terraform plan -refresh-only -detailed-exitcode
+# Exit 0 = state matches reality
+# Exit 2 = drift found. Fail the scheduled job, alert the channel.
+
+# Example output when someone widened a security group in the console:
+#
+#   # aws_vpc_security_group_ingress_rule.db_from_core has changed
+#   ~ resource "aws_vpc_security_group_ingress_rule" "db_from_core" {
+#       ~ cidr_ipv4 = "10.20.10.0/24" -> "0.0.0.0/0"
+#     }
+#
+# This is a real security incident found by a cron job.
+</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p>&ldquo;A colleague fixed an outage by editing a security group in the console. What happens on the next
+  <code>terraform apply</code>?&rdquo; Terraform refreshes, sees reality no longer matches state, and
+  proposes to put it back the way the code says &mdash; silently undoing the fix and possibly re-breaking
+  production. The right answer continues: &ldquo;so we run <code>plan -refresh-only</code> nightly to catch
+  it within a day, we remove console write access in prod so the fix has to be a PR, and we agree that
+  emergency console changes are followed by a same-day PR that codifies them.&rdquo;</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; state</div>
+  <a class="r" href="https://urldefense.com/v3/__https://developer.hashicorp.com/terraform/language/state__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5E52vrX2$" target="_blank" rel="noopener"><span>Terraform docs &mdash; State<i>Read &ldquo;Purpose&rdquo; and &ldquo;Sensitive Data&rdquo; in full. Short, and it is the source for most interview answers.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://developer.hashicorp.com/terraform/language/backend/s3__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5HG1QF1C$" target="_blank" rel="noopener"><span>The S3 backend reference<i>Every argument, including <code>use_lockfile</code> and the DynamoDB predecessor. Copy the bucket policy example.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=terraform*remote*state*s3*dynamodb*locking*tutorial__;KysrKysr!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Oh-OinY$" target="_blank" rel="noopener"><span>Remote state and locking, walked through<i>Watch someone set up the bucket, break the lock, and recover. Do the same on your own account.</i></span><span class="dur">25 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://developer.hashicorp.com/terraform/language/import__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5IlK9j9t$" target="_blank" rel="noopener"><span>Import blocks and config generation<i>The page to have open while you adopt your Sheet 07 resources.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@KodeKloud__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5DUU7__R$" target="_blank" rel="noopener"><span>KodeKloud &mdash; Terraform labs<i>Hands-on exercises including state surgery and import. Best resource if you learn by doing.</i></span><span class="dur">series</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="workflow">The workflow</h2>
+<p class="sub">Six commands, one of which matters. Everything in this section is about reading
+<code>plan</code> output properly, because that is the skill that stops you destroying a database.</p>
+
+<h3 id="wf-commands">init, fmt, validate, plan, apply, destroy</h3>
+
+<div class="code" data-lang="bash">
+<header><b>terminal &mdash; the loop you will run fifty times this week</b></header>
+<pre><code>terraform init            # download providers, configure the backend, write the
+                          # lock file. Re-run after changing providers or backend.
+terraform fmt -recursive  # canonical formatting. Run it on save; CI checks it.
+terraform validate        # syntax and type checking only. No API calls, no creds.
+
+terraform plan -out=tfplan          # save the plan so apply cannot drift from it
+terraform apply tfplan              # apply EXACTLY that plan, no second prompt
+
+terraform apply                     # or: plan and prompt in one step, for dev
+terraform destroy                   # reverse dependency order. Read it first.
+
+terraform output -raw db_endpoint   # a value, unquoted, for a shell pipeline
+terraform show                      # human-readable dump of current state
+
+# Useful flags
+terraform plan  -detailed-exitcode  # 0 no change, 1 error, 2 changes pending
+terraform apply -lock-timeout=120s  # wait for a colleague instead of failing
+terraform apply -parallelism=5      # be kinder to API rate limits
+</code></pre>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why <code>-out=tfplan</code> is not optional in CI</span>
+  <p><code>terraform apply</code> with no argument plans again and then asks. In CI, where the approval step
+  happens minutes or hours after the plan a human reviewed, that means you approve one plan and apply a
+  different one. Saving the plan and applying the file makes the artefact you reviewed the artefact that
+  runs. The catch: <b>the plan file contains state, so it contains secrets</b> &mdash; if you upload it as a
+  CI artefact it needs the same protection as the state bucket.</p>
+</div>
+
+<h3 id="wf-plan">Reading a real plan</h3>
+<p>Four symbols. Three of them are routine and one of them should stop you mid-sentence.</p>
+
+<div class="code" data-lang="text">
+<header><b>terraform plan &mdash; BadgeDesk prod, annotated</b></header>
+<pre><code>$ terraform plan
+
+module.network.aws_vpc.main: Refreshing state... [id=vpc-0f3a1c9e]
+module.network.aws_subnet.private["a"]: Refreshing state... [id=subnet-0a91]
+aws_db_instance.core: Refreshing state... [id=badgedesk-prod]
+aws_s3_bucket.reports: Refreshing state... [id=badgedesk-prod-audit-reports]
+
+Terraform used the selected providers to generate the following execution plan.
+Resource actions are indicated with the following symbols:
+  + create
+  ~ update in-place
+-/+ destroy and then create replacement
+  - destroy
+
+Terraform will perform the following actions:
+
+  # module.network.aws_subnet.private["b"] will be created
+  + resource "aws_subnet" "private" {                    &lt;-- ROUTINE. New address,
+      + availability_zone = "ap-south-1b"                    nothing existed before.
+      + cidr_block        = "10.20.11.0/24"
+      + id                = (known after apply)
+      + vpc_id            = "vpc-0f3a1c9e"
+      + tags              = {
+          + "Name" = "badgedesk-prod-private-b"
+          + "Tier" = "private"
+        }
+    }
+
+  # aws_s3_bucket_lifecycle_configuration.reports will be updated in-place
+  ~ resource "aws_s3_bucket_lifecycle_configuration" "reports" {   &lt;-- ROUTINE.
+        id = "badgedesk-prod-audit-reports"                            Same resource,
+      ~ rule {                                                         one field moves.
+            id     = "expire-old-reports"
+          ~ expiration {
+              ~ days = 365 -&gt; 400
+            }
+        }
+    }
+
+  # aws_db_subnet_group.core must be replaced
+-/+ resource "aws_db_subnet_group" "core" {              &lt;-- STOP. READ EVERY LINE.
+      ~ arn        = "arn:aws:rds:ap-south-1:...:subgrp:badgedesk-prod" -&gt; (known after apply)
+      ~ id         = "badgedesk-prod" -&gt; (known after apply)
+      ~ name       = "badgedesk-prod" -&gt; "badgedesk-prod-v2" # forces replacement
+      ~ subnet_ids = [
+          + "subnet-0b42",
+            "subnet-0a91",
+        ]
+    }
+
+  # aws_db_instance.core will be updated in-place
+  ~ resource "aws_db_instance" "core" {
+        id                   = "badgedesk-prod"
+      ~ db_subnet_group_name = "badgedesk-prod" -&gt; (known after apply)
+    }
+
+Plan: 2 to add, 2 to change, 1 to destroy.
+
+Warning: Resource targeting is in effect
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; <code>-/+</code> means it will not be the same thing afterwards</span>
+  <p><code>-/+</code> is <b>destroy then create</b>. Every attribute that was &ldquo;known after apply&rdquo;
+  the first time will be a different value: a new ARN, a new endpoint DNS name, a new IP, an empty disk. For
+  a subnet group that is survivable; for an <code>aws_db_instance</code> it is your production database
+  gone, and for an EBS volume it is data gone. Find the <code># forces replacement</code> comment &mdash;
+  Terraform always tells you which single attribute caused it &mdash; and decide whether you meant it. The
+  usual culprits are <code>name</code>, <code>availability_zone</code>, <code>subnet_id</code> and anything
+  the cloud cannot change without rebuilding.</p>
+  <p>The defence is <code>prevent_destroy = true</code> on anything that holds data. With it set, the plan
+  refuses outright rather than helpfully offering to proceed:</p>
+</div>
+
+<div class="code" data-lang="text">
+<header><b>the seatbelt working as designed</b></header>
+<pre><code>Error: Instance cannot be destroyed
+
+  on data.tf line 42:
+  42: resource "aws_db_instance" "core" {
+
+Resource aws_db_instance.core has lifecycle.prevent_destroy set, but the plan
+calls for this resource to be destroyed. To avoid this error and continue with
+the plan, either disable lifecycle.prevent_destroy or reduce the scope of the
+plan using the -target flag.
+</code></pre>
+</div>
+
+<h3 id="wf-target">Targeting, and why it is a smell</h3>
+
+<div class="code" data-lang="bash">
+<header><b>terminal &mdash; -target and -replace</b></header>
+<pre><code># Apply only part of the graph. Terraform prints a warning every time,
+# because the resulting state is not what your configuration describes.
+terraform apply -target='module.network.aws_subnet.private["b"]'
+
+# Force one resource to be recreated without changing any code.
+# The modern replacement for `terraform taint`.
+terraform apply -replace='aws_lambda_function.audit'
+</code></pre>
+</div>
+
+<p><code>-target</code> is a recovery tool, not a workflow. It exists for exactly two situations: unwinding a
+half-failed apply, and breaking a genuine chicken-and-egg cycle on the very first apply of a new account.
+If you find yourself typing it routinely, the real problem is that your root module is too big &mdash; split
+it, so that the blast radius of one apply is a thing you actually want to change together. An interviewer
+who hears &ldquo;we always use <code>-target</code>&rdquo; will ask why, and the honest answer is always
+architectural.</p>
+
+<h3 id="wf-failed">When apply fails halfway</h3>
+
+<div class="code" data-lang="text">
+<header><b>a failed apply, and what it left behind</b></header>
+<pre><code>module.network.aws_subnet.private["b"]: Creation complete after 2s [id=subnet-0b42]
+aws_db_subnet_group.core: Creation complete after 1s [id=badgedesk-prod-v2]
+aws_db_instance.core: Still modifying... [4m20s elapsed]
+
+Error: modifying DB Instance (badgedesk-prod): InvalidParameterCombination:
+Cannot find version 16.9 for postgres
+
+Terraform has already created or modified some resources. They are recorded
+in the state file, so the next plan will not try to create them again.
+</code></pre>
+</div>
+
+<p>There is no rollback and you should not want one. The subnet and the subnet group exist and are recorded;
+only the database change failed. Fix the version, run <code>plan</code> again, and it will show one remaining
+change. That is the declarative model paying you back: <b>a failed apply is just a plan you have not
+finished.</b> The one case that needs care is a resource that was created in the cloud but whose state write
+did not land &mdash; the next plan tries to create it again and fails with <code>AlreadyExists</code>. Import
+it, then carry on.</p>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; the workflow</div>
+  <a class="r" href="https://urldefense.com/v3/__https://developer.hashicorp.com/terraform/cli/commands/plan__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5OJzBo3U$" target="_blank" rel="noopener"><span>CLI docs &mdash; plan<i>Read the &ldquo;Resource Targeting&rdquo; and &ldquo;Planning Modes&rdquo; sections; they answer most plan questions.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://developer.hashicorp.com/terraform/tutorials__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5GLUrrlg$" target="_blank" rel="noopener"><span>HashiCorp tutorials &mdash; AWS track<i>Guided, correct, free. Do &ldquo;Build Infrastructure&rdquo; through &ldquo;Manage Resource Drift&rdquo; in one sitting.</i></span><span class="dur">3 h</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=terraform*forces*replacement*plan*output*explained__;KysrKys!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5J3u7XlV$" target="_blank" rel="noopener"><span>Reading &ldquo;forces replacement&rdquo;<i>The specific skill that prevents the worst Terraform accident. Watch one, then do it deliberately on a dev bucket.</i></span><span class="dur">12 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@NetworkChuck__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5D7iqruU$" target="_blank" rel="noopener"><span>NetworkChuck &mdash; Terraform basics<i>Energetic first-hour walkthrough if the HashiCorp tutorials feel dry.</i></span><span class="dur">40 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="modules">Modules</h2>
+<p class="sub">A module is any directory of <code>.tf</code> files. You have already written one &mdash; the
+directory you run <code>terraform</code> in is the <b>root module</b>. Everything else is the same thing,
+called with arguments.</p>
+
+<h3 id="mod-shape">The shape of a real repository</h3>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 400" role="img" aria-label="The BadgeDesk infrastructure module tree. A root module for the prod environment calls four child modules: network, data, compute and observability. Each child module creates a listed set of AWS resources, and outputs from the network module become inputs to the data and compute modules.">
+  <defs>
+    <marker id="s10e-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s10e-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+  </defs>
+
+  <rect class="box-a" x="470" y="30" width="260" height="56" rx="3"/>
+  <text class="t b mid" x="600" y="54">envs/prod</text>
+  <text class="mm mid" x="600" y="72">THE ROOT MODULE &middot; ONE STATE FILE</text>
+
+  <path class="flow" d="M600,90 V118 H160 V154" marker-end="url(#s10e-ac)"/>
+  <path class="flow" d="M600,118 H450 V154" marker-end="url(#s10e-ac)"/>
+  <path class="flow" d="M600,118 H740 V154" marker-end="url(#s10e-ac)"/>
+  <path class="flow" d="M600,118 H1030 V154" marker-end="url(#s10e-ac)"/>
+
+  <rect class="box-c" x="30" y="160" width="260" height="60" rx="3"/>
+  <text class="t mid" x="160" y="186">module.network</text>
+  <text class="mm mid" x="160" y="204">MODULES/NETWORK</text>
+
+  <rect class="box-c" x="320" y="160" width="260" height="60" rx="3"/>
+  <text class="t mid" x="450" y="186">module.data</text>
+  <text class="mm mid" x="450" y="204">MODULES/DATA</text>
+
+  <rect class="box-c" x="610" y="160" width="260" height="60" rx="3"/>
+  <text class="t mid" x="740" y="186">module.compute</text>
+  <text class="mm mid" x="740" y="204">MODULES/COMPUTE</text>
+
+  <rect class="box-c" x="900" y="160" width="260" height="60" rx="3"/>
+  <text class="t mid" x="1030" y="186">module.observability</text>
+  <text class="mm mid" x="1030" y="204">MODULES/OBSERVABILITY</text>
+
+  <path class="flow-b" d="M294,190 H314" marker-end="url(#s10e-ab)"/>
+  <path class="flow-b" d="M584,190 H604" marker-end="url(#s10e-ab)"/>
+  <path class="flow-b" d="M874,190 H894" marker-end="url(#s10e-ab)"/>
+
+  <text class="mm b" x="30" y="248">OUTPUTS BECOME INPUTS &mdash; module.network.private_subnet_ids IS module.data'S SUBNET LIST, AND THAT REFERENCE IS THE ONLY ORDERING YOU NEED</text>
+
+  <rect class="box" x="30" y="266" width="260" height="90" rx="3"/>
+  <text class="m" x="46" y="290">aws_vpc</text>
+  <text class="m" x="46" y="308">4 subnets, 2 AZs</text>
+  <text class="m" x="46" y="326">igw, nat, route tables</text>
+  <text class="m" x="46" y="344">flow logs</text>
+
+  <rect class="box" x="320" y="266" width="260" height="90" rx="3"/>
+  <text class="m" x="336" y="290">aws_db_instance (Postgres)</text>
+  <text class="m" x="336" y="308">db_subnet_group</text>
+  <text class="m" x="336" y="326">secretsmanager secret</text>
+  <text class="m" x="336" y="344">s3 bucket for reports</text>
+
+  <rect class="box" x="610" y="266" width="260" height="90" rx="3"/>
+  <text class="m" x="626" y="290">aws_lambda_function</text>
+  <text class="m" x="626" y="308">iam_role + policies</text>
+  <text class="m" x="626" y="326">3 security groups</text>
+  <text class="m" x="626" y="344">eventbridge schedule</text>
+
+  <rect class="box" x="900" y="266" width="260" height="90" rx="3"/>
+  <text class="m" x="916" y="290">cloudwatch_log_group</text>
+  <text class="m" x="916" y="308">metric_alarm x4</text>
+  <text class="m" x="916" y="326">sns_topic + subscription</text>
+  <text class="m" x="916" y="344">dashboard</text>
+
+  <text class="mm" x="30" y="386">A MODULE IS A DIRECTORY, NOT A DEPLOYMENT UNIT. ALL FOUR OF THESE APPLY TOGETHER, IN ONE PLAN, AGAINST ONE STATE FILE.</text>
+</svg>
+<figcaption>Drawing 10-E &mdash; the BadgeDesk module tree. <b>Cyan</b> = a <code>module</code> call.
+<b>Brass</b> = an output wired into the next module's input.</figcaption>
+</figure>
+
+<h3 id="mod-write">Writing a module: inputs, outputs, README</h3>
+<p>A good module has a narrow interface, no hidden assumptions about the caller, and no
+<code>provider</code> or <code>backend</code> block &mdash; those belong to the root only. Here is the
+BadgeDesk network module in full.</p>
+
+<div class="code" data-lang="hcl">
+<header><b>modules/network/variables.tf</b></header>
+<pre><code>variable "name" {
+  description = "Name prefix for every resource, e.g. badgedesk-prod."
+  type        = string
+}
+
+variable "cidr" {
+  description = "IPv4 CIDR for the VPC. /16 gives you 256 usable /24 subnets."
+  type        = string
+}
+
+variable "azs" {
+  description = "Availability zones to spread across. Exactly two for BadgeDesk."
+  type        = list(string)
+
+  validation {
+    condition     = length(var.azs) == 2
+    error_message = "BadgeDesk requires exactly two AZs: RDS multi-AZ needs two subnets."
+  }
+}
+
+variable "single_nat_gateway" {
+  description = "true in dev to save $32/month; false in prod for AZ independence."
+  type        = bool
+  default     = true
+}
+</code></pre>
+</div>
+
+<div class="code" data-lang="hcl">
+<header><b>modules/network/main.tf</b></header>
+<pre><code>locals {
+  # Keys "a" and "b" become part of the resource address forever.
+  # Never derive them from something that can reorder.
+  public = {
+    for i, az in var.azs : substr(az, -1, 1) =&gt; {
+      az   = az
+      cidr = cidrsubnet(var.cidr, 8, i)
+    }
+  }
+
+  private = {
+    for i, az in var.azs : substr(az, -1, 1) =&gt; {
+      az   = az
+      cidr = cidrsubnet(var.cidr, 8, i + 10)
+    }
+  }
+
+  nat_keys = var.single_nat_gateway ? [keys(local.public)[0]] : keys(local.public)
+}
+
+resource "aws_vpc" "main" {
+  cidr_block           = var.cidr
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+  tags                 = { Name = var.name }
+}
+
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.main.id
+  tags   = { Name = "${var.name}-igw" }
+}
+
+resource "aws_subnet" "public" {
+  for_each                = local.public
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = each.value.cidr
+  availability_zone       = each.value.az
+  map_public_ip_on_launch = true
+  tags                    = { Name = "${var.name}-public-${each.key}", Tier = "public" }
+}
+
+resource "aws_subnet" "private" {
+  for_each          = local.private
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = each.value.cidr
+  availability_zone = each.value.az
+  tags              = { Name = "${var.name}-private-${each.key}", Tier = "private" }
+}
+
+resource "aws_eip" "nat" {
+  for_each = toset(local.nat_keys)
+  domain   = "vpc"
+  tags     = { Name = "${var.name}-nat-${each.key}" }
+}
+
+resource "aws_nat_gateway" "main" {
+  for_each      = toset(local.nat_keys)
+  allocation_id = aws_eip.nat[each.key].id
+  subnet_id     = aws_subnet.public[each.key].id
+
+  # The NAT gateway references the EIP and the subnet, but not the IGW -
+  # and AWS will not give it internet access until the IGW is attached.
+  depends_on = [aws_internet_gateway.igw]
+}
+
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
+  tags = { Name = "${var.name}-public" }
+}
+
+resource "aws_route_table" "private" {
+  for_each = local.private
+  vpc_id   = aws_vpc.main.id
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.main[
+      var.single_nat_gateway ? local.nat_keys[0] : each.key
+    ].id
+  }
+  tags = { Name = "${var.name}-private-${each.key}" }
+}
+
+resource "aws_route_table_association" "public" {
+  for_each       = aws_subnet.public
+  subnet_id      = each.value.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "private" {
+  for_each       = aws_subnet.private
+  subnet_id      = each.value.id
+  route_table_id = aws_route_table.private[each.key].id
+}
+</code></pre>
+</div>
+
+<div class="code" data-lang="hcl">
+<header><b>modules/network/outputs.tf</b></header>
+<pre><code>output "vpc_id" {
+  description = "For security groups and VPC endpoints in other modules."
+  value       = aws_vpc.main.id
+}
+
+output "vpc_cidr" {
+  value = aws_vpc.main.cidr_block
+}
+
+output "public_subnet_ids" {
+  value = [for k in sort(keys(aws_subnet.public)) : aws_subnet.public[k].id]
+}
+
+output "private_subnet_ids" {
+  description = "Feeds the RDS subnet group and the audit Lambda's VPC config."
+  value       = [for k in sort(keys(aws_subnet.private)) : aws_subnet.private[k].id]
+}
+
+output "private_subnets_by_az" {
+  value = { for k, s in aws_subnet.private : s.availability_zone =&gt; s.id }
+}
+</code></pre>
+</div>
+
+<div class="code" data-lang="text">
+<header><b>modules/network/README.md</b></header>
+<pre><code># network
+
+A two-AZ VPC for BadgeDesk: public subnets with an internet gateway, private
+subnets behind NAT, and one route table per private subnet.
+
+## Usage
+
+    module "network" {
+      source = "../../modules/network"
+
+      name               = "badgedesk-prod"
+      cidr               = "10.20.0.0/16"
+      azs                = ["ap-south-1a", "ap-south-1b"]
+      single_nat_gateway = false
+    }
+
+## Inputs
+
+| Name               | Type         | Default | Description                        |
+|--------------------|--------------|---------|------------------------------------|
+| name               | string       | n/a     | Prefix for every resource name     |
+| cidr               | string       | n/a     | VPC CIDR; /16 expected             |
+| azs                | list(string) | n/a     | Exactly two AZs                    |
+| single_nat_gateway | bool         | true    | One NAT for all AZs (cheaper)      |
+
+## Outputs
+
+vpc_id, vpc_cidr, public_subnet_ids, private_subnet_ids, private_subnets_by_az
+
+## Notes
+
+- Subnet addresses are keyed by the AZ letter ("a", "b"). Changing the AZ list
+  order does NOT renumber them. Adding a third AZ adds one subnet.
+- single_nat_gateway = true is a deliberate availability trade: if that AZ goes,
+  the private subnets in the other AZ lose egress. Fine for dev, not for prod.
+</code></pre>
+</div>
+
+<h3 id="mod-registry">Registry modules, versioning, and deciding</h3>
+
+<div class="code" data-lang="hcl">
+<header><b>calling modules three ways</b></header>
+<pre><code># 1. A local module. No version - it moves with the repository.
+module "network" {
+  source = "../../modules/network"
+  name   = local.name
+  cidr   = var.vpc_cidr
+  azs    = local.azs
+}
+
+# 2. A registry module. ALWAYS pin the version; `~&gt;` is not enough for
+#    modules because a minor bump can still rename resource addresses.
+module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "20.31.6"
+
+  cluster_name    = "${local.name}-eks"
+  cluster_version = "1.31"
+  vpc_id          = module.network.vpc_id
+  subnet_ids      = module.network.private_subnet_ids
+}
+
+# 3. A module from Git. Pin to a tag or a commit SHA, never to a branch.
+module "shared_tags" {
+  source = "git::<a href="https://urldefense.com/v3/__https://github.com/badgedesk/tf-modules.git/*tags?ref=v1.4.0__;Lw!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5DxYDcX9$">https://github.com/badgedesk/tf-modules.git//tags?ref=v1.4.0</a>"
+}
+</code></pre>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Situation</th><th>Registry module</th><th>Write your own</th></tr></thead>
+<tbody>
+<tr><td>VPC, EKS, RDS &mdash; large, well-understood, many knobs</td><td><b>Yes.</b> <code>terraform-aws-modules/vpc</code> has absorbed a decade of edge cases you have not thought of.</td><td>Only to learn. Do write the VPC once by hand this week; then use theirs at work.</td></tr>
+<tr><td>Three resources with two arguments</td><td>No. A module wrapping <code>aws_s3_bucket</code> plus two settings costs more than it saves.</td><td><b>Write it inline.</b> Not everything needs to be a module.</td></tr>
+<tr><td>Your organisation's opinions &mdash; naming, tags, mandatory encryption</td><td>No such thing exists.</td><td><b>Yes.</b> This is where your modules earn their keep.</td></tr>
+<tr><td>Something used in exactly one place</td><td>&mdash;</td><td>Do not modularise it yet. Extract on the second use, not the first.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><b>The rule:</b> use registry modules for infrastructure that is the same everywhere, and write your own for
+the parts that encode a decision your team made. Version everything you do not control, read the source of
+any registry module before you adopt it, and keep the number of nesting levels at two &mdash; root calls
+child, child does not call grandchild. Deep module trees make plan output unreadable, which defeats the
+purpose of having plan output.</p>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; modules</div>
+  <a class="r" href="https://urldefense.com/v3/__https://developer.hashicorp.com/terraform/language/modules/develop__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5HrjvOag$" target="_blank" rel="noopener"><span>Docs &mdash; module development<i>The standard module structure and the composition guidance. Short, and it settles most style arguments.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://registry.terraform.io/modules/terraform-aws-modules/vpc/aws/latest__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5KAWciVa$" target="_blank" rel="noopener"><span>terraform-aws-modules/vpc<i>Read the source after you write your own. Instructive to see which edge cases you missed.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=terraform*modules*tutorial*reusable*aws__;KysrKw!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5M4zg0e7$" target="_blank" rel="noopener"><span>Terraform modules, walked through<i>Watch one build a module and call it from two environments. Then do it with the network module above.</i></span><span class="dur">30 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://github.com/terraform-docs/terraform-docs__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5MdICG3g$" target="_blank" rel="noopener"><span>terraform-docs<i>Generates the inputs/outputs tables in your README from the code, so they cannot go stale. Wire it into CI.</i></span><span class="dur">tool</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="environments">Environments</h2>
+<p class="sub">dev, staging and prod. Three approaches exist, two of them are fine and one of them is a trap
+with a friendly name.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Approach</th><th>How it works</th><th>Isolation</th><th>Per-env differences</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr><td>Workspaces<br><code>terraform workspace new prod</code></td><td>One directory, one backend, several state files keyed by workspace name</td><td>State only. <b>Same backend, same credentials, same provider config.</b></td><td>Ternaries on <code>terraform.workspace</code>, scattered through the code</td><td><b>No</b> for real environments. Yes for a short-lived personal copy.</td></tr>
+<tr><td>Directory per environment</td><td><code>envs/dev</code>, <code>envs/prod</code>, each with its own backend key and tfvars, all calling shared modules</td><td>Separate state, separate backend config, and you can point prod at a different AWS account</td><td>A <code>terraform.tfvars</code> file per directory. Visible and reviewable.</td><td><b>Yes.</b> The default answer, and what the tree below shows.</td></tr>
+<tr><td>Separate repositories or accounts</td><td>Each environment is its own repo/pipeline, consuming published module versions</td><td>Total. Prod can run module v1.4 while dev tests v1.5.</td><td>Whatever each repo pins</td><td>Right at large scale. Overkill for BadgeDesk.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; why workspaces are the wrong tool for prod</span>
+  <p>Workspaces isolate <i>state</i> and nothing else. The consequences bite in order: the backend block is
+  shared, so dev state and prod state sit in the same bucket under the same permissions; the
+  <code>provider</code> block is shared, so you cannot put prod in a separate AWS account without a
+  conditional; the code is shared, so &ldquo;prod is bigger&rdquo; becomes
+  <code>terraform.workspace == "prod" ? "db.r6g.large" : "db.t4g.micro"</code> sprinkled across ten files;
+  and the current workspace is invisible &mdash; it is a piece of CLI state, not something in the diff. The
+  failure mode is famous and it is exactly what you think: you forget to run
+  <code>terraform workspace select</code> and apply a dev change to prod. A directory has none of these
+  properties, and a wrong directory is visible in the shell prompt, the PR, and the CI job name.</p>
+</div>
+
+<div class="code" data-lang="text">
+<header><b>badgedesk-infra/ &mdash; the layout to use</b></header>
+<pre><code>badgedesk-infra/
+├── modules/                       # no backend, no provider, no tfvars
+│   ├── network/                   #   vpc, subnets, igw, nat, routing
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   ├── outputs.tf
+│   │   └── README.md
+│   ├── data/                      #   rds postgres, secrets, s3
+│   ├── compute/                   #   lambda, iam, security groups
+│   └── observability/             #   log groups, alarms, sns
+│
+├── envs/
+│   ├── dev/
+│   │   ├── 00-provider.tf         #   backend key = dev/infra.tfstate
+│   │   ├── main.tf                #   module calls
+│   │   ├── variables.tf
+│   │   ├── outputs.tf
+│   │   ├── terraform.tfvars       #   db.t4g.micro, single_nat, no multi-az
+│   │   └── .terraform.lock.hcl    #   COMMITTED
+│   ├── staging/                   #   same files, staging/infra.tfstate
+│   └── prod/                      #   same files, prod/infra.tfstate
+│       └── terraform.tfvars       #   db.r6g.large, 2 NATs, multi-az, 14d backups
+│
+├── .github/workflows/terraform.yml
+├── .tflint.hcl
+└── README.md                      # "how to add an environment", in 20 lines
+</code></pre>
+</div>
+
+<div class="code" data-lang="hcl">
+<header><b>envs/prod/terraform.tfvars &mdash; the entire difference between environments</b></header>
+<pre><code>environment = "prod"
+region      = "ap-south-1"
+vpc_cidr    = "10.20.0.0/16"
+
+single_nat_gateway = false        # one NAT per AZ; dev uses one for the whole VPC
+
+db = {
+  instance_class    = "db.r6g.large"
+  allocated_storage = 200
+  multi_az          = true
+}
+
+log_retention_days   = 90         # dev: 7
+alarm_email          = "badgedesk-oncall@example.com"
+</code></pre>
+</div>
+
+<p>The duplication between <code>envs/dev</code> and <code>envs/prod</code> is about twenty lines of module
+calls, and it is duplication you want: it means a change to dev physically cannot alter prod, and the diff of
+&ldquo;what is different about prod&rdquo; is one <code>tfvars</code> file a reviewer can read in ten seconds.
+Resist the urge to DRY it away with a generator; if you outgrow it, reach for Terragrunt deliberately rather
+than inventing your own.</p>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; environments</div>
+  <a class="r" href="https://urldefense.com/v3/__https://developer.hashicorp.com/terraform/language/state/workspaces__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5CvIw_qv$" target="_blank" rel="noopener"><span>Docs &mdash; workspaces<i>Read the &ldquo;When not to use workspaces&rdquo; section. HashiCorp themselves say what the trap panel says.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=terraform*multiple*environments*dev*staging*prod*best*practice__;KysrKysrKw!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5HKEanrc$" target="_blank" rel="noopener"><span>Structuring dev / staging / prod<i>Compare two or three opinions, then commit to the directory layout above and stop reading.</i></span><span class="dur">25 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://terragrunt.gruntwork.io/docs/getting-started/quick-start/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5A4JFNAJ$" target="_blank" rel="noopener"><span>Terragrunt quick start<i>Only after the directory layout hurts. Understand what problem it solves before adopting it.</i></span><span class="dur">docs</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="badgedesk">BadgeDesk infrastructure, in full</h2>
+<p class="sub">The complete <code>envs/prod</code> root module that creates the <a href="aws.html">Sheet 07</a>
+architecture: VPC, security groups, RDS Postgres with credentials in Secrets Manager, the audit report bucket,
+and the nightly <code>audit-reconciler</code> Lambda with its own IAM role. The network comes from the module
+above; everything else is here.</p>
+
+<div class="code" data-lang="hcl">
+<header><b>envs/prod/00-provider.tf</b></header>
+<pre><code>terraform {
+  required_version = "~&gt; 1.10"
+
+  required_providers {
+    aws    = { source = "hashicorp/aws",    version = "~&gt; 5.60" }
+    random = { source = "hashicorp/random", version = "~&gt; 3.6" }
+  }
+
+  backend "s3" {
+    bucket       = "badgedesk-tfstate"
+    key          = "prod/infra.tfstate"
+    region       = "ap-south-1"
+    encrypt      = true
+    use_lockfile = true
+  }
+}
+
+provider "aws" {
+  region = var.region
+
+  default_tags {
+    tags = {
+      Project     = "badgedesk"
+      Environment = var.environment
+      ManagedBy   = "terraform"
+      Repo        = "badgedesk-infra"
+    }
+  }
+}
+
+locals {
+  name    = "badgedesk-${var.environment}"
+  azs     = ["${var.region}a", "${var.region}b"]
+  is_prod = var.environment == "prod"
+}
+</code></pre>
+</div>
+
+<div class="code" data-lang="hcl">
+<header><b>envs/prod/main.tf &mdash; network and security groups</b></header>
+<pre><code>module "network" {
+  source = "../../modules/network"
+
+  name               = local.name
+  cidr               = var.vpc_cidr
+  azs                = local.azs
+  single_nat_gateway = !local.is_prod
+}
+
+# --- security groups: one per tier, referencing each other, never CIDRs ------
+
+resource "aws_security_group" "alb" {
+  name_prefix = "${local.name}-alb-"
+  description = "Public load balancer in front of the Next.js web app"
+  vpc_id      = module.network.vpc_id
+  lifecycle { create_before_destroy = true }
+}
+
+resource "aws_security_group" "core" {
+  name_prefix = "${local.name}-core-"
+  description = "FastAPI core service and the audit Lambda's ENIs"
+  vpc_id      = module.network.vpc_id
+  lifecycle { create_before_destroy = true }
+}
+
+resource "aws_security_group" "db" {
+  name_prefix = "${local.name}-db-"
+  description = "RDS Postgres. Reachable only from the core security group."
+  vpc_id      = module.network.vpc_id
+  lifecycle { create_before_destroy = true }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "alb_https" {
+  security_group_id = aws_security_group.alb.id
+  description       = "HTTPS from the internet"
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "core_from_alb" {
+  security_group_id            = aws_security_group.core.id
+  description                  = "gateway and web to core"
+  referenced_security_group_id = aws_security_group.alb.id
+  from_port                    = 8000
+  to_port                      = 8000
+  ip_protocol                  = "tcp"
+}
+
+# THIS is the line that makes the database private. No CIDR, no 0.0.0.0/0 -
+# "whatever is in the core security group, and nothing else".
+resource "aws_vpc_security_group_ingress_rule" "db_from_core" {
+  security_group_id            = aws_security_group.db.id
+  description                  = "Postgres from the core service and audit Lambda"
+  referenced_security_group_id = aws_security_group.core.id
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "core_all" {
+  security_group_id = aws_security_group.core.id
+  description       = "outbound to the vendor access-control API, via NAT"
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1"
+}
+</code></pre>
+</div>
+
+<div class="code" data-lang="hcl">
+<header><b>envs/prod/data.tf &mdash; RDS Postgres, Secrets Manager, the reports bucket</b></header>
+<pre><code>resource "random_password" "db" {
+  length  = 32
+  special = false          # some RDS engines reject certain punctuation
+}
+
+resource "aws_db_subnet_group" "core" {
+  name       = local.name
+  subnet_ids = module.network.private_subnet_ids
+}
+
+resource "aws_db_instance" "core" {
+  identifier     = local.name
+  engine         = "postgres"
+  engine_version = "16.4"
+  instance_class = var.db.instance_class
+
+  allocated_storage     = var.db.allocated_storage
+  max_allocated_storage = var.db.allocated_storage * 4    # storage autoscaling
+  storage_type          = "gp3"
+  storage_encrypted     = true
+
+  db_name  = "badgedesk"
+  username = "badgedesk"
+  password = random_password.db.result
+
+  db_subnet_group_name   = aws_db_subnet_group.core.name
+  vpc_security_group_ids = [aws_security_group.db.id]
+  publicly_accessible    = false
+
+  multi_az                = var.db.multi_az
+  backup_retention_period = local.is_prod ? 14 : 1
+  backup_window           = "18:00-19:00"                # 23:30 IST, off-peak
+  deletion_protection     = local.is_prod
+  skip_final_snapshot     = !local.is_prod
+
+  performance_insights_enabled = local.is_prod
+  enabled_cloudwatch_logs_exports = ["postgresql"]
+
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes  = [password]     # rotated outside Terraform
+  }
+}
+
+# The secret is created empty of connection details, then filled in with the
+# endpoint AFTER the database exists. That ordering is inferred, not declared.
+resource "aws_secretsmanager_secret" "db" {
+  name                    = "badgedesk/${var.environment}/postgres"
+  description             = "Postgres credentials for core and audit-reconciler"
+  recovery_window_in_days = local.is_prod ? 30 : 0
+}
+
+resource "aws_secretsmanager_secret_version" "db" {
+  secret_id = aws_secretsmanager_secret.db.id
+  secret_string = jsonencode({
+    username = aws_db_instance.core.username
+    password = random_password.db.result
+    host     = aws_db_instance.core.address
+    port     = aws_db_instance.core.port
+    dbname   = aws_db_instance.core.db_name
+  })
+}
+
+# --- audit report bucket -----------------------------------------------------
+
+resource "aws_s3_bucket" "reports" {
+  bucket = "${local.name}-audit-reports"
+}
+
+resource "aws_s3_bucket_versioning" "reports" {
+  bucket = aws_s3_bucket.reports.id
+  versioning_configuration {
+    status = "Enabled"          # an overwritten audit report is still recoverable
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "reports" {
+  bucket                  = aws_s3_bucket.reports.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "reports" {
+  bucket = aws_s3_bucket.reports.id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "reports" {
+  bucket = aws_s3_bucket.reports.id
+  rule {
+    id     = "expire-old-reports"
+    status = "Enabled"
+    filter {}
+    noncurrent_version_expiration { noncurrent_days = 30 }
+    expiration { days = 400 }        # 13 months: one full audit cycle
+  }
+}
+</code></pre>
+</div>
+
+<div class="code" data-lang="hcl">
+<header><b>envs/prod/lambda.tf &mdash; the nightly audit-reconciler and its role</b></header>
+<pre><code># Policy documents as data sources, not heredoc JSON: the provider validates
+# the shape, and `plan` shows you a readable diff when a statement changes.
+data "aws_iam_policy_document" "audit_assume" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "audit" {
+  name               = "${local.name}-audit-reconciler"
+  assume_role_policy = data.aws_iam_policy_document.audit_assume.json
+}
+
+data "aws_iam_policy_document" "audit" {
+  statement {
+    sid       = "WriteNightlyReports"
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.reports.arn}/reports/*"]   # not the whole bucket
+  }
+
+  statement {
+    sid       = "ReadDatabaseCredentials"
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [aws_secretsmanager_secret.db.arn]           # not "*"
+  }
+}
+
+resource "aws_iam_role_policy" "audit" {
+  name   = "audit-reconciler"
+  role   = aws_iam_role.audit.id
+  policy = data.aws_iam_policy_document.audit.json
+}
+
+# Managed policy for the ENI permissions a VPC-attached Lambda needs.
+resource "aws_iam_role_policy_attachment" "audit_vpc" {
+  role       = aws_iam_role.audit.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
+# Create the log group ourselves so retention is set. If Lambda creates it
+# first, retention is "never expire" and you pay for logs forever.
+resource "aws_cloudwatch_log_group" "audit" {
+  name              = "/aws/lambda/${local.name}-audit-reconciler"
+  retention_in_days = var.log_retention_days
+}
+
+resource "aws_lambda_function" "audit" {
+  function_name = "${local.name}-audit-reconciler"
+  role          = aws_iam_role.audit.arn
+  runtime       = "python3.12"
+  handler       = "handler.reconcile"
+  architectures = ["arm64"]
+  timeout       = 300
+  memory_size   = 512
+
+  # The pipeline uploads the zip to S3 and passes the object version.
+  # Terraform references the artefact; it does not build it. See Sheet 09.
+  s3_bucket         = var.artefact_bucket
+  s3_key            = "audit-reconciler/${var.artefact_version}.zip"
+  source_code_hash  = var.artefact_sha256
+
+  environment {
+    variables = {
+      DB_SECRET_ARN = aws_secretsmanager_secret.db.arn
+      REPORT_BUCKET = aws_s3_bucket.reports.id
+      LOG_LEVEL     = local.is_prod ? "INFO" : "DEBUG"
+    }
+  }
+
+  vpc_config {
+    subnet_ids         = module.network.private_subnet_ids
+    security_group_ids = [aws_security_group.core.id]
+  }
+
+  # No reference exists to the log group, so assert the edge.
+  depends_on = [aws_cloudwatch_log_group.audit]
+}
+
+resource "aws_cloudwatch_event_rule" "nightly" {
+  name                = "${local.name}-audit-nightly"
+  description         = "Reconcile BadgeDesk against the vendor at 00:00 IST"
+  schedule_expression = "cron(30 18 * * ? *)"          # 18:30 UTC = 00:00 IST
+}
+
+resource "aws_cloudwatch_event_target" "nightly" {
+  rule = aws_cloudwatch_event_rule.nightly.name
+  arn  = aws_lambda_function.audit.arn
+}
+
+resource "aws_lambda_permission" "events" {
+  statement_id  = "AllowEventBridgeInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.audit.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.nightly.arn
+}
+</code></pre>
+</div>
+
+<div class="code" data-lang="hcl">
+<header><b>envs/prod/outputs.tf</b></header>
+<pre><code>output "vpc_id" {
+  value = module.network.vpc_id
+}
+
+output "private_subnet_ids" {
+  value = module.network.private_subnet_ids
+}
+
+output "db_endpoint" {
+  description = "Host:port for the core service. The password is in Secrets Manager."
+  value       = aws_db_instance.core.endpoint
+}
+
+output "db_secret_arn" {
+  value = aws_secretsmanager_secret.db.arn
+}
+
+output "report_bucket" {
+  value = aws_s3_bucket.reports.id
+}
+
+output "audit_function_name" {
+  value = aws_lambda_function.audit.function_name
+}
+</code></pre>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">In production &mdash; the artefact boundary</span>
+  <p>Notice what the Lambda block does <b>not</b> do: it does not zip your Python. Building an artefact inside
+  Terraform means every <code>plan</code> depends on a build, the hash changes when it should not, and two
+  engineers get different plans from the same commit. The pipeline on <a href="devops.html">Sheet 09</a>
+  builds the zip once, uploads it to the artefact bucket under an immutable key, and passes the version and
+  hash in as variables. Terraform owns the <i>function</i>; the pipeline owns the <i>code</i>. That line is
+  the subject of the last drawing on this sheet.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="cicd">Terraform in CI/CD</h2>
+<p class="sub">The point of putting infrastructure in Git is the pull request. This pipeline makes
+<code>plan</code> a review artefact and makes <code>apply</code> something only main can do, with a human in
+the loop and no long-lived AWS keys anywhere.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 420" role="img" aria-label="The gated Terraform pipeline. On a pull request the workflow runs format check, validate with tflint, a checkov security scan, and then posts the plan as a pull request comment; any failing check blocks the merge. On merge to main the workflow assumes an AWS role using OIDC, plans again, waits for an environment approval, and then applies.">
+  <defs>
+    <marker id="s10f-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s10f-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s10f-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <text class="mm c" x="30" y="30">ON EVERY PULL REQUEST &mdash; NO CREDENTIALS THAT CAN WRITE</text>
+
+  <rect class="box-c" x="30" y="44" width="170" height="56" rx="3"/>
+  <text class="t mid" x="115" y="68">Pull request</text>
+  <text class="mm mid" x="115" y="86">ENVS/** OR MODULES/**</text>
+
+  <rect class="box-c" x="230" y="44" width="170" height="56" rx="3"/>
+  <text class="t mid" x="315" y="68">fmt -check</text>
+  <text class="mm mid" x="315" y="86">2 SECONDS</text>
+
+  <rect class="box-c" x="430" y="44" width="190" height="56" rx="3"/>
+  <text class="t mid" x="525" y="68">validate + tflint</text>
+  <text class="mm mid" x="525" y="86">TYPES &middot; DEAD CODE &middot; NAMING</text>
+
+  <rect class="box-c" x="650" y="44" width="190" height="56" rx="3"/>
+  <text class="t mid" x="745" y="68">checkov / tfsec</text>
+  <text class="mm mid" x="745" y="86">PUBLIC BUCKET? OPEN SG?</text>
+
+  <rect class="box-a" x="870" y="44" width="300" height="56" rx="3"/>
+  <text class="t b mid" x="1020" y="68">plan &rarr; PR comment</text>
+  <text class="mm mid" x="1020" y="86">READ-ONLY ROLE &middot; THE REVIEW ARTEFACT</text>
+
+  <path class="flow" d="M204,72 H224" marker-end="url(#s10f-ac)"/>
+  <path class="flow" d="M404,72 H424" marker-end="url(#s10f-ac)"/>
+  <path class="flow" d="M624,72 H644" marker-end="url(#s10f-ac)"/>
+  <path class="flow" d="M844,72 H864" marker-end="url(#s10f-ac)"/>
+
+  <rect class="box-r" x="430" y="140" width="410" height="50" rx="3"/>
+  <text class="t r mid" x="635" y="162">any check fails &rarr; merge button disabled</text>
+  <text class="mm mid" x="635" y="180">REQUIRED STATUS CHECKS ON THE BRANCH RULE</text>
+
+  <path class="flow-r" d="M525,104 V134" marker-end="url(#s10f-ar)"/>
+  <path class="flow-r" d="M745,104 V134" marker-end="url(#s10f-ar)"/>
+
+  <line class="ln dash" x1="30" y1="220" x2="1170" y2="220"/>
+
+  <text class="mm b" x="30" y="252">ON MERGE TO MAIN &mdash; THE ONLY PATH THAT CAN WRITE</text>
+
+  <rect class="box-c" x="30" y="266" width="170" height="56" rx="3"/>
+  <text class="t mid" x="115" y="290">Merge to main</text>
+  <text class="mm mid" x="115" y="308">PUSH EVENT</text>
+
+  <rect class="box-a" x="230" y="266" width="210" height="56" rx="3"/>
+  <text class="t b mid" x="335" y="290">OIDC assume role</text>
+  <text class="mm mid" x="335" y="308">NO STORED KEYS &middot; SHEET 09</text>
+
+  <rect class="box-c" x="470" y="266" width="170" height="56" rx="3"/>
+  <text class="t mid" x="555" y="290">plan -out</text>
+  <text class="mm mid" x="555" y="308">SAME COMMIT, FRESH DIFF</text>
+
+  <rect class="box-a" x="670" y="266" width="230" height="56" rx="3"/>
+  <text class="t b mid" x="785" y="290">environment approval</text>
+  <text class="mm mid" x="785" y="308">A NAMED HUMAN CLICKS</text>
+
+  <rect class="box-a" x="930" y="266" width="240" height="56" rx="3"/>
+  <text class="t b mid" x="1050" y="290">apply tfplan</text>
+  <text class="mm mid" x="1050" y="308">EXACTLY WHAT WAS APPROVED</text>
+
+  <path class="flow" d="M204,294 H224" marker-end="url(#s10f-ac)"/>
+  <path class="flow-b" d="M444,294 H464" marker-end="url(#s10f-ab)"/>
+  <path class="flow" d="M644,294 H664" marker-end="url(#s10f-ac)"/>
+  <path class="flow-b" d="M904,294 H924" marker-end="url(#s10f-ab)"/>
+
+  <text class="mm" x="30" y="358">NIGHTLY, ON A SCHEDULE: TERRAFORM PLAN -REFRESH-ONLY -DETAILED-EXITCODE &mdash; EXIT 2 MEANS SOMEONE CHANGED SOMETHING BY HAND. ALERT ON IT.</text>
+  <text class="mm r" x="30" y="384">THE ONE RULE: THE PR JOB'S ROLE HAS READ-ONLY IAM PERMISSIONS. A PLAN THAT COULD WRITE IS NOT A PLAN, IT IS AN UNREVIEWED APPLY WAITING FOR A TYPO.</text>
+</svg>
+<figcaption>Drawing 10-F &mdash; the gated pipeline. <b>Cyan</b> = read-only steps. <b>Brass</b> = the steps
+that hold write credentials. <b>Red</b> = the gate that stops the merge.</figcaption>
+</figure>
+
+<div class="code" data-lang="yaml">
+<header><b>.github/workflows/terraform.yml</b></header>
+<pre><code>name: terraform
+
+on:
+  pull_request:
+    paths: ['envs/**', 'modules/**', '.github/workflows/terraform.yml']
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write        # required for OIDC. No AWS keys in secrets. Sheet 09.
+  contents: read
+  pull-requests: write   # so the plan can be posted as a comment
+
+env:
+  TF_VERSION: 1.10.5
+  TF_IN_AUTOMATION: 'true'
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: envs/prod
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: fmt
+        run: terraform fmt -check -recursive -diff
+        working-directory: .            # check the whole repo, not just this env
+
+      # A role with READ-ONLY IAM permissions. It can refresh state and plan;
+      # it cannot create, modify or delete anything.
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/badgedesk-terraform-plan
+          aws-region: ap-south-1
+
+      - run: terraform init -input=false
+      - run: terraform validate
+
+      - uses: terraform-linters/setup-tflint@v4
+      - run: tflint --recursive --format compact
+        working-directory: .
+
+      - name: checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: envs/prod
+          framework: terraform
+          soft_fail: false              # a public S3 bucket fails the build
+
+      - name: plan
+        id: plan
+        run: |
+          terraform plan -input=false -lock-timeout=120s \
+            -no-color -out=tfplan | tee plan.txt
+
+      - name: comment the plan on the PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('envs/prod/plan.txt', 'utf8');
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '### Terraform plan (prod)\n```\n'
+                    + body.slice(-60000) + '\n```',
+            });
+
+  apply:
+    needs: plan
+    if: github.ref == 'refs/heads/main' &amp;&amp; github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: prod          # &lt;- the approval gate. Reviewers set in repo settings.
+    defaults:
+      run:
+        working-directory: envs/prod
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      # A DIFFERENT role, with write permissions, assumable only by this job.
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/badgedesk-terraform-apply
+          aws-region: ap-south-1
+
+      - run: terraform init -input=false
+      # Re-plan rather than passing tfplan between jobs: a plan file contains
+      # state, so uploading it as an artefact means uploading your secrets.
+      - run: terraform plan -input=false -lock-timeout=300s -out=tfplan
+      - run: terraform apply -input=false -auto-approve tfplan
+</code></pre>
+</div>
+
+<div class="code" data-lang="hcl">
+<header><b>.tflint.hcl &mdash; the linter config worth having on day one</b></header>
+<pre><code>plugin "terraform" {
+  enabled = true
+  preset  = "recommended"
+}
+
+plugin "aws" {
+  enabled = true
+  version = "0.32.0"
+  source  = "github.com/terraform-linters/tflint-ruleset-aws"
+}
+
+# Catches instance types that do not exist, deprecated arguments, unused
+# variables and declarations, and missing required tags - all before plan.
+rule "terraform_required_version"   { enabled = true }
+rule "terraform_required_providers" { enabled = true }
+rule "terraform_unused_declarations" { enabled = true }
+rule "terraform_naming_convention" {
+  enabled = true
+  format  = "snake_case"
+}
+</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p>&ldquo;How does your pipeline authenticate to AWS?&rdquo; The answer that ends the topic: &ldquo;GitHub
+  OIDC. The workflow requests a short-lived OIDC token, AWS STS exchanges it for temporary credentials via a
+  role whose trust policy is scoped to our repository and the <code>main</code> ref. There are no AWS access
+  keys in GitHub secrets to leak or rotate, the credentials expire in an hour, and the plan job and the apply
+  job assume two different roles &mdash; read-only and write &mdash; so a pull request from a fork cannot
+  change anything.&rdquo; Details on <a href="devops.html">Sheet 09</a>.</p>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Two-machine rule</span>
+  <p>Install Terraform on your <b>personal laptop</b> &mdash; <code>winget install Hashicorp.Terraform</code>
+  or <code>tfenv</code> in WSL2. On the <b>corporate laptop</b> with no admin rights: download the
+  <code>terraform_*_windows_amd64.zip</code>, unzip a single binary into
+  <code>%LOCALAPPDATA%\bin</code> and add that to your user PATH &mdash; no installer needed. Behind the
+  TLS-inspecting proxy, <code>terraform init</code> fails on certificate verification: set
+  <code>SSL_CERT_FILE</code> to the exported proxy CA bundle. If <code>registry.terraform.io</code> is
+  blocked outright, run <code>terraform providers mirror ./vendor</code> on the personal machine and point a
+  <code>filesystem_mirror</code> block in <code>%APPDATA%\terraform.rc</code> at it. Full commands on
+  <a href="setup.html">Sheet 01</a>. Never put personal AWS credentials on the corporate machine.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; Terraform in CI</div>
+  <a class="r" href="https://urldefense.com/v3/__https://developer.hashicorp.com/terraform/tutorials/automation/automate-terraform__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5M_XWmnX$" target="_blank" rel="noopener"><span>Running Terraform in automation<i>The official guidance the workflow above follows, including why <code>-input=false</code> matters.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5NTnEv9s$" target="_blank" rel="noopener"><span>GitHub &mdash; OIDC to AWS<i>Copy the trust policy exactly, then narrow the <code>sub</code> condition to your repo and branch.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.checkov.io/1.Welcome/What*20is*20Checkov.html__;JSU!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5EMhpZwN$" target="_blank" rel="noopener"><span>Checkov<i>Hundreds of built-in policies for Terraform. Run it locally once on your own code; the first report is educational.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://github.com/terraform-linters/tflint__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5CcsNXgW$" target="_blank" rel="noopener"><span>tflint<i>Catches what <code>validate</code> cannot: non-existent instance types, deprecated syntax, unused variables.</i></span><span class="dur">tool</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@TechWorldwithNana__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5CyCI6xD$" target="_blank" rel="noopener"><span>TechWorld with Nana &mdash; Terraform with GitHub Actions<i>Watch the plan-comment pattern being built. It is the part that makes IaC feel worth it.</i></span><span class="dur">30 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="connect">How the subtopics connect</h2>
+<p class="sub">One <code>terraform apply</code> in <code>envs/prod</code> draws the whole of Sheet 07 into an
+empty AWS account. The other half of the picture is the boundary: what Terraform must not be allowed to own.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 440" role="img" aria-label="One terraform apply creating the whole Sheet 07 AWS environment: VPC and subnets, internet and NAT gateways, security groups, an RDS Postgres instance, the audit report S3 bucket, the audit Lambda with its IAM role, and CloudWatch log groups and alarms. Alongside it, a panel listing what Terraform must not own: container image tags, Helm releases, database rows and secret values.">
+  <defs>
+    <marker id="s10g-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s10g-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <rect class="box-a" x="30" y="180" width="220" height="66" rx="3"/>
+  <text class="t b mid" x="140" y="206">terraform apply</text>
+  <text class="mm mid" x="140" y="224">ENVS/PROD &middot; ONE COMMAND</text>
+  <text class="mm mid" x="140" y="240">41 RESOURCES &middot; 11 MINUTES</text>
+
+  <path class="flow-b" d="M254,213 H284" marker-end="url(#s10g-ab)"/>
+
+  <rect class="zone" x="290" y="30" width="640" height="380" rx="4"/>
+  <text class="mm c" x="304" y="52">AWS ACCOUNT &mdash; EVERY BOX IN HERE IS A RESOURCE BLOCK IN GIT &middot; SHEET 07</text>
+
+  <rect class="box" x="320" y="70" width="270" height="52" rx="3"/>
+  <text class="t mid" x="455" y="92">aws_vpc + 4 subnets</text>
+  <text class="mm mid" x="455" y="108">2 PUBLIC, 2 PRIVATE, 2 AZS</text>
+
+  <rect class="box" x="620" y="70" width="280" height="52" rx="3"/>
+  <text class="t mid" x="760" y="92">internet + NAT gateways</text>
+  <text class="mm mid" x="760" y="108">ROUTE TABLES, ASSOCIATIONS</text>
+
+  <rect class="box" x="320" y="146" width="270" height="52" rx="3"/>
+  <text class="t mid" x="455" y="168">aws_security_group &times;3</text>
+  <text class="mm mid" x="455" y="184">ALB &rarr; CORE &rarr; DB, BY REFERENCE</text>
+
+  <rect class="box-c" x="620" y="146" width="280" height="52" rx="3"/>
+  <text class="t mid" x="760" y="168">aws_db_instance.core</text>
+  <text class="mm mid" x="760" y="184">POSTGRES 16 &middot; MULTI-AZ &middot; SHEET 06</text>
+
+  <rect class="box-c" x="320" y="222" width="270" height="52" rx="3"/>
+  <text class="t mid" x="455" y="244">aws_s3_bucket.reports</text>
+  <text class="mm mid" x="455" y="260">VERSIONED &middot; BLOCK PUBLIC ACCESS</text>
+
+  <rect class="box-c" x="620" y="222" width="280" height="52" rx="3"/>
+  <text class="t mid" x="760" y="244">audit Lambda + IAM role</text>
+  <text class="mm mid" x="760" y="260">NIGHTLY &middot; LEAST PRIVILEGE</text>
+
+  <rect class="box" x="320" y="298" width="580" height="52" rx="3"/>
+  <text class="t mid" x="610" y="320">log groups &middot; 4 metric alarms &middot; SNS topic &middot; secret</text>
+  <text class="mm mid" x="610" y="336">THE THINGS EVERYONE FORGETS TO CREATE BY HAND</text>
+
+  <text class="mm b" x="320" y="382">DESTROY WALKS THIS EXACTLY BACKWARDS &mdash; LAMBDA, THEN RDS, THEN SUBNETS, THEN VPC.</text>
+  <text class="mm b" x="320" y="398">WHICH IS WHY A DEV ENVIRONMENT CAN BE THROWN AWAY EVERY FRIDAY EVENING.</text>
+
+  <rect class="box-r" x="960" y="70" width="210" height="180" rx="3"/>
+  <text class="t r" x="976" y="94">Terraform must NOT</text>
+  <text class="t r" x="976" y="110">own these</text>
+  <text class="m" x="976" y="136">&middot; the container image tag</text>
+  <text class="m" x="976" y="154">&middot; kubectl / helm upgrade</text>
+  <text class="m" x="976" y="172">&middot; database rows</text>
+  <text class="m" x="976" y="190">&middot; schema migrations</text>
+  <text class="m" x="976" y="208">&middot; secret VALUES</text>
+  <text class="m" x="976" y="226">&middot; anything per-deploy</text>
+  <text class="mm r" x="976" y="244">EACH ONE IS A NEW APPLY</text>
+
+  <rect class="box-a" x="960" y="278" width="210" height="132" rx="3"/>
+  <text class="t b" x="976" y="302">Where the line sits</text>
+  <text class="m" x="976" y="326">Terraform makes the</text>
+  <text class="m" x="976" y="344">cluster, the database,</text>
+  <text class="m" x="976" y="362">the role, the bucket.</text>
+  <text class="m" x="976" y="380">The pipeline puts</text>
+  <text class="m" x="976" y="398">things into them.</text>
+
+  <path class="flow-r dash" d="M955,160 H906" marker-end="url(#s10g-ar)"/>
+</svg>
+<figcaption>Drawing 10-G &mdash; one apply, one environment. <b>Brass</b> = what Terraform creates.
+<b>Cyan</b> = the resources other sheets build on. <b>Red</b> = the boundary you should refuse to cross.</figcaption>
+</figure>
+
+<div class="tw">
+<table>
+<thead><tr><th>Thing</th><th>Terraform?</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>VPC, subnets, security groups, IAM roles</td><td><b>Yes</b></td><td>Long-lived, changes rarely, has a desired state, and the diff is the review.</td></tr>
+<tr><td>RDS instance, S3 bucket, Kafka cluster, EKS cluster</td><td><b>Yes</b></td><td>Same. Note: the <i>cluster</i>, not what runs on it.</td></tr>
+<tr><td>Secrets Manager secret (the container)</td><td><b>Yes</b></td><td>The ARN and rotation config are infrastructure.</td></tr>
+<tr><td>The secret's <i>value</i></td><td>Prefer not</td><td>Terraform stores it in state in plain text. Create the secret empty; let the app or a rotation Lambda write the value.</td></tr>
+<tr><td>Database schema and migrations</td><td><b>No</b></td><td>Alembic or Flyway, run by the app's own pipeline. Terraform has no concept of an ordered, irreversible migration.</td></tr>
+<tr><td>Container image tag / Lambda zip contents</td><td><b>No</b></td><td>Changes on every commit. If Terraform owns it, every deploy is an infrastructure apply and your plan diff is noise.</td></tr>
+<tr><td>Kubernetes Deployments and Services</td><td>Usually no</td><td>The <code>kubernetes</code> provider works, but you now have two controllers reconciling the same object. Use it for cluster-level singletons &mdash; namespaces, the ingress controller, cluster-wide RBAC &mdash; and let the app pipeline or Argo CD own workloads.</td></tr>
+<tr><td>Helm releases</td><td>Line call</td><td>The <code>helm</code> provider is reasonable for platform charts installed once per cluster (external-dns, cert-manager). Never for your own application chart.</td></tr>
+<tr><td>DNS records, Datadog monitors, GitHub repo settings</td><td><b>Yes</b></td><td>Declarative, long-lived, and providers exist. This is where Terraform beats every cloud-native alternative.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">In production &mdash; the test that decides</span>
+  <p>Ask: <b>does this change on every deploy?</b> If yes, it belongs to the pipeline, not to Terraform.
+  Infrastructure changes weekly and is reviewed by a person reading a plan; application code changes hourly
+  and is reviewed by tests. Mixing them means either your deploys need an infrastructure approval, or your
+  infrastructure changes ride along unreviewed with a deploy. Both are worse than a slightly awkward
+  handover of an artefact version between two pipelines.</p>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">What you ship this week</span>
+  <p>Take the environment you clicked together on <a href="aws.html">Sheet 07</a>. <code>import</code> the VPC
+  and the reports bucket into a fresh Terraform root until <code>plan</code> says no changes. Then
+  <code>terraform destroy</code> the whole thing and <code>apply</code> it back from scratch in a different
+  region. If the BadgeDesk core service comes up against a database created entirely by code, you have
+  finished Sheet 10 &mdash; and you now own the disaster-recovery story that the first table on this sheet
+  said you were missing.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="drill">Drill book</h2>
+<p class="sub">Answer out loud, standing up, without notes. Every one of these has been asked in a real
+platform interview.</p>
+
+<div class="drill">
+  <div class="dh">Drill &mdash; Terraform</div>
+
+  <details><summary>What is the state file and why does Terraform need one at all?</summary>
+    <div class="ans"><p>It is a JSON map from the addresses in my configuration to the real resource IDs in
+    the cloud, plus a full snapshot of each resource's attributes and its dependencies. Terraform needs it
+    because a cloud API cannot answer &ldquo;is this <i>my</i> VPC, the one called <code>aws_vpc.main</code>?&rdquo;
+    &mdash; there is no field for that. Without state, every plan would either try to create everything again
+    or would have to discover and match resources heuristically. It is also what makes
+    <code>destroy</code> possible in the correct order, and what records the metadata AWS does not store,
+    such as generated passwords. Follow-up they will ask: &ldquo;so what happens if you delete it?&rdquo;
+    &mdash; Terraform forgets it owns anything and the next plan proposes to build a second copy of your
+    entire environment.</p></div></details>
+
+  <details><summary>Two engineers run <code>terraform apply</code> at the same time. What happens?</summary>
+    <div class="ans"><p>With locking configured, the first writes a lock &mdash; a conditional
+    <code>.tflock</code> object in S3, or a conditional <code>PutItem</code> in DynamoDB &mdash; and the
+    second's conditional write fails, so it blocks and retries until <code>-lock-timeout</code> expires.
+    Without locking, both read serial 118, both compute a plan against it, both apply, and both write serial
+    119. The loser's resources now exist in AWS but are absent from state: orphaned, billed for, invisible to
+    Terraform. Recovery means restoring an earlier state version from the bucket and importing what was lost.
+    Follow-up: &ldquo;what if the lock is stuck?&rdquo; &mdash; <code>terraform force-unlock &lt;id&gt;</code>,
+    but only after confirming with a human that no apply is actually running.</p></div></details>
+
+  <details><summary><code>count</code> versus <code>for_each</code> &mdash; which and why?</summary>
+    <div class="ans"><p><code>for_each</code> over a map or set, almost always. With <code>count</code> the
+    resource address is a list index, so removing an element in the middle shifts every element after it:
+    Terraform sees <code>[1]</code>'s attributes change and <code>[2]</code> disappear, and it destroys and
+    recreates real infrastructure to reindex a list. With <code>for_each</code> the address is a stable key
+    I chose, so removing one entry destroys exactly one resource. I use <code>count</code> only for
+    zero-or-one conditionals like <code>count = local.is_prod ? 1 : 0</code>. Follow-up: &ldquo;how do you
+    migrate an existing <code>count</code> resource?&rdquo; &mdash; <code>moved</code> blocks, or
+    <code>terraform state mv</code> per instance, then confirm the plan is empty before applying.</p></div></details>
+
+  <details><summary>How do you bring an existing, hand-created resource under Terraform?</summary>
+    <div class="ans"><p>Write an <code>import</code> block with the target address and the provider's import
+    id, then run <code>terraform plan -generate-config-out=generated.tf</code> to get a starting
+    configuration. Trim the generated file down to the arguments that express intent, and iterate on
+    <code>plan</code> until it reports zero changes &mdash; that is the actual work, and it is where you
+    discover the four settings someone changed in the console two years ago. Only then apply, which writes
+    state and touches nothing in the cloud. The dangerous mistake is applying while the plan still shows
+    changes, because you then revert live configuration you never intended to.</p></div></details>
+
+  <details><summary>How do you handle secrets with Terraform?</summary>
+    <div class="ans"><p>Starting from the fact that <b>state stores every managed attribute in plain text</b>,
+    so <code>sensitive = true</code> protects the terminal, not the file. So: the state backend is encrypted,
+    versioned, private and readable by a handful of roles &mdash; it is a credentials store and is treated
+    like one. Terraform creates the secret <i>container</i> (the Secrets Manager secret, its rotation
+    schedule, the IAM policy granting access) and where possible not the value; the application reads the
+    secret at runtime by ARN rather than receiving it through an environment variable Terraform set. Values
+    that must be supplied come from the pipeline's OIDC-derived credentials or a
+    <code>data</code> source, never from a committed <code>tfvars</code> file. Follow-up: &ldquo;where do the
+    AWS credentials for Terraform itself come from?&rdquo; &mdash; OIDC, short-lived, two roles, one
+    read-only.</p></div></details>
+
+  <details><summary>What is drift and how do you detect it?</summary>
+    <div class="ans"><p>Drift is a change made to the real cloud that neither the configuration nor the state
+    file knows about &mdash; almost always a human in the console during an incident. I detect it with
+    <code>terraform plan -refresh-only -detailed-exitcode</code> on a nightly schedule; exit code 2 means
+    something changed and the job alerts. That matters because the next ordinary <code>apply</code> would
+    quietly revert it. The organisational half of the answer is more important than the technical half:
+    remove console write access in production so an emergency fix has to be a fast-tracked PR, and if a
+    console change is unavoidable, require a same-day PR that codifies it.</p></div></details>
+
+  <details><summary>Would you use Terraform to deploy your application?</summary>
+    <div class="ans"><p>No. The test is &ldquo;does it change on every deploy?&rdquo; An image tag or a
+    Lambda zip changes hourly; a VPC changes quarterly. If Terraform owns the image tag then every deploy is
+    an infrastructure apply, every plan diff is noise nobody reads carefully, and a routine deploy can pick
+    up an unrelated pending infrastructure change. Terraform creates the ECS service, the EKS cluster, the
+    Lambda function, the IAM role and the bucket; the application pipeline pushes the artefact and updates
+    the running version. The grey area is Kubernetes: I will use the Terraform Kubernetes and Helm providers
+    for cluster singletons like namespaces, cert-manager and the ingress controller, but not for application
+    workloads, because Argo CD or the app's own pipeline reconciles those continuously and two controllers
+    fighting over one object is a bad Tuesday.</p></div></details>
+
+  <details><summary>Your plan shows <code>-/+</code> on the production database. Walk me through the next
+  sixty seconds.</summary>
+    <div class="ans"><p>I stop and find the <code># forces replacement</code> comment, because Terraform
+    always names the single attribute responsible. Then I decide whether I intended a rebuild &mdash; usually
+    I did not; usually I changed a name, an availability zone or a subnet, which the cloud cannot alter in
+    place. I do not apply. In the longer term, anything holding data carries
+    <code>lifecycle { prevent_destroy = true }</code> so the plan errors instead of politely offering to drop
+    the database, and the CI plan comment means a second person sees the <code>-/+</code> before I do.
+    Follow-up: &ldquo;how would you actually make that change?&rdquo; &mdash; create the new resource
+    alongside, migrate data, cut over, then remove the old one, in separate applies.</p></div></details>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="signoff">Sign-off</h2>
+<p class="sub">Tick only what you have typed yourself, against a real AWS account, and can explain with the
+sheet closed.</p>
+
+<div class="signoff">
+  <div class="sh"><span>Week 10</span><span>Sheet 10</span></div>
+  <label><input type="checkbox"><span>Narrated Drawing 10-A from memory: the three pictures, what <code>plan</code> reads, what <code>apply</code> writes, and where drift enters.</span></label>
+  <label><input type="checkbox"><span>Created the state bucket with versioning and Block Public Access, moved a local state file into the S3 backend and confirmed <code>plan</code> was empty afterwards.</span></label>
+  <label><input type="checkbox"><span>Ran two applies at once from two terminals and read the lock refusal message.</span></label>
+  <label><input type="checkbox"><span>Opened a real <code>terraform.tfstate</code> and found a password in it in plain text.</span></label>
+  <label><input type="checkbox"><span>Built four subnets with <code>count</code>, deleted the middle CIDR, and read the plan that destroys two of them. Then migrated to <code>for_each</code> with <code>moved</code> blocks and got an empty plan.</span></label>
+  <label><input type="checkbox"><span>Imported the Sheet 07 VPC and reports bucket until <code>plan</code> reported zero changes.</span></label>
+  <label><input type="checkbox"><span>Wrote the <code>modules/network</code> module with inputs, outputs and a README, and called it from both <code>envs/dev</code> and <code>envs/prod</code>.</span></label>
+  <label><input type="checkbox"><span>Applied the full BadgeDesk root module into an empty region, brought the core service up against the new database, then destroyed it.</span></label>
+  <label><input type="checkbox"><span>Caused a <code>-/+</code> plan on purpose on a dev resource and identified the attribute that forced replacement.</span></label>
+  <label><input type="checkbox"><span>Set <code>prevent_destroy</code> on the database and watched <code>terraform destroy</code> refuse.</span></label>
+  <label><input type="checkbox"><span>Wired up the GitHub Actions workflow with OIDC, saw a plan posted as a PR comment, and merged to trigger an approved apply.</span></label>
+  <label><input type="checkbox"><span>Changed a security group in the console and caught it with <code>terraform plan -refresh-only</code>.</span></label>
+</div>
+
+</div><!-- /sheetbody -->
+</main>
+
+<aside class="toc" aria-label="Contents"></aside>
+</div>
+
+<script src="assets/js/nav-data.js"></script>
+<script src="assets/js/sheet.js"></script>
+</body>
+</html>

@@ -1,0 +1,1812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheet 01 — Machine Setup — BadgeDesk Roadmap</title>
+<link rel="stylesheet" href="assets/css/sheet.css">
+</head>
+<body data-sheet="01">
+<a class="skip" href="#main">Skip to sheet</a>
+<div class="wrap">
+<nav class="rail" aria-label="Sheet index"></nav>
+
+<main id="main">
+
+<header class="sheethead">
+  <div>
+    <div class="no">Sheet 01 &middot; Preflight &middot; Week 00</div>
+    <h1>Machine<br>Setup<span>.</span></h1>
+    <p class="lede">Two laptops, one repository. The personal machine is where you build; the corporate
+    machine is where you practise, and it will fight you with no admin rights and a proxy that re-signs
+    every TLS certificate you touch. <b>Every instruction on this sheet says which machine it belongs to</b> &mdash;
+    follow the wrong column and you will spend Week 01 debugging your toolchain instead of writing code.</p>
+  </div>
+  <div class="specs">
+    <div><span>Weeks</span><span>00</span></div>
+    <div><span>Hours</span><span>4 &ndash; 6</span></div>
+    <div><span>Must know</span><span>WSL2, Git, Docker</span></div>
+    <div><span>Nice to have</span><span>Podman, tfenv</span></div>
+    <div><span>Ships</span><span>compose up, both laptops</span></div>
+  </div>
+</header>
+
+<div class="sheetbody">
+
+<!-- ===================================================================== -->
+<h2 id="topology">What you are installing and why</h2>
+<p class="sub">Not a shopping list. A topology: two machines with deliberately different capabilities,
+joined by exactly one thing they both trust &mdash; a Git repository. Read the drawing before you type
+anything, because the boundary in the middle is the part people get wrong.</p>
+
+<figure class="dwg dwg--hero">
+<svg viewBox="0 0 1200 700" role="img" aria-label="Two-machine topology: a personal Windows 11 laptop with full admin running WSL2 Ubuntu, Docker Desktop, toolchain managers, cloud CLIs and real AWS and Azure accounts; a corporate Windows 11 laptop with no admin running user-scope toolchains behind a TLS-inspecting proxy, using Podman or Rancher and local-only infrastructure; both connected to one GitHub repository in the middle, with a red warning on the corporate side never to store personal cloud credentials there.">
+  <defs>
+    <marker id="s01-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s01-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s01-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <text class="mm b" x="54" y="44">PERSONAL LAPTOP &middot; FULL ADMIN &middot; THE BUILD MACHINE</text>
+  <text class="mm r" x="640" y="44">CORPORATE LAPTOP &middot; NO ADMIN &middot; THE PRACTICE MACHINE</text>
+
+  <rect class="zone" x="54" y="52" width="516" height="430" rx="4"/>
+  <rect class="zone" x="640" y="52" width="506" height="430" rx="4"/>
+
+  <!-- personal stack -->
+  <rect class="box" x="74" y="76" width="476" height="46" rx="3"/>
+  <text class="t mid" x="312" y="100">Windows 11 &mdash; full administrator</text>
+  <text class="mm mid" x="312" y="116">WINGET MACHINE SCOPE &middot; HYPER-V ALLOWED</text>
+
+  <rect class="box-a" x="74" y="142" width="228" height="58" rx="3"/>
+  <text class="t b mid" x="188" y="166">WSL2 &middot; Ubuntu 24.04</text>
+  <text class="mm mid" x="188" y="182">CODE LIVES IN /HOME/YOU/CODE</text>
+
+  <rect class="box" x="322" y="142" width="228" height="58" rx="3"/>
+  <text class="t mid" x="436" y="166">Docker Desktop</text>
+  <text class="mm mid" x="436" y="182">WSL2 BACKEND &middot; FREE FOR PERSONAL USE</text>
+
+  <rect class="box-c" x="74" y="220" width="228" height="58" rx="3"/>
+  <text class="t mid" x="188" y="244">Toolchain managers</text>
+  <text class="mm mid" x="188" y="260">NVM &middot; UV &middot; SDKMAN &middot; TFENV</text>
+
+  <rect class="box-c" x="322" y="220" width="228" height="58" rx="3"/>
+  <text class="t mid" x="436" y="244">Cloud CLIs</text>
+  <text class="mm mid" x="436" y="260">AWS V2 + SSO &middot; AZ &middot; KUBECTL &middot; KIND</text>
+
+  <rect class="box" x="74" y="298" width="476" height="58" rx="3"/>
+  <text class="t mid" x="312" y="322">Real AWS and Azure accounts</text>
+  <text class="mm mid" x="312" y="338">ROOT MFA &middot; $10 BUDGET ALARM &middot; SHEETS 07 &amp; 08</text>
+
+  <rect class="box-c" x="74" y="376" width="476" height="58" rx="3"/>
+  <text class="t mid" x="312" y="400">Local infrastructure &mdash; docker compose up -d</text>
+  <text class="mm mid" x="312" y="416">POSTGRES 16 &middot; REDIS 7 &middot; MONGO 7 &middot; KAFKA KRAFT</text>
+
+  <text class="mm" x="74" y="462">ANYTHING NEEDING ADMIN, A KERNEL OR A CLOUD BILL HAPPENS HERE</text>
+
+  <path class="flow" d="M188,122 V136" marker-end="url(#s01-ac)"/>
+  <path class="flow" d="M436,122 V136" marker-end="url(#s01-ac)"/>
+  <path class="flow" d="M188,200 V214" marker-end="url(#s01-ac)"/>
+  <path class="flow" d="M436,200 V214" marker-end="url(#s01-ac)"/>
+  <path class="flow" d="M312,278 V292" marker-end="url(#s01-ac)"/>
+  <path class="flow-b" d="M312,356 V370" marker-end="url(#s01-ab)"/>
+
+  <!-- corporate stack -->
+  <rect class="box" x="660" y="76" width="466" height="46" rx="3"/>
+  <text class="t mid" x="893" y="100">Windows 11 &mdash; no administrator</text>
+  <text class="mm mid" x="893" y="116">WINGET --SCOPE USER &middot; %LOCALAPPDATA% ONLY</text>
+
+  <rect class="box-a" x="660" y="142" width="224" height="58" rx="3"/>
+  <text class="t b mid" x="772" y="166">User-scope toolchains</text>
+  <text class="mm mid" x="772" y="182">FNM &middot; UV &middot; PORTABLE TEMURIN JDK</text>
+
+  <rect class="box-r" x="902" y="142" width="224" height="58" rx="3"/>
+  <text class="t r mid" x="1014" y="166">TLS-inspecting proxy</text>
+  <text class="mm mid" x="1014" y="182">RE-SIGNS EVERY CERT IT SEES</text>
+
+  <rect class="box" x="660" y="220" width="224" height="58" rx="3"/>
+  <text class="t mid" x="772" y="244">Podman / Rancher</text>
+  <text class="mm mid" x="772" y="260">OR DOCKER CE INSIDE WSL2</text>
+
+  <rect class="box-c" x="902" y="220" width="224" height="58" rx="3"/>
+  <text class="t mid" x="1014" y="244">Corporate CA wired in</text>
+  <text class="mm mid" x="1014" y="260">NPM &middot; PIP &middot; GIT &middot; MAVEN &middot; WSL</text>
+
+  <rect class="box-r" x="660" y="298" width="466" height="58" rx="3"/>
+  <text class="t r mid" x="893" y="322">never store personal cloud credentials here</text>
+  <text class="mm mid" x="893" y="338">NO ~/.AWS &middot; NO AZ LOGIN &middot; NO PERSONAL SSH KEY</text>
+
+  <rect class="box" x="660" y="376" width="466" height="58" rx="3"/>
+  <text class="t mid" x="893" y="400">Local-only work</text>
+  <text class="mm mid" x="893" y="416">SHEETS &middot; KATAS &middot; SQL &middot; UNIT TESTS &middot; DRILLS</text>
+
+  <text class="mm" x="660" y="462">ASSUME NO ADMIN, NO OUTBOUND PORT 22, NO DOCKER HUB. PLAN FOR IT NOW.</text>
+
+  <path class="flow" d="M772,122 V136" marker-end="url(#s01-ac)"/>
+  <path class="flow-r" d="M1014,122 V136" marker-end="url(#s01-ar)"/>
+  <path class="flow" d="M772,200 V214" marker-end="url(#s01-ac)"/>
+  <path class="flow-r" d="M1014,200 V214" marker-end="url(#s01-ar)"/>
+  <path class="flow-r dash" d="M893,278 V292" marker-end="url(#s01-ar)"/>
+  <path class="flow" d="M893,356 V370" marker-end="url(#s01-ac)"/>
+
+  <!-- the one thing in common -->
+  <rect class="box-a" x="390" y="536" width="420" height="64" rx="3"/>
+  <text class="t b mid" x="600" y="562">github.com/&lt;you&gt;/badgedesk</text>
+  <text class="mm mid" x="600" y="580">ONE REPO &middot; .ENV.EXAMPLE COMMITTED &middot; .ENV NEVER</text>
+
+  <path class="flow-b" d="M312,482 V510 H466" marker-start="url(#s01-ab)" marker-end="url(#s01-ab)"/>
+  <path class="flow-b" d="M466,510 V530" marker-end="url(#s01-ab)"/>
+  <path class="flow-b" d="M893,482 V510 H734" marker-start="url(#s01-ab)" marker-end="url(#s01-ab)"/>
+  <path class="flow-b" d="M734,510 V530" marker-end="url(#s01-ab)"/>
+  <text class="mm b mid" x="600" y="504">SOURCE, COMPOSE FILES, MIGRATIONS, DOCS &mdash; NOTHING ELSE</text>
+
+  <text class="mm r" x="54" y="640">WHAT NEVER CROSSES: PERSONAL AWS KEYS &middot; ~/.AWS/CREDENTIALS &middot; PRIVATE SSH KEYS &middot; .ENV &middot; CORPORATE CERTIFICATES &middot; VENDOR API TOKENS</text>
+  <text class="mm" x="54" y="662">WHAT ALWAYS CROSSES: THE COMPOSE FILE &middot; THE SCHEMA &middot; THE TESTS &middot; .ENV.EXAMPLE WITH EMPTY VALUES &middot; THE README THAT SAYS WHICH MACHINE</text>
+  <line class="ln dash" x1="54" y1="618" x2="1146" y2="618"/>
+
+  <circle class="bub" cx="34" cy="99" r="13"/><text class="bubt" x="34" y="103">1</text>
+  <path class="lead" d="M47,99 H70"/>
+  <circle class="bub" cx="34" cy="171" r="13"/><text class="bubt" x="34" y="175">2</text>
+  <path class="lead" d="M47,171 H70"/>
+  <circle class="bub" cx="34" cy="327" r="13"/><text class="bubt" x="34" y="331">3</text>
+  <path class="lead" d="M47,327 H70"/>
+  <circle class="bub" cx="34" cy="405" r="13"/><text class="bubt" x="34" y="409">4</text>
+  <path class="lead" d="M47,405 H70"/>
+  <circle class="bub" cx="1166" cy="171" r="13"/><text class="bubt" x="1166" y="175">5</text>
+  <path class="lead" d="M1153,171 H1130"/>
+  <circle class="bub" cx="1166" cy="327" r="13"/><text class="bubt" x="1166" y="331">6</text>
+  <path class="lead" d="M1153,327 H1130"/>
+  <circle class="bub" cx="352" cy="568" r="13"/><text class="bubt" x="352" y="572">7</text>
+  <path class="lead" d="M365,568 H386"/>
+</svg>
+<figcaption>Drawing 01-A &mdash; the two-machine topology. <b>Cyan</b> = something you install and control.
+<b>Brass</b> = the shared artefact and the asynchronous sync between machines. <b>Red</b> = the constraint
+you cannot remove, only work around.</figcaption>
+</figure>
+
+<div class="notes">
+  <div class="n"><b>1</b><div><b>Admin rights are the whole difference.</b> On the personal machine you can
+  enable the <code>VirtualMachinePlatform</code> Windows feature, install to <code>C:\Program Files</code>,
+  register a Windows service and run a hypervisor. On the corporate machine you can do none of those, which
+  rules out WSL2 unless IT has already enabled it, rules out Docker Desktop&rsquo;s service, and forces every
+  install into <code>%LOCALAPPDATA%</code>. Establish which of those you actually have on day one &mdash; run
+  the two probe commands in &sect;3 before you plan anything.</div></div>
+  <div class="n"><b>2</b><div><b>WSL2 is not &ldquo;Linux emulation&rdquo;.</b> It is a real Linux kernel in a
+  lightweight Hyper-V virtual machine, sharing your Windows filesystem over a network protocol. That last
+  clause is the important one: code kept under <code>/mnt/c</code> is reached over 9p and is roughly
+  <b>10&times; slower</b> to stat, which is fatal for <code>npm install</code>, <code>pytest</code> collection
+  and file watchers. Keep every repository in the Linux home directory. Drawing 01-B is the whole story.</div></div>
+  <div class="n"><b>3</b><div><b>Real cloud accounts, real spend, on the personal machine only.</b> You cannot
+  learn Sheet 07 against a simulator. You need an account with MFA on the root user, an IAM Identity Center
+  admin user you actually log in as, and a $10 budget alarm wired up <i>before</i> you create your first NAT
+  Gateway. Corporate cloud tenants are for corporate work; never point your learning Terraform at one.</div></div>
+  <div class="n"><b>4</b><div><b>All five data services come from one Compose file.</b> PostgreSQL 16, Redis 7,
+  MongoDB 7, Kafka in KRaft mode and kafka-ui. You never install a database on the host, on either machine.
+  One file, checked into the repo, is what makes the two laptops equivalent from Week 01 onwards &mdash; and
+  it is the same file <a href="databases.html">Sheet 06</a> and <a href="messaging.html">Sheet 11</a>
+  assume you already have.</div></div>
+  <div class="n"><b>5</b><div><b>The proxy is a man in the middle, by design.</b> It terminates your TLS
+  connection, inspects the plaintext, then makes its own connection onwards and hands you a certificate it
+  signed itself with the corporate root CA. Your tools reject it because that CA is not in their bundle.
+  Every one of <code>SELF_SIGNED_CERT_IN_CHAIN</code>, <code>CERTIFICATE_VERIFY_FAILED</code> and
+  <code>unable to get local issuer certificate</code> is the same event seen through three different
+  libraries. &sect;3 fixes all three properly, and explains why <code>strict-ssl=false</code> is not a fix.</div></div>
+  <div class="n"><b>6</b><div><b>The red line is a policy, not a suggestion.</b> A corporate laptop is
+  monitored, backed up, subject to DLP scanning and can be remotely wiped or forensically imaged. Personal
+  long-lived AWS keys on it are a real incident with your name on it, and a personal SSH key there is
+  compromised the moment the disk is imaged. Two identities, two key pairs, one repository.</div></div>
+  <div class="n"><b>7</b><div><b>The repository is the only shared state.</b> Not a USB stick, not OneDrive,
+  not a zip file in email. Both machines clone the same repo, both run the same
+  <code>docker compose up -d</code>, both have a <code>.env</code> derived from the committed
+  <code>.env.example</code> and never committed themselves. When something works on one machine and not the
+  other, the diff is either in <code>.env</code> or in the toolchain &mdash; and the verification script in
+  &sect;7 tells you which in ten seconds.</div></div>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why this sheet exists at all</span>
+  <p>Setup is the most-skipped and most-expensive sheet in the set. The failure mode is not that you cannot
+  install Node; it is that you install it four different ways over twelve weeks, end up with three Pythons on
+  <code>PATH</code>, discover in Week 08 that your corporate laptop cannot reach Terraform&rsquo;s registry,
+  and lose a Saturday block to it. Six hours here buys back roughly twenty over the twelve weeks. Do not
+  start Week 01 until the script in &sect;7 prints a version for every line on <i>both</i> machines.</p>
+</div>
+
+<h3 id="toolset">Every tool, why it is here, and which machine</h3>
+<p>Nothing on this list is optional and nothing is here twice. &ldquo;First used&rdquo; is the sheet that
+breaks if the tool is missing, so if you are short on time, install top-down.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Tool</th><th>Why you need it</th><th>First used on</th><th>Machine</th></tr></thead>
+<tbody>
+<tr><td>Windows Terminal + PowerShell 7</td><td>A shell that supports tabs, UTF-8 and profiles. <code>powershell.exe</code> 5.1 is nine years old and mangles output.</td><td>Sheet 01</td><td>Both</td></tr>
+<tr><td>winget</td><td>The only sanctioned package manager on Windows. Machine scope on personal, <code>--scope user</code> on corporate.</td><td>Sheet 01</td><td>Both</td></tr>
+<tr><td>WSL2 + Ubuntu 24.04</td><td>A real Linux to develop in, so your local environment matches the container and the EC2 box.</td><td>Sheet 01</td><td>Personal (corporate only if already enabled)</td></tr>
+<tr><td>Git 2.4x</td><td>Version control, and the mechanism that keeps the two machines identical.</td><td>Sheet 01</td><td>Both</td></tr>
+<tr><td>An SSH key per machine</td><td>Push to GitHub without typing a password. <b>One key per machine, never copied.</b></td><td>Sheet 01</td><td>Both, separately</td></tr>
+<tr><td>GitHub CLI (<code>gh</code>)</td><td>Create the repo, open PRs, and read Actions logs from the terminal.</td><td><a href="devops.html">Sheet 09</a></td><td>Both</td></tr>
+<tr><td>VS Code or Cursor</td><td>The editor. Everything on this set assumes its terminal, debugger and extensions.</td><td>Sheet 01</td><td>Both</td></tr>
+<tr><td>Remote &ndash; WSL extension</td><td>Runs the editor server inside Linux so the terminal, debugger and language servers all see the Linux filesystem.</td><td>Sheet 01</td><td>Personal</td></tr>
+<tr><td>Node 22 LTS via nvm-windows / fnm</td><td>Runtime for Next.js, NestJS and the notifier. Version-managed because Sheet 03 and Sheet 04 pin different minors.</td><td><a href="programming.html">Sheet 02</a></td><td>Both</td></tr>
+<tr><td>pnpm (via corepack)</td><td>Faster, disk-efficient installs and a lockfile that actually pins transitive versions.</td><td><a href="frontend.html">Sheet 03</a></td><td>Both</td></tr>
+<tr><td>Python 3.12 + venv</td><td>The <code>core</code> service, the worker, the reconciler, everything on Sheet 12.</td><td><a href="programming.html">Sheet 02</a></td><td>Both</td></tr>
+<tr><td>uv</td><td>Resolves and installs Python dependencies in seconds instead of minutes; single static binary, so it installs without admin.</td><td>Sheet 02</td><td>Both</td></tr>
+<tr><td>Ruff</td><td>Lint and format Python in one tool. Replaces flake8 + isort + black.</td><td>Sheet 02</td><td>Both</td></tr>
+<tr><td>Java 21 (Temurin) + SDKMAN</td><td>The Java tour on Sheet 02, and reading Spring Boot services you will meet at work.</td><td>Sheet 02</td><td>Both (portable JDK on corporate)</td></tr>
+<tr><td>Maven</td><td>Builds the Java sample. Also the tool most badly broken by the corporate proxy &mdash; see &sect;3.</td><td>Sheet 02</td><td>Both</td></tr>
+<tr><td>Docker Desktop</td><td>Builds images and runs the Compose stack with the WSL2 backend.</td><td>Sheet 01</td><td>Personal only</td></tr>
+<tr><td>Podman Desktop / Rancher Desktop / Docker CE in WSL</td><td>The three licence-safe replacements. Same CLI surface, same Compose file.</td><td>Sheet 01</td><td>Corporate</td></tr>
+<tr><td>PostgreSQL 16 (container)</td><td>Source of truth: <code>employees</code>, <code>access_requests</code>, <code>approvals</code>, <code>badges</code>.</td><td><a href="databases.html">Sheet 06</a></td><td>Both</td></tr>
+<tr><td>Redis 7 (container)</td><td>Session cache, policy cache, rate-limit counters, idempotency keys, locks.</td><td>Sheet 06</td><td>Both</td></tr>
+<tr><td>MongoDB 7 (container)</td><td><code>access_events</code> audit documents whose shape differs per vendor.</td><td>Sheet 06</td><td>Both</td></tr>
+<tr><td>Kafka 3.7 in KRaft mode (container)</td><td><code>badge.requests</code>, <code>badge.provisioned</code>, <code>access.events</code>. No ZooKeeper.</td><td><a href="messaging.html">Sheet 11</a></td><td>Both</td></tr>
+<tr><td>kafka-ui (container)</td><td>See topics, partitions, offsets and message payloads in a browser instead of guessing.</td><td>Sheet 11</td><td>Both</td></tr>
+<tr><td><code>psql</code> client</td><td>Run SQL and read <code>EXPLAIN ANALYZE</code> without a GUI in the way.</td><td>Sheet 06</td><td>Both</td></tr>
+<tr><td>MongoDB Compass</td><td>Inspect nested audit documents. Faster than <code>mongosh</code> for shape discovery.</td><td>Sheet 06</td><td>Both (user-scope installer exists)</td></tr>
+<tr><td><code>redis-cli</code></td><td><code>MONITOR</code>, <code>TTL</code> and <code>KEYS</code> while debugging a cache miss.</td><td>Sheet 06</td><td>Both</td></tr>
+<tr><td>AWS CLI v2</td><td><code>aws sso login</code>, S3, Lambda, EKS. v1 does not support SSO properly &mdash; do not install it.</td><td><a href="aws.html">Sheet 07</a></td><td>Personal only</td></tr>
+<tr><td>Azure CLI</td><td>The Sheet 08 mapping exercise: resource groups, storage, AKS, Entra ID.</td><td><a href="azure.html">Sheet 08</a></td><td>Personal only</td></tr>
+<tr><td>Terraform 1.9 via tfenv</td><td>Sheet 10 pins a version; tfenv means you can switch without reinstalling.</td><td><a href="terraform.html">Sheet 10</a></td><td>Personal (plan-only on corporate)</td></tr>
+<tr><td>kubectl</td><td>Talk to any cluster, local or EKS. The one CLI you will use for the rest of your career.</td><td><a href="devops.html">Sheet 09</a></td><td>Both</td></tr>
+<tr><td>kind or minikube</td><td>A throwaway Kubernetes cluster on your laptop, so you can break it freely.</td><td>Sheet 09</td><td>Both (kind needs a container runtime)</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the four installs that will hurt you later</span>
+  <p><b>Node from the <code>.msi</code>.</b> You get one global Node and global <code>npm -g</code> installs
+  that need elevation. Two weeks later a project needs 20.x and you are uninstalling Node. Use a version
+  manager from the start. <b>Python from the Microsoft Store.</b> It sandboxes
+  <code>%LOCALAPPDATA%\Packages</code>, breaks some native builds and confuses the <code>py</code> launcher.
+  <b>PostgreSQL as a Windows service.</b> It squats on port 5432 forever and you will spend an evening
+  discovering why your container cannot bind. <b>A second copy of your SSH private key.</b> Two machines, two
+  keys, both registered on GitHub &mdash; then revoking one is a ten-second job.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; orientation</div>
+  <a class="r" href="https://urldefense.com/v3/__https://learn.microsoft.com/en-us/windows/wsl/install__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5AdopB6A$" target="_blank" rel="noopener"><span>Microsoft Learn &mdash; Install WSL<i>The authoritative page. Read it rather than a blog post; the command surface changed in 2023 and most tutorials are stale.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://learn.microsoft.com/en-us/windows/wsl/setup/environment__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5AzF-5UQ$" target="_blank" rel="noopener"><span>Microsoft Learn &mdash; Set up a WSL development environment<i>Covers Git, VS Code, Docker and the filesystem rule in one page. The closest official equivalent to this sheet.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@NetworkChuck__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5D7iqruU$" target="_blank" rel="noopener"><span>NetworkChuck<i>Good on the Windows-plus-Linux plumbing and on proxies. Watch a WSL2 walkthrough if you have never used a terminal in Linux.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@TechWorldwithNana__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5CyCI6xD$" target="_blank" rel="noopener"><span>TechWorld with Nana<i>Her Docker and Kubernetes intros explain what you are installing in &sect;2 and why the Compose file is shaped this way.</i></span><span class="dur">long</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=WSL2*vs*WSL1*architecture*explained*filesystem*performance__;KysrKysr!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5FXOQjZv$" target="_blank" rel="noopener"><span>WSL1 vs WSL2 architecture and filesystem performance<i>Watch one before you decide where to keep your code. It is the single decision on this sheet with the largest daily cost.</i></span><span class="dur">15 min</span></a>
+  <a class="r" href="index.html" target="_blank" rel="noopener"><span>Sheet 00 &mdash; The Plan<i>If you have not read the twelve-week schedule and Drawing 00-A yet, read them first. This sheet only makes sense as its prerequisite.</i></span><span class="dur">sheet</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="personal">Personal laptop &mdash; the full install</h2>
+<p class="sub">Full admin, so do it properly once. Everything in this section is <b>personal machine only</b>
+unless it says otherwise. Budget two hours, most of which is downloads.</p>
+
+<h3 id="winget">winget, PowerShell 7 and Windows Terminal</h3>
+<p><code>winget</code> ships with Windows 11 and is the one install mechanism you should use for Windows-side
+software. It writes to the registry properly, supports upgrades, and gives you a reproducible list you can
+commit. Start by getting a decent shell, because you will be living in it.</p>
+
+<div class="code" data-lang="powershell">
+<header><b>PowerShell (Admin) &mdash; personal laptop</b></header>
+<pre><code># Confirm winget exists and is recent. Anything below 1.6 is worth upgrading.
+winget --version                       # v1.9.25180
+
+# The shell and the terminal first.
+winget install --id Microsoft.PowerShell        --source winget
+winget install --id Microsoft.WindowsTerminal   --source winget
+
+# Then the always-on tools. --silent skips the installer UI.
+winget install --id Git.Git                     --silent
+winget install --id GitHub.cli                  --silent
+winget install --id Microsoft.VisualStudioCode  --silent
+winget install --id 7zip.7zip                   --silent
+
+# Keep everything current, in one command, once a fortnight.
+winget upgrade --all --include-unknown
+
+# Export the exact set so you can rebuild this machine, or seed the corporate one.
+winget export -o $HOME\badgedesk-winget.json --include-versions
+</code></pre>
+</div>
+
+<p>Two habits worth forming now. Search before you install &mdash; package IDs are exact and near-misses are
+common (<code>Python.Python.3.12</code>, not <code>python3</code>). And prefer the <code>winget</code> source
+over <code>msstore</code>, because Store packages are sandboxed in ways that break native build tooling.</p>
+
+<div class="code" data-lang="powershell">
+<header><b>finding the right package id</b></header>
+<pre><code>winget search python
+# Name              Id                         Version  Source
+# Python 3.12       Python.Python.3.12         3.12.7   winget
+# Python 3.13       Python.Python.3.13         3.13.0   winget
+
+winget show Python.Python.3.12                 # publisher, homepage, installer type, scope support
+winget list --upgrade-available                # what is stale right now
+</code></pre>
+</div>
+
+<h3 id="wsl">WSL2 in detail &mdash; and where your code must live</h3>
+<p>WSL2 gives you a real Linux kernel on the same machine as Windows, booting in about a second and sharing
+memory dynamically with the host. It is not a compatibility layer; there is an actual Hyper-V virtual machine
+with a Microsoft-built kernel underneath. Understanding that is what makes the filesystem rule obvious rather
+than arbitrary.</p>
+
+<div class="code" data-lang="powershell">
+<header><b>PowerShell (Admin) &mdash; personal laptop</b></header>
+<pre><code># One command now does the lot: enables the VirtualMachinePlatform and WSL Windows
+# features, downloads the kernel, and installs the default distribution.
+wsl --install
+
+# Pin the default before installing anything, so nothing lands on WSL1.
+wsl --set-default-version 2
+
+# See what is offered, then take the one this set assumes.
+wsl --list --online
+wsl --install --distribution Ubuntu-24.04
+
+# The kernel is updated separately from Windows Update. Do this now and monthly.
+wsl --update
+wsl --version
+# WSL version: 2.3.26.0
+# Kernel version: 6.6.87.2-1
+# WSLg version: 1.0.65
+# Windows version: 10.0.26200.1742
+
+wsl --status
+# Default Distribution: Ubuntu-24.04
+# Default Version: 2
+
+# If an existing distro is on version 1, convert it. Takes a few minutes.
+wsl --list --verbose
+#   NAME            STATE           VERSION
+# * Ubuntu-24.04    Running         2
+wsl --set-version Ubuntu-24.04 2
+</code></pre>
+</div>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 520" role="img" aria-label="WSL2 architecture: the Windows 11 userland and Hyper-V hypervisor platform sit below a lightweight utility virtual machine containing a Microsoft-built Linux kernel, the Ubuntu 24.04 distribution on ext4 inside a VHDX, systemd, and dockerd; on the right, the filesystem boundary shows that the Linux home directory is native ext4 and fast while slash mnt slash c is reached over the 9p protocol and is roughly ten times slower, illustrated by an npm install taking fourteen seconds versus two minutes forty.">
+  <defs>
+    <marker id="s01b-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s01b-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s01b-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <text class="mm" x="30" y="44">THE STACK, BOTTOM TO TOP</text>
+
+  <rect class="box" x="30" y="56" width="560" height="48" rx="3"/>
+  <text class="t mid" x="310" y="80">Windows 11 userland</text>
+  <text class="mm mid" x="310" y="96">EXPLORER &middot; POWERSHELL &middot; THE VS CODE WINDOW ITSELF</text>
+
+  <rect class="box" x="30" y="120" width="560" height="48" rx="3"/>
+  <text class="t mid" x="310" y="144">Hyper-V hypervisor platform</text>
+  <text class="mm mid" x="310" y="160">&ldquo;VIRTUAL MACHINE PLATFORM&rdquo; FEATURE &middot; NEEDS ADMIN</text>
+
+  <rect class="zone" x="30" y="184" width="560" height="252" rx="4"/>
+  <text class="mm c" x="44" y="204">WSL2 LIGHTWEIGHT UTILITY VM &middot; BOOTS IN ~1 S &middot; MEMORY RETURNED TO WINDOWS</text>
+
+  <rect class="box-c" x="50" y="214" width="520" height="48" rx="3"/>
+  <text class="t mid" x="310" y="238">Microsoft-built Linux kernel 6.6</text>
+  <text class="mm mid" x="310" y="254">A REAL KERNEL &middot; PATCHED BY WSL --UPDATE, NOT BY APT</text>
+
+  <rect class="box-a" x="50" y="278" width="252" height="48" rx="3"/>
+  <text class="t b mid" x="176" y="302">Ubuntu 24.04</text>
+  <text class="mm mid" x="176" y="318">EXT4 INSIDE A VHDX FILE</text>
+
+  <rect class="box" x="318" y="278" width="252" height="48" rx="3"/>
+  <text class="t mid" x="444" y="302">systemd</text>
+  <text class="mm mid" x="444" y="318">OPT-IN VIA /ETC/WSL.CONF</text>
+
+  <rect class="box" x="50" y="342" width="520" height="48" rx="3"/>
+  <text class="t mid" x="310" y="366">dockerd + containerd</text>
+  <text class="mm mid" x="310" y="382">DOCKER DESKTOP WSL INTEGRATION, OR DOCKER CE INSTALLED HERE</text>
+
+  <text class="mm" x="50" y="414">YOUR SHELL, YOUR COMPILERS, YOUR LANGUAGE SERVERS AND YOUR TESTS ALL RUN INSIDE THIS BOX</text>
+
+  <path class="flow" d="M310,104 V114" marker-end="url(#s01b-ac)"/>
+  <path class="flow" d="M310,168 V178" marker-end="url(#s01b-ac)"/>
+  <path class="flow" d="M176,262 V272" marker-end="url(#s01b-ac)"/>
+  <path class="flow" d="M444,262 V272" marker-end="url(#s01b-ac)"/>
+  <path class="flow-b" d="M310,326 V336" marker-end="url(#s01b-ab)"/>
+
+  <!-- filesystem boundary -->
+  <text class="mm b" x="640" y="44">THE FILESYSTEM BOUNDARY &mdash; THE ONE THING PEOPLE GET WRONG</text>
+
+  <rect class="box-a" x="640" y="56" width="530" height="150" rx="3"/>
+  <text class="t b" x="658" y="82">Three paths to the same-looking files</text>
+  <text class="m" x="658" y="108">/home/you/code/badgedesk</text>
+  <text class="m c" x="928" y="108">ext4, in the VM</text>
+  <text class="m" x="1096" y="108">FAST</text>
+  <text class="m" x="658" y="130">/mnt/c/Users/you/badgedesk</text>
+  <text class="m r" x="928" y="130">9p over a socket</text>
+  <text class="m r" x="1096" y="130">SLOW</text>
+  <text class="m" x="658" y="152">\\wsl.localhost\Ubuntu-24.04\home</text>
+  <text class="m r" x="928" y="152">Windows reaching in</text>
+  <text class="m r" x="1096" y="152">SLOW</text>
+  <line class="ln dash" x1="658" y1="166" x2="1152" y2="166"/>
+  <text class="mm" x="658" y="186">EVERY open(), stat() AND readdir() ON THE MIDDLE TWO CROSSES A</text>
+  <text class="mm" x="658" y="200">PROTOCOL BOUNDARY. A DEPENDENCY TREE DOES MILLIONS OF THEM.</text>
+
+  <text class="mm" x="640" y="240">MEASURED: pnpm install, THE SAME 1,140-PACKAGE TREE, SAME MACHINE</text>
+
+  <rect class="box-c" x="640" y="252" width="118" height="28" rx="2"/>
+  <text class="m c" x="772" y="271">14 s &nbsp;&mdash;&nbsp; /home/you/code/badgedesk</text>
+
+  <rect class="box-r" x="640" y="292" width="430" height="28" rx="2"/>
+  <text class="m r" x="640" y="339">2 min 41 s &nbsp;&mdash;&nbsp; /mnt/c/Users/you/badgedesk</text>
+
+  <rect class="box-r" x="640" y="368" width="530" height="116" rx="3"/>
+  <text class="t r" x="658" y="392">The two rules that follow from this</text>
+  <text class="m" x="658" y="416">1 &nbsp;Clone into ~/code. Never into /mnt/c. Never onto OneDrive.</text>
+  <text class="m" x="658" y="438">2 &nbsp;Open the folder with `code .` from inside WSL, so the editor</text>
+  <text class="m" x="658" y="456">&nbsp; &nbsp; server runs in Linux too. Opening \\wsl.localhost from the</text>
+  <text class="m" x="658" y="474">&nbsp; &nbsp; Windows side puts every keystroke back across 9p.</text>
+
+  <path class="flow-r dash" d="M594,300 H634" marker-end="url(#s01b-ar)"/>
+  <text class="mm r mid" x="614" y="292">9P</text>
+</svg>
+<figcaption>Drawing 01-B &mdash; WSL2 architecture and the 9p boundary. <b>Cyan</b> = inside the VM, native
+speed. <b>Red</b> = crosses the boundary, and pays for it on every single file operation.</figcaption>
+</figure>
+
+<p>Two configuration files matter. <code>/etc/wsl.conf</code> lives inside the distribution and configures
+that distribution; <code>%USERPROFILE%\.wslconfig</code> lives on Windows and configures the virtual machine
+itself. Enabling systemd is worth doing on day one, because Docker CE, PostgreSQL packages and anything else
+that ships a unit file expect it.</p>
+
+<div class="code" data-lang="text">
+<header><b>/etc/wsl.conf &mdash; inside Ubuntu, edit with sudo</b></header>
+<pre><code>[boot]
+systemd=true                 # so `systemctl` works; needed for Docker CE in &sect;3
+
+[interop]
+enabled=true
+appendWindowsPath=true       # keeps code.exe and winget on PATH inside Linux
+
+[automount]
+enabled=true
+options="metadata,umask=0022,fmask=0011"
+                             # metadata lets chmod work on /mnt/c. Without it every
+                             # Windows file looks like 0777 and git sees phantom
+                             # permission changes on every status.
+
+[user]
+default=you                  # the Linux user, not your Windows account name
+
+[network]
+generateHosts=true
+generateResolvConf=true      # set to false only if you hand-manage DNS for a VPN
+</code></pre>
+</div>
+
+<div class="code" data-lang="text">
+<header><b>C:\Users\you\.wslconfig &mdash; on the Windows side</b></header>
+<pre><code>[wsl2]
+memory=8GB                   # cap it. The default is 50% of RAM and Kafka will take it.
+processors=4
+swap=4GB
+localhostForwarding=true     # localhost:5432 on Windows reaches the VM's 5432
+nestedVirtualization=true    # required if you want kind or minikube inside WSL
+vmIdleTimeout=60000
+</code></pre>
+</div>
+
+<div class="code" data-lang="bash">
+<header><b>Ubuntu 24.04 &mdash; first ten minutes inside the distro</b></header>
+<pre><code>sudo apt-get update &amp;&amp; sudo apt-get upgrade -y
+sudo apt-get install -y build-essential curl git unzip ca-certificates \
+                        pkg-config libssl-dev zip
+
+mkdir -p ~/code &amp;&amp; cd ~/code          # every repository lives here. No exceptions.
+
+# Prove which filesystem you are on before you trust a benchmark.
+df -hT ~/code   | tail -1              # /dev/sdc  ext4   1006G  ...  /
+df -hT /mnt/c   | tail -1              # C:\       9p     476G   ...  /mnt/c
+
+# Apply the wsl.conf changes: a full shutdown, not a reboot of the distro.
+exit
+</code></pre>
+</div>
+
+<div class="code" data-lang="powershell">
+<header><b>PowerShell &mdash; the command you will use constantly</b></header>
+<pre><code>wsl --shutdown              # stops the VM. Next `wsl` starts it fresh with new config.
+wsl -d Ubuntu-24.04         # back in
+wsl --terminate Ubuntu-24.04  # stop one distro only
+
+# Back the whole distro up before doing anything drastic. This is your undo button.
+wsl --export Ubuntu-24.04 D:\backups\ubuntu-2404-week00.tar
+wsl --import Ubuntu-Restored D:\wsl\ubuntu-restored D:\backups\ubuntu-2404-week00.tar
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; three WSL2 mistakes that cost a day each</span>
+  <p><b>Cloning into <code>/mnt/c</code>.</b> Everything works, everything is slow, and you blame the
+  framework. <b>Letting a repo sit inside a OneDrive-synced folder.</b> OneDrive rewrites file timestamps and
+  locks files mid-build, so <code>node_modules</code> and <code>.venv</code> produce random
+  <code>EPERM</code> and <code>EBUSY</code> errors. <b>Installing Node and Python on both Windows and inside
+  WSL and then not knowing which one a terminal is using.</b> Pick one side per language &mdash; this set
+  assumes Linux-side for everything except the editor &mdash; and check with <code>which -a node</code>
+  whenever something behaves oddly.</p>
+</div>
+
+<h3 id="editor-wsl">VS Code or Cursor, and the WSL remote extension</h3>
+<p>The editor UI runs on Windows; the extension host, the language servers, the debugger and the integrated
+terminal should all run inside Linux. That split is exactly what the Remote &ndash; WSL extension does, and it
+is the difference between Pylance answering in 200 ms and in four seconds.</p>
+
+<div class="code" data-lang="bash">
+<header><b>from inside Ubuntu &mdash; the correct way to open a project</b></header>
+<pre><code># One-time, from PowerShell:
+#   code --install-extension ms-vscode-remote.remote-wsl
+# Cursor ships the equivalent as "WSL" in its extension marketplace.
+
+cd ~/code/badgedesk
+code .            # launches the Windows UI, installs the server into ~/.vscode-server
+
+# Check the bottom-left status bar. It must read:  WSL: Ubuntu-24.04
+# If it reads anything else, you are editing over 9p and the language server will crawl.
+
+# Sanity check from the editor's integrated terminal:
+uname -a          # Linux ... microsoft-standard-WSL2 ...
+pwd               # /home/you/code/badgedesk        (not /mnt/c/...)
+</code></pre>
+</div>
+
+<h3 id="git-ssh">Git identity, an SSH key, and proving it works</h3>
+<p>Configure Git once inside WSL and once on Windows if you will ever use it there. The line-ending setting
+differs between the two and is the most common source of a diff that shows every line as changed.</p>
+
+<div class="code" data-lang="bash">
+<header><b>Ubuntu (WSL) &mdash; git configuration worth having</b></header>
+<pre><code>git config --global user.name  "Your Name"
+git config --global user.email "you@example.com"      # match a verified GitHub email
+git config --global init.defaultBranch main
+git config --global pull.rebase true                  # linear history, no merge noise
+git config --global fetch.prune true                  # drop deleted remote branches
+git config --global core.editor "code --wait"
+git config --global diff.colorMoved zebra
+git config --global rerere.enabled true               # remembers conflict resolutions
+
+# Line endings. THIS DIFFERS BY MACHINE:
+git config --global core.autocrlf input               # inside WSL / Linux
+# On Windows-native Git instead:   git config --global core.autocrlf true
+
+git config --global --list | sort
+</code></pre>
+</div>
+
+<div class="code" data-lang="bash">
+<header><b>Ubuntu (WSL) &mdash; one key for this machine only</b></header>
+<pre><code># ed25519, not RSA. Smaller, faster, and what GitHub recommends.
+ssh-keygen -t ed25519 -C "you@personal-laptop-2026-08" -f ~/.ssh/id_ed25519
+# Enter passphrase: use one. The agent will remember it for the session.
+
+eval "$(ssh-agent -s)"          # Agent pid 1487
+ssh-add ~/.ssh/id_ed25519
+
+cat ~/.ssh/id_ed25519.pub
+# ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH... you@personal-laptop-2026-08
+
+# Paste that into GitHub -> Settings -> SSH and GPG keys -> New SSH key,
+# titled "personal laptop (WSL) 2026-08". Or do it from the CLI:
+gh auth login                   # choose SSH, let it upload the key for you
+gh ssh-key add ~/.ssh/id_ed25519.pub --title "personal laptop (WSL) 2026-08"
+
+# The test. Anything other than this line means the key is not registered.
+ssh -T git@github.com
+# Hi you! You've successfully authenticated, but GitHub does not provide shell access.
+
+# Keep the agent alive across shells:
+printf '%s\n' 'eval "$(ssh-agent -s)" &gt;/dev/null' 'ssh-add -q ~/.ssh/id_ed25519 2&gt;/dev/null' &gt;&gt; ~/.bashrc
+</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p>&ldquo;What actually happens when you <code>git push</code> over SSH?&rdquo; The client opens TCP 22 to
+  <code>github.com</code>, both sides negotiate a session key, the server sends its host key which your
+  client checks against <code>~/.ssh/known_hosts</code> (that is the &ldquo;authenticity of host&rdquo;
+  prompt), then you prove you hold the private key matching a public key on the account &mdash; the private
+  key never leaves your machine. Only then does <code>git-receive-pack</code> run on the far side. If port 22
+  is blocked, as it often is on a corporate network, HTTPS on 443 or
+  <code>ssh.github.com:443</code> is the way round; see &sect;3.</p>
+</div>
+
+<h3 id="node">Node &mdash; nvm-windows on Windows, fnm inside WSL</h3>
+<p>Two rules. Never install Node from the <code>.msi</code>, and install it on the side of the boundary where
+your code lives &mdash; which for this set means inside WSL. The version manager is not a luxury: Sheet 03
+pins a different Node minor from Sheet 04, and a <code>.nvmrc</code> in the repo is how the two laptops stay
+identical.</p>
+
+<div class="vs">
+  <div>
+    <div class="vh">Inside WSL &mdash; fnm (what this set uses)</div>
+    <div class="code" data-lang="bash"><header><b>Ubuntu 24.04</b></header><pre><code>curl -fsSL <a href="https://urldefense.com/v3/__https://fnm.vercel.app/install__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Bvd4i-7$">https://fnm.vercel.app/install</a> | bash
+exec $SHELL -l
+
+fnm install 22.11.0
+fnm default 22.11.0
+fnm use 22.11.0
+node -v          # v22.11.0
+npm -v           # 10.9.0
+
+# Auto-switch per project from .nvmrc / .node-version
+echo 'eval "$(fnm env --use-on-cd)"' &gt;&gt; ~/.bashrc
+
+# pnpm without a second installer
+corepack enable
+corepack prepare pnpm@9.12.3 --activate
+pnpm -v          # 9.12.3
+</code></pre></div>
+    <div class="vb"><p>Rust binary, ~40 ms shell startup, honours <code>.nvmrc</code>. Works identically on
+    the corporate machine because it needs no admin.</p></div>
+  </div>
+  <div>
+    <div class="vh">On Windows &mdash; nvm-windows</div>
+    <div class="code" data-lang="powershell"><header><b>PowerShell (Admin)</b></header><pre><code>winget install --id CoreyButler.NVMforWindows
+# reopen the terminal so PATH refreshes
+
+nvm list available
+nvm install 22.11.0
+nvm use 22.11.0
+node -v          # v22.11.0
+where.exe node   # C:\Program Files\nodejs\node.exe
+
+# nvm-windows swaps a SYMLINK at C:\Program Files\nodejs,
+# which is why `nvm use` needs elevation on this side.
+nvm list
+#   * 22.11.0 (Currently using 64-bit executable)
+#     20.18.0
+</code></pre></div>
+    <div class="vb"><p>Only needed if you must run Node from PowerShell &mdash; for example a Windows-only
+    Electron build. It does not read <code>.nvmrc</code>.</p></div>
+  </div>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Dimension</th><th>Node from <code>.msi</code></th><th>nvm-windows</th><th>fnm / nvm in WSL</th></tr></thead>
+<tbody>
+<tr><td>Multiple versions</td><td>No &mdash; uninstall to change</td><td>Yes, one active globally</td><td>Yes, per shell and per directory</td></tr>
+<tr><td>Reads <code>.nvmrc</code></td><td>&mdash;</td><td>No</td><td>Yes, on <code>cd</code></td></tr>
+<tr><td>Needs admin</td><td>Yes to install</td><td>Yes for <code>nvm use</code></td><td>No, ever</td></tr>
+<tr><td><code>npm -g</code> installs</td><td><code>EACCES</code> / needs elevation</td><td>Into the managed dir</td><td>Into <code>~/.local/share/fnm</code></td></tr>
+<tr><td>Native modules</td><td>Needs MSVC build tools</td><td>Same</td><td><code>build-essential</code>, matches CI</td></tr>
+<tr><td>Matches your Docker image</td><td>No</td><td>No</td><td>Yes &mdash; same libc, same paths</td></tr>
+<tr><td>Corporate machine</td><td>Blocked (needs admin)</td><td>Blocked (needs admin)</td><td>Works, user scope</td></tr>
+</tbody>
+</table>
+</div>
+<p><b>Pick fnm inside WSL</b> on the personal machine and fnm in <code>%LOCALAPPDATA%</code> on the corporate
+machine. One tool, one mental model, no elevation anywhere.</p>
+
+<h3 id="python">Python 3.12, venv and uv</h3>
+<p>Python 3.12 because 3.13 still trips over a handful of data and ML wheels you will want on
+<a href="ai.html">Sheet 12</a>. Install the interpreter once, then never install a package outside a virtual
+environment &mdash; and use <code>uv</code> to create and fill those environments, because it resolves in
+seconds what <code>pip</code> takes minutes to do.</p>
+
+<div class="code" data-lang="powershell">
+<header><b>PowerShell &mdash; the Windows side, if you want it</b></header>
+<pre><code>winget install --id Python.Python.3.12 --silent
+# NOT the Microsoft Store build: it sandboxes site-packages and breaks native builds.
+
+py --list
+# -V:3.12 *        Python 3.12 (64-bit)
+py -3.12 -V        # Python 3.12.7
+
+# The `py` launcher is the right way to pick an interpreter on Windows.
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+# If that is blocked: Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+</code></pre>
+</div>
+
+<div class="code" data-lang="bash">
+<header><b>Ubuntu (WSL) &mdash; where the BadgeDesk core actually gets built</b></header>
+<pre><code>sudo apt-get install -y python3.12 python3.12-venv python3-pip
+python3.12 -V                       # Python 3.12.3
+
+# uv: one static binary, no admin, installs to ~/.local/bin
+curl -LsSf <a href="https://urldefense.com/v3/__https://astral.sh/uv/install.sh__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5IwxZXIo$">https://astral.sh/uv/install.sh</a> | sh
+exec $SHELL -l
+uv --version                        # uv 0.5.4
+
+cd ~/code/badgedesk/services/core
+uv venv --python 3.12               # creates .venv in ~9 ms
+source .venv/bin/activate
+
+uv pip install fastapi "uvicorn[standard]" httpx pydantic-settings \
+               sqlalchemy alembic asyncpg redis "pymongo[srv]" \
+               ruff pytest pytest-asyncio
+# Resolved 61 packages in 214ms
+# Installed 61 packages in 1.03s
+
+# Lock what you actually have, so the other laptop gets the same tree.
+uv pip compile pyproject.toml -o requirements.txt
+uv pip sync requirements.txt        # exact, reproducible, deletes anything extra
+
+ruff check . &amp;&amp; ruff format .
+pytest -q
+deactivate
+</code></pre>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why a virtual environment at all</span>
+  <p>Two BadgeDesk services will disagree about a dependency version within six weeks &mdash;
+  <code>provisioning-worker</code> wants an older <code>httpx</code> than <code>core</code> does. A venv is
+  just a directory with its own <code>site-packages</code> and a <code>pyvenv.cfg</code> pointing at a base
+  interpreter; activating it puts that directory first on <code>PATH</code>. Installing into the system
+  Python instead is how you end up with an unreproducible machine and a Dockerfile that works only for you.
+  On Debian and Ubuntu, <code>pip install</code> outside a venv now refuses outright with
+  <code>error: externally-managed-environment</code> &mdash; that error is the packaging system doing you a
+  favour.</p>
+</div>
+
+<h3 id="java">Java 21 &mdash; Temurin, and SDKMAN inside WSL</h3>
+<p>You need Java to read it fluently, not to become a Java developer. Temurin is the free, well-maintained
+OpenJDK build; SDKMAN manages versions and also installs Maven and Gradle, which saves you three separate
+downloads.</p>
+
+<div class="code" data-lang="bash">
+<header><b>Ubuntu (WSL) &mdash; SDKMAN</b></header>
+<pre><code>sudo apt-get install -y zip unzip
+curl -s "<a href="https://urldefense.com/v3/__https://get.sdkman.io__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5GqvcdRf$">https://get.sdkman.io</a>" | bash
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+sdk version                     # SDKMAN 5.19.0
+
+sdk list java | grep -i tem | head -5
+#  Temurin       |     | 21.0.5-tem   | tem     |            | 21.0.5-tem
+#  Temurin       |     | 17.0.13-tem  | tem     |            | 17.0.13-tem
+
+sdk install java 21.0.5-tem     # becomes the default
+sdk install maven 3.9.9
+sdk install gradle 8.10.2
+
+java -version
+# openjdk version "21.0.5" 2024-10-15 LTS
+# OpenJDK Runtime Environment Temurin-21.0.5+11 (build 21.0.5+11-LTS)
+mvn -v | head -2
+echo $JAVA_HOME                 # /home/you/.sdkman/candidates/java/current
+
+# Switch for one shell only - useful when a legacy service needs 17
+sdk use java 17.0.13-tem
+</code></pre>
+</div>
+
+<div class="code" data-lang="powershell">
+<header><b>PowerShell &mdash; if you also want Java on the Windows side</b></header>
+<pre><code>winget install --id EclipseAdoptium.Temurin.21.JDK --silent
+winget install --id Apache.Maven --silent
+
+java -version
+[Environment]::SetEnvironmentVariable(
+  "JAVA_HOME", "C:\Program Files\Eclipse Adoptium\jdk-21.0.5.11-hotspot", "User")
+</code></pre>
+</div>
+
+<h3 id="docker">Docker Desktop with the WSL2 backend</h3>
+<p>On the personal machine, Docker Desktop is the right choice: it is free for personal use, it wires
+<code>dockerd</code> into your WSL distro so <code>docker</code> works from the Linux shell, and it handles
+the Compose plugin, volume management and port forwarding for you.</p>
+
+<div class="code" data-lang="powershell">
+<header><b>PowerShell (Admin) &mdash; personal laptop only</b></header>
+<pre><code>winget install --id Docker.DockerDesktop --silent
+
+# Then, in the Docker Desktop UI, once:
+#   Settings -> General          -> "Use the WSL 2 based engine"        [x]
+#   Settings -> Resources -> WSL integration
+#                                -> "Enable integration with my default WSL distro"  [x]
+#                                -> Ubuntu-24.04                                     [x]
+#   Settings -> Resources -> Advanced -> Memory limit is set by .wslconfig, not here.
+</code></pre>
+</div>
+
+<div class="code" data-lang="bash">
+<header><b>Ubuntu (WSL) &mdash; verify the integration, not the installer</b></header>
+<pre><code>docker version
+# Client: Docker Engine - Community
+#  Version:    27.3.1
+# Server: Docker Desktop 4.35.1 (172550)
+#  Engine Version: 27.3.1
+
+docker context ls
+# NAME              DESCRIPTION                               DOCKER ENDPOINT
+# default *         Current DOCKER_HOST based configuration    unix:///var/run/docker.sock
+# desktop-linux     Docker Desktop                             unix:///home/you/.docker/desktop/docker.sock
+
+docker run --rm hello-world
+# Hello from Docker!
+
+docker compose version          # v2 is a plugin: `docker compose`, no hyphen
+# Docker Compose version v2.30.3
+
+docker buildx ls                # multi-arch builder, needed for arm64 images later
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; <code>docker</code> vs <code>docker-compose</code></span>
+  <p><code>docker-compose</code> with a hyphen is Compose v1, written in Python, end-of-life since July 2023.
+  It reads <code>version: "3.8"</code> at the top of the file and has different networking defaults. Compose
+  v2 is a Go plugin invoked as <code>docker compose</code>, and the <code>version:</code> key is now obsolete
+  &mdash; leaving it in produces a warning on every command. Every Compose invocation on this set is
+  <code>docker compose</code>.</p>
+</div>
+
+<h3 id="cloudcli">Cloud CLIs &mdash; AWS v2 with SSO, and Azure</h3>
+<p>Personal machine only, and personal accounts only. AWS CLI <b>v2</b>: v1 is unmaintained for new features
+and does not do SSO token caching properly. Configure a named profile rather than dumping keys into the
+default profile, because you will have more than one before Sheet 09 is done.</p>
+
+<div class="code" data-lang="powershell">
+<header><b>PowerShell &mdash; personal laptop</b></header>
+<pre><code>winget install --id Amazon.AWSCLI     --silent
+winget install --id Microsoft.AzureCLI --silent
+aws --version    # aws-cli/2.19.5 Python/3.12.6 Windows/11 exe/AMD64
+az version --output table
+</code></pre>
+</div>
+
+<div class="code" data-lang="bash">
+<header><b>Ubuntu (WSL) &mdash; AWS CLI v2 and SSO, the only credentials you should use</b></header>
+<pre><code>curl -fsSL "<a href="https://urldefense.com/v3/__https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5G2xlnxx$">https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip</a>" -o awscliv2.zip
+unzip -q awscliv2.zip &amp;&amp; sudo ./aws/install &amp;&amp; rm -rf aws awscliv2.zip
+aws --version                 # aws-cli/2.19.5 Python/3.12.6 Linux/6.6.87.2-1
+
+aws configure sso
+# SSO session name (Recommended): badgedesk
+# SSO start URL [None]: <a href="https://urldefense.com/v3/__https://d-9067abcdef.awsapps.com/start__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5KxhBj2s$">https://d-9067abcdef.awsapps.com/start</a>
+# SSO region [None]: ap-south-1
+# SSO registration scopes [sso:account:access]: (enter)
+#   ... browser opens, you approve the device code ...
+# The only AWS account available to you is: 431298765432
+# Using the account ID 431298765432
+# The only role available to you is: AdministratorAccess
+# CLI default client Region [None]: ap-south-1
+# CLI default output format [None]: json
+# CLI profile name [AdministratorAccess-431298765432]: badgedesk-admin
+
+aws sso login --profile badgedesk-admin
+aws sts get-caller-identity --profile badgedesk-admin
+# {
+#   "UserId": "AROAY...:you@example.com",
+#   "Account": "431298765432",
+#   "Arn": "arn:aws:sts::431298765432:assumed-role/AWSReservedSSO_AdministratorAccess_.../you@example.com"
+# }
+
+export AWS_PROFILE=badgedesk-admin      # or put it in .envrc / .bashrc
+aws s3 ls
+</code></pre>
+</div>
+
+<div class="code" data-lang="bash">
+<header><b>Ubuntu (WSL) &mdash; Azure CLI</b></header>
+<pre><code>curl -sL <a href="https://urldefense.com/v3/__https://aka.ms/InstallAzureCLIDeb__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5H5F9M8o$">https://aka.ms/InstallAzureCLIDeb</a> | sudo bash
+az version --output table
+
+az login                       # opens a browser; use the personal Microsoft account
+az account show --output table
+# EnvironmentName    IsDefault    Name                  State    TenantId
+# AzureCloud         True         Azure subscription 1  Enabled  72f988bf-...
+
+az group create --name rg-badgedesk-dev --location centralindia
+az configure --defaults group=rg-badgedesk-dev location=centralindia
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; never <code>aws configure</code> with long-lived keys</span>
+  <p><code>aws configure</code> writes an access key ID and secret into <code>~/.aws/credentials</code> in
+  plain text, valid until you remember to rotate them. That file has leaked from laptops, from Docker images
+  and from GitHub more times than any other secret in the industry. <code>aws configure sso</code> instead
+  caches a short-lived token in <code>~/.aws/sso/cache</code> that expires in hours, and the recovery from a
+  stolen laptop is &ldquo;revoke the session&rdquo; rather than &ldquo;audit six months of CloudTrail&rdquo;.
+  Long-lived keys appear exactly once on this set: never.</p>
+</div>
+
+<h3 id="k8s-tf">Terraform via tfenv, kubectl, and a throwaway cluster</h3>
+<p>Terraform gets pinned per project, so install it through <code>tfenv</code> and let a
+<code>.terraform-version</code> file in the repo decide. <code>kubectl</code> is a single binary. For a local
+cluster, <code>kind</code> runs the control plane inside a container and is the faster of the two options.</p>
+
+<div class="code" data-lang="bash">
+<header><b>Ubuntu (WSL) &mdash; tfenv</b></header>
+<pre><code>git clone --depth 1 <a href="https://urldefense.com/v3/__https://github.com/tfutils/tfenv.git__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5FMftSwc$">https://github.com/tfutils/tfenv.git</a> ~/.tfenv
+echo 'export PATH="$HOME/.tfenv/bin:$PATH"' &gt;&gt; ~/.bashrc &amp;&amp; exec $SHELL -l
+
+tfenv list-remote | head -3
+tfenv install 1.9.8
+tfenv use 1.9.8
+terraform version               # Terraform v1.9.8 on linux_amd64
+
+echo "1.9.8" &gt; ~/code/badgedesk/infra/.terraform-version   # tfenv reads this on cd
+terraform -install-autocomplete
+</code></pre>
+</div>
+
+<div class="code" data-lang="bash">
+<header><b>Ubuntu (WSL) &mdash; kubectl and kind</b></header>
+<pre><code># kubectl: fetch the stable version number, then the matching binary
+curl -fsSLO "<a href="https://urldefense.com/v3/__https://dl.k8s.io/release/$(curl__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5LDkv1pp$">https://dl.k8s.io/release/$(curl</a> -Ls <a href="https://urldefense.com/v3/__https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5BSElIdY$">https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl</a>"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl &amp;&amp; rm kubectl
+kubectl version --client
+# Client Version: v1.31.3
+
+# kind: also one binary. Needs a working container runtime.
+curl -fsSLo ./kind <a href="https://urldefense.com/v3/__https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5JUSaG4c$">https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64</a>
+sudo install -o root -g root -m 0755 kind /usr/local/bin/kind &amp;&amp; rm kind
+
+kind create cluster --name badgedesk
+# Creating cluster "badgedesk" ...
+#  - Ensuring node image (kindest/node:v1.31.0) 
+#  - Preparing nodes 
+#  - Writing configuration 
+#  - Starting control-plane 
+#  - Installing CNI 
+#  - Installing StorageClass 
+# Set kubectl context to "kind-badgedesk"
+
+kubectl cluster-info --context kind-badgedesk
+kubectl get nodes
+# NAME                      STATUS   ROLES           AGE   VERSION
+# badgedesk-control-plane   Ready    control-plane   41s   v1.31.0
+
+kind delete cluster --name badgedesk    # it is disposable. Delete it freely.
+</code></pre>
+</div>
+
+<h3 id="dbclients">Database clients &mdash; and the zero-install alternative</h3>
+<p>You need a SQL prompt, a Mongo viewer and <code>redis-cli</code>. You do <b>not</b> need a database server
+installed on the host: everything comes from the Compose file in &sect;4. Installing PostgreSQL natively is
+the single most common cause of the <code>port 5432 already in use</code> error in &sect;8.</p>
+
+<div class="code" data-lang="bash">
+<header><b>Ubuntu (WSL) &mdash; clients only, no servers</b></header>
+<pre><code># PostgreSQL 16 client from the PGDG repo, so psql matches the server major version
+sudo apt-get install -y curl gnupg lsb-release
+curl -fsSL <a href="https://urldefense.com/v3/__https://www.postgresql.org/media/keys/ACCC4CF8.asc__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5M9lawIl$">https://www.postgresql.org/media/keys/ACCC4CF8.asc</a> \
+  | sudo gpg --dearmor -o /usr/share/keyrings/pgdg.gpg
+echo "deb [signed-by=/usr/share/keyrings/pgdg.gpg] \
+<a href="https://urldefense.com/v3/__http://apt.postgresql.org/pub/repos/apt__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Ngpvr_s$">http://apt.postgresql.org/pub/repos/apt</a> $(lsb_release -cs)-pgdg main" \
+  | sudo tee /etc/apt/sources.list.d/pgdg.list &gt;/dev/null
+sudo apt-get update
+sudo apt-get install -y postgresql-client-16 redis-tools
+
+psql --version            # psql (PostgreSQL) 16.4
+redis-cli --version       # redis-cli 7.0.15
+
+# mongosh, for the access_events collection
+curl -fsSL <a href="https://urldefense.com/v3/__https://pgp.mongodb.com/server-7.0.asc__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5J47SXpe$">https://pgp.mongodb.com/server-7.0.asc</a> \
+  | sudo gpg --dearmor -o /usr/share/keyrings/mongodb-7.gpg
+echo "deb [signed-by=/usr/share/keyrings/mongodb-7.gpg] \
+<a href="https://urldefense.com/v3/__https://repo.mongodb.org/apt/ubuntu__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5LXWgAkZ$">https://repo.mongodb.org/apt/ubuntu</a> noble/mongodb-org/7.0 multiverse" \
+  | sudo tee /etc/apt/sources.list.d/mongodb-7.list &gt;/dev/null
+sudo apt-get update &amp;&amp; sudo apt-get install -y mongodb-mongosh
+</code></pre>
+</div>
+
+<div class="code" data-lang="bash">
+<header><b>the alternative that always works, on either machine</b></header>
+<pre><code># If you cannot install a client - corporate laptop, blocked apt repo, whatever -
+# use the one already inside the container. Zero installs, guaranteed version match.
+docker compose exec postgres psql -U badgedesk -d badgedesk
+docker compose exec redis    redis-cli
+docker compose exec mongo    mongosh -u badgedesk -p badgedesk --authenticationDatabase admin
+
+# One-off SQL without an interactive session:
+docker compose exec -T postgres psql -U badgedesk -d badgedesk \
+  -c "select status, count(*) from access_requests group by status;"
+</code></pre>
+</div>
+
+<p>MongoDB Compass is worth having as a GUI for nested documents: <code>winget install
+MongoDB.Compass.Full</code> on the personal machine, and it also ships a per-user installer that works
+without admin on the corporate one. Connect to <code>mongodb://badgedesk:badgedesk@localhost:27017/?authSource=admin</code>.</p>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; personal machine toolchain</div>
+  <a class="r" href="https://urldefense.com/v3/__https://learn.microsoft.com/en-us/windows/wsl/wsl-config__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5O9prgEK$" target="_blank" rel="noopener"><span>Microsoft Learn &mdash; Advanced settings configuration in WSL<i>The complete reference for every key in <code>wsl.conf</code> and <code>.wslconfig</code>. Bookmark it; you will come back when Kafka eats your RAM.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://docs.docker.com/desktop/wsl/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5NXLXjFX$" target="_blank" rel="noopener"><span>Docker docs &mdash; Docker Desktop WSL2 backend<i>Explains exactly what &ldquo;WSL integration&rdquo; does to your distro, and the <code>docker context</code> it creates.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://docs.astral.sh/uv/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5L37zX0q$" target="_blank" rel="noopener"><span>uv documentation<i><code>uv venv</code>, <code>uv pip compile</code>, <code>uv sync</code> and the project workflow. Ten minutes here saves an hour of pip.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://docs.github.com/en/authentication/connecting-to-github-with-ssh__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Mq58DQu$" target="_blank" rel="noopener"><span>GitHub docs &mdash; Connecting to GitHub with SSH<i>Includes the &ldquo;use HTTPS over port 443&rdquo; page you will need on the corporate network.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@Fireship__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Cc14g7u$" target="_blank" rel="noopener"><span>Fireship<i>Two-minute orientation videos for Docker, WSL, pnpm and uv. Use them to decide what a tool is for before installing it.</i></span><span class="dur">2 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=aws*cli*v2*sso*configure*sso*profile*tutorial__;KysrKysrKw!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5CacFukD$" target="_blank" rel="noopener"><span>AWS CLI v2 and <code>aws configure sso</code><i>Watch this rather than any tutorial that types an access key into a terminal. Sets you up correctly for <a href="aws.html">Sheet 07</a>.</i></span><span class="dur">15 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="corporate">Corporate laptop &mdash; no admin, hostile network</h2>
+<p class="sub">Assume you cannot elevate, the registries are proxied, and every TLS connection is being
+opened and re-signed on the way out. None of that stops you working &mdash; but discovering it in Week 08
+does.</p>
+
+<h3 id="corp-install">Installing without administrator rights</h3>
+<p>Almost every tool on this set ships a per-user installer that writes to <code>%LOCALAPPDATA%</code> and
+needs no elevation. The trick is knowing to ask for it.</p>
+
+<div class="code" data-lang="powershell">
+<header><b>corporate laptop &mdash; PowerShell, no elevation</b></header>
+<pre><code># winget can install into the user scope. Not every package supports it,
+# but the ones that matter here do.
+winget install --scope user --id Git.Git
+winget install --scope user --id Microsoft.VisualStudioCode      # "User Installer" build
+winget install --scope user --id Microsoft.PowerShell
+
+# Node: never the .msi. fnm is a single binary and manages versions per project.
+winget install --scope user --id Schniz.fnm
+fnm install 22
+fnm use 22
+fnm default 22
+node --version                                   # v22.x
+
+# Python: the Microsoft Store build installs per-user by design and needs no admin.
+winget install --scope user --id Python.Python.3.12
+python --version                                 # Python 3.12.x
+
+# Java: extract a portable JDK, no installer at all.
+$jdk = "$env:LOCALAPPDATA\jdk-21"
+New-Item -ItemType Directory -Force -Path $jdk | Out-Null
+# download the Temurin 21 .zip from adoptium.net, then:
+Expand-Archive -Path "$env:USERPROFILE\Downloads\OpenJDK21.zip" -DestinationPath $jdk -Force
+[Environment]::SetEnvironmentVariable(
+  "JAVA_HOME", "$jdk\jdk-21.0.4+7", "User")       # "User" scope - no admin needed
+[Environment]::SetEnvironmentVariable(
+  "Path", "$([Environment]::GetEnvironmentVariable('Path','User'));%JAVA_HOME%\bin", "User")
+
+# Everything above lands in your profile. IT policy usually permits this;
+# if AppLocker blocks execution from %LOCALAPPDATA%, stop and ask - do not fight it.
+</code></pre>
+</div>
+
+<h3 id="corp-tls">Why every tool suddenly cannot verify a certificate</h3>
+<p>This is the single biggest time-sink on a corporate machine, and almost nobody explains it properly. Your
+employer runs a proxy that decrypts your HTTPS traffic to inspect it, then re-encrypts it with a certificate
+it signs itself. Windows trusts that signature because IT installed the root certificate. <b>Node, Python
+and Git do not use the Windows trust store</b> &mdash; they each ship their own list of trusted authorities,
+and the corporate root is not on any of them.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 380" role="img" aria-label="TLS interception: the corporate proxy terminates the connection to the package registry and re-signs it with the corporate root certificate authority. The Windows certificate store trusts that authority, but Node, Python and Git each ship their own certificate bundle which does not, so those tools reject the connection.">
+  <defs>
+    <marker id="s01x-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s01x-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s01x-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <rect class="box-c" x="30" y="64" width="240" height="60" rx="3"/>
+  <text class="t mid" x="150" y="88">npm / pip / git</text>
+  <text class="mm mid" x="150" y="104">ON YOUR CORPORATE LAPTOP</text>
+
+  <rect class="box-a" x="380" y="64" width="300" height="60" rx="3"/>
+  <text class="t b mid" x="530" y="88">Corporate TLS proxy</text>
+  <text class="mm mid" x="530" y="104">DECRYPTS &middot; INSPECTS &middot; RE-ENCRYPTS</text>
+
+  <rect class="box" x="790" y="64" width="240" height="60" rx="3"/>
+  <text class="t mid" x="910" y="88">registry.npmjs.org</text>
+  <text class="mm mid" x="910" y="104">THE REAL SERVER</text>
+
+  <path class="flow" d="M274,94 H374" marker-end="url(#s01x-ac)"/>
+  <path class="flow" d="M684,94 H784" marker-end="url(#s01x-ac)"/>
+
+  <rect class="box-a" x="380" y="156" width="300" height="52" rx="3"/>
+  <text class="m b mid" x="530" y="180">certificate signed by</text>
+  <text class="t b mid" x="530" y="198">MegaCorp Root CA</text>
+  <path class="lead" d="M530,128 V152"/>
+
+  <rect class="box" x="790" y="156" width="240" height="52" rx="3"/>
+  <text class="m mid" x="910" y="180">certificate signed by</text>
+  <text class="t mid" x="910" y="198">a public CA</text>
+  <path class="lead" d="M910,128 V152"/>
+
+  <text class="mm b" x="380" y="230">THIS IS THE CERTIFICATE YOUR TOOLS ACTUALLY SEE</text>
+
+  <line class="ln dash" x1="20" y1="252" x2="1180" y2="252"/>
+  <text class="mm" x="30" y="276">WHO TRUSTS &ldquo;MEGACORP ROOT CA&rdquo;?</text>
+
+  <rect class="box-c" x="30" y="290" width="270" height="66" rx="3"/>
+  <text class="t c mid" x="165" y="314">Windows cert store</text>
+  <text class="mm c mid" x="165" y="332">YES &mdash; IT PUSHED IT BY POLICY</text>
+  <text class="mm mid" x="165" y="348">SO THE BROWSER WORKS FINE</text>
+
+  <rect class="box-r" x="320" y="290" width="270" height="66" rx="3"/>
+  <text class="t r mid" x="455" y="314">Node&rsquo;s bundled list</text>
+  <text class="mm r mid" x="455" y="332">NO &mdash; SHIPS ITS OWN</text>
+  <text class="mm mid" x="455" y="348">SELF_SIGNED_CERT_IN_CHAIN</text>
+
+  <rect class="box-r" x="610" y="290" width="270" height="66" rx="3"/>
+  <text class="t r mid" x="745" y="314">Python certifi</text>
+  <text class="mm r mid" x="745" y="332">NO &mdash; SHIPS ITS OWN</text>
+  <text class="mm mid" x="745" y="348">CERTIFICATE_VERIFY_FAILED</text>
+
+  <rect class="box-r" x="900" y="290" width="270" height="66" rx="3"/>
+  <text class="t r mid" x="1035" y="314">Git&rsquo;s ca-bundle.crt</text>
+  <text class="mm r mid" x="1035" y="332">NO &mdash; SHIPS ITS OWN</text>
+  <text class="mm mid" x="1035" y="348">UNABLE TO GET LOCAL ISSUER</text>
+
+  <circle class="bub" cx="530" cy="36" r="13"/><text class="bubt" x="530" y="40">1</text>
+  <path class="lead" d="M530,49 V60"/>
+  <circle class="bub" cx="1100" cy="182" r="13"/><text class="bubt" x="1100" y="186">2</text>
+  <path class="lead" d="M1087,182 H1034"/>
+</svg>
+<figcaption>Drawing 01-C &mdash; TLS interception and the four trust stores. <b>Red</b> = the tools that will
+refuse to connect until you tell them about the corporate authority.</figcaption>
+</figure>
+
+<div class="notes">
+  <div class="n"><b>1</b><div><b>The proxy is not attacking you</b> &mdash; this is standard corporate data-loss
+  prevention. It is indistinguishable from a man-in-the-middle attack at the protocol level, which is exactly
+  why your tools complain. The fix is to tell each tool that this particular authority is expected.</div></div>
+  <div class="n"><b>2</b><div><b>The browser working proves nothing.</b> Chrome and Edge read the Windows
+  store, so the web is fine while <code>npm install</code> fails. If someone tells you &ldquo;the network is
+  fine, the site loads&rdquo;, this drawing is your answer.</div></div>
+</div>
+
+<div class="code" data-lang="powershell">
+<header><b>step 1 &mdash; export the corporate root certificate</b></header>
+<pre><code># Find it. The name varies - look for your company in the subject.
+Get-ChildItem Cert:\LocalMachine\Root |
+  Where-Object { $_.Subject -match 'MegaCorp|Zscaler|Netskope|Blue Coat|Forcepoint' } |
+  Format-List Subject, Thumbprint, NotAfter
+
+# Export it as PEM (Base-64), which is what npm, pip and git all want.
+$dst = "$env:USERPROFILE\.certs\corp-root.pem"
+New-Item -ItemType Directory -Force -Path (Split-Path $dst) | Out-Null
+
+Get-ChildItem Cert:\LocalMachine\Root |
+  Where-Object { $_.Subject -match 'MegaCorp' } |
+  ForEach-Object {
+    "-----BEGIN CERTIFICATE-----"
+    [Convert]::ToBase64String($_.RawData, 'InsertLineBreaks')
+    "-----END CERTIFICATE-----"
+  } | Set-Content -Encoding ascii $dst
+
+Get-Content $dst | Select-Object -First 2      # sanity check: BEGIN CERTIFICATE
+</code></pre>
+</div>
+
+<div class="code" data-lang="powershell">
+<header><b>step 2 &mdash; point every tool at it</b></header>
+<pre><code>$cert = "$env:USERPROFILE\.certs\corp-root.pem"
+
+# --- Node and npm --------------------------------------------------------
+npm config set cafile $cert
+[Environment]::SetEnvironmentVariable("NODE_EXTRA_CA_CERTS", $cert, "User")
+#   NODE_EXTRA_CA_CERTS is the important one: it covers node itself,
+#   so fetch(), undici, prisma and every build tool stop failing too.
+
+# --- Python and pip ------------------------------------------------------
+New-Item -ItemType Directory -Force -Path "$env:APPDATA\pip" | Out-Null
+@"
+[global]
+cert = $cert
+proxy = <a href="https://urldefense.com/v3/__http://proxy.megacorp.example:8080__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5E_t6QEv$">http://proxy.megacorp.example:8080</a>
+"@ | Set-Content "$env:APPDATA\pip\pip.ini"
+
+#   requests, httpx and boto3 read this one:
+[Environment]::SetEnvironmentVariable("REQUESTS_CA_BUNDLE", $cert, "User")
+[Environment]::SetEnvironmentVariable("SSL_CERT_FILE",      $cert, "User")
+[Environment]::SetEnvironmentVariable("AWS_CA_BUNDLE",      $cert, "User")
+
+# --- Git -----------------------------------------------------------------
+git config --global http.sslCAInfo $cert
+#   NEVER do this instead:  git config --global http.sslVerify false
+
+# --- The proxy itself ----------------------------------------------------
+[Environment]::SetEnvironmentVariable("HTTP_PROXY",  "<a href="https://urldefense.com/v3/__http://proxy.megacorp.example:8080__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5E_t6QEv$">http://proxy.megacorp.example:8080</a>", "User")
+[Environment]::SetEnvironmentVariable("HTTPS_PROXY", "<a href="https://urldefense.com/v3/__http://proxy.megacorp.example:8080__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5E_t6QEv$">http://proxy.megacorp.example:8080</a>", "User")
+[Environment]::SetEnvironmentVariable("NO_PROXY",    "localhost,127.0.0.1,::1,.megacorp.example", "User")
+#   NO_PROXY matters: without it, your own containers on localhost get proxied and time out.
+</code></pre>
+</div>
+
+<div class="code" data-lang="bash">
+<header><b>step 3 &mdash; and again inside WSL, which has its own trust store</b></header>
+<pre><code># Copy the PEM in from the Windows side.
+mkdir -p ~/.certs
+cp /mnt/c/Users/$USER/.certs/corp-root.pem ~/.certs/
+
+# Add it to the system trust store - this fixes curl, apt and most CLIs at once.
+sudo cp ~/.certs/corp-root.pem /usr/local/share/ca-certificates/corp-root.crt
+sudo update-ca-certificates                    # 1 added, 0 removed
+
+# Then the per-tool variables, in ~/.bashrc so they survive a restart:
+cat &gt;&gt; ~/.bashrc &lt;&lt;'EOF'
+export NODE_EXTRA_CA_CERTS=$HOME/.certs/corp-root.pem
+export REQUESTS_CA_BUNDLE=$HOME/.certs/corp-root.pem
+export SSL_CERT_FILE=$HOME/.certs/corp-root.pem
+export HTTP_PROXY=<a href="https://urldefense.com/v3/__http://proxy.megacorp.example:8080__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5E_t6QEv$">http://proxy.megacorp.example:8080</a>
+export HTTPS_PROXY=$HTTP_PROXY
+export NO_PROXY=localhost,127.0.0.1,::1,.megacorp.example
+EOF
+source ~/.bashrc
+
+# Maven, if you get as far as the Java work in Week 02:
+#   ~/.m2/settings.xml needs a &lt;proxies&gt; block, and the cert must be
+#   imported into the JDK's own keystore with keytool -importcert.
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil</span>
+  <p>Every search result for these errors suggests <code>npm config set strict-ssl false</code>,
+  <code>pip --trusted-host pypi.org</code> or <code>git config http.sslVerify false</code>. They work, and
+  they work by <b>switching off certificate verification entirely</b> &mdash; you are now trusting anything
+  that answers, on a network you do not control, while installing code that will run with your privileges.
+  Configure the CA bundle instead. It takes five more minutes and it is the difference between an engineer
+  and someone who pastes commands. Expect to be asked what <code>strict-ssl false</code> actually does.</p>
+</div>
+
+<h3 id="corp-docker">Containers without Docker Desktop</h3>
+<p>Docker Desktop requires a paid subscription for larger companies, so many corporate images do not have
+it. Every command on this set still works &mdash; the Docker CLI and the daemon are open source; only the
+desktop application is licensed.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Option</th><th>How it works</th><th>Effort</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><b>Docker CE inside WSL2</b></td><td>Install the daemon in your Ubuntu distro and use it from there</td><td>Low</td><td>The recommended route. No licence question, no GUI, identical CLI. Needs WSL2 to be permitted.</td></tr>
+<tr><td><b>Podman Desktop</b></td><td>Daemonless, rootless containers; <code>podman</code> is CLI-compatible</td><td>Low</td><td>Apache-licensed. <code>alias docker=podman</code> covers nearly everything. <code>podman compose</code> handles the Compose file.</td></tr>
+<tr><td><b>Rancher Desktop</b></td><td>Bundles containerd or dockerd plus a local Kubernetes</td><td>Medium</td><td>Also gives you a real cluster for Sheet 09 without a cloud account.</td></tr>
+<tr><td><b>Remote dev container</b></td><td>Containers run on the personal machine or a cloud VM; the corporate laptop is just an editor</td><td>Medium</td><td>Best when local virtualisation is blocked outright.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="code" data-lang="bash">
+<header><b>Docker CE inside WSL2, no Docker Desktop</b></header>
+<pre><code>sudo apt-get update
+sudo apt-get install -y ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL <a href="https://urldefense.com/v3/__https://download.docker.com/linux/ubuntu/gpg__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5MTZ5Q8D$">https://download.docker.com/linux/ubuntu/gpg</a> -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
+<a href="https://urldefense.com/v3/__https://download.docker.com/linux/ubuntu__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5AnVfnKM$">https://download.docker.com/linux/ubuntu</a> $(. /etc/os-release &amp;&amp; echo $VERSION_CODENAME) stable" \
+  | sudo tee /etc/apt/sources.list.d/docker.list &gt;/dev/null
+
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+# Run docker without sudo
+sudo usermod -aG docker $USER
+newgrp docker
+
+# systemd must be enabled in /etc/wsl.conf (see the personal-machine section above),
+# otherwise start it by hand each session:
+sudo service docker start
+
+docker run --rm hello-world
+docker compose version
+</code></pre>
+</div>
+
+<h3 id="corp-limits">What you genuinely cannot do on the corporate machine</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Blocked</th><th>Why</th><th>Do this instead</th></tr></thead>
+<tbody>
+<tr><td>Deploying to your personal AWS or Azure account</td><td>Personal cloud credentials on a corporate device is a policy breach, and often a fireable one</td><td>All cloud work on the personal laptop. No exceptions, no &ldquo;just this once&rdquo;.</td></tr>
+<tr><td>Running a local Kubernetes cluster</td><td>Usually needs nested virtualisation or elevation</td><td>Sheet 09 on the personal laptop; read manifests and use <code>kubectl --dry-run=client</code> here</td></tr>
+<tr><td>Exposing a public tunnel for webhook testing</td><td>Inbound tunnels are blocked and monitored</td><td>Sheet 05 webhook work on the personal laptop; here, test the receiver with a local <code>curl</code> and a hand-computed signature</td></tr>
+<tr><td>Pasting internal documents into a public LLM API</td><td>Data-loss policy, and rightly so</td><td>Sheet 12 practice on the personal laptop, or a local model via Ollama</td></tr>
+<tr><td>Installing anything requiring a driver or service</td><td>No admin</td><td>Portable or user-scope builds, or run it in a container</td></tr>
+</tbody>
+</table>
+</div>
+<p>What the corporate machine <i>is</i> good for: reading these sheets, typing every code sample, katas,
+SQL against a local Postgres container, the Friday drill session on
+<a href="interview.html">Sheet 14</a>, and writing. That is comfortably half of the twelve weeks.</p>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; corporate constraints</div>
+  <a class="r" href="https://urldefense.com/v3/__https://docs.docker.com/engine/install/ubuntu/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Krvqpq2$" target="_blank" rel="noopener"><span>Docker docs &mdash; Install Docker Engine on Ubuntu<i>The canonical instructions for the no-Docker-Desktop route above.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://podman-desktop.io/docs/installation__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5EV5cCFO$" target="_blank" rel="noopener"><span>Podman Desktop &mdash; installation<i>Includes the Windows per-user install and the <code>docker</code> compatibility notes.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=corporate*proxy*ssl*certificate*npm*pip*self*signed*certificate*in*chain*fix__;KysrKysrKysrKys!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Eqxiq1q$" target="_blank" rel="noopener"><span>Fixing SELF_SIGNED_CERT_IN_CHAIN properly<i>Look for one that configures the CA bundle rather than disabling strict-ssl. If the video disables verification, close it.</i></span><span class="dur">12 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://learn.microsoft.com/en-us/windows/package-manager/winget/install__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Pvclep0$" target="_blank" rel="noopener"><span>winget install reference<i>Documents <code>--scope user</code> and which packages support it.</i></span><span class="dur">docs</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="repo">One repository, one command</h2>
+<p class="sub">Both machines clone the same repository and bring up the same infrastructure. If a service
+only runs on one laptop, you will stop using it.</p>
+
+<div class="code" data-lang="text">
+<header><b>badgedesk/ &mdash; the layout you will grow into over twelve weeks</b></header>
+<pre><code>badgedesk/
+  README.md                 architecture diagram + one-command start (Sheet 13)
+  docker-compose.yml        postgres, redis, mongo, kafka, kafka-ui
+  .env.example              every variable, with safe defaults. COMMITTED.
+  .env                      real values. NEVER committed.
+  .gitignore
+  services/
+    core/                   FastAPI          Sheet 04, Week 05
+    gateway/                NestJS + GraphQL Sheet 05, Week 06
+    notifier/               Express          Sheet 05, Week 06
+    provisioning-worker/    Kafka consumer   Sheet 11, Week 11
+    audit-reconciler/       Lambda handler   Sheet 07, Week 09
+  web/                      Next.js          Sheet 03, Weeks 03-04
+  infra/                    Terraform        Sheet 10, Week 10
+  .github/workflows/        CI/CD            Sheet 09, Week 10
+  tools/
+    csv-validator-py/       Week 01
+    csv-validator-ts/       Week 02
+    csv-validator-java/     Week 02</code></pre>
+</div>
+
+<div class="code" data-lang="text">
+<header><b>.gitignore &mdash; the lines that matter</b></header>
+<pre><code>.env
+.env.*
+!.env.example
+*.pem
+*.key
+.terraform/
+*.tfstate
+*.tfstate.backup
+.venv/
+node_modules/
+__pycache__/
+.next/
+dist/
+.aws/
+kubeconfig</code></pre>
+</div>
+
+<div class="code" data-lang="yaml">
+<header><b>docker-compose.yml &mdash; the whole local platform</b></header>
+<pre><code>name: badgedesk
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: badgedesk
+      POSTGRES_PASSWORD: badgedesk
+      POSTGRES_DB: badgedesk
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U badgedesk -d badgedesk"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["6379:6379"]
+    volumes: ["redisdata:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  mongo:
+    image: mongo:7
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: badgedesk
+      MONGO_INITDB_ROOT_PASSWORD: badgedesk
+    ports: ["27017:27017"]
+    volumes: ["mongodata:/data/db"]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      retries: 10
+
+  # Kafka in KRaft mode - no ZooKeeper. One container, one broker.
+  kafka:
+    image: apache/kafka:3.8.0
+    ports: ["9092:9092"]
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:19092,CONTROLLER://:9093,EXTERNAL://:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:19092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      CLUSTER_ID: badgedesk-local-cluster-01
+    volumes: ["kafkadata:/var/lib/kafka/data"]
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    ports: ["8080:8080"]
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:19092
+      DYNAMIC_CONFIG_ENABLED: "true"
+    depends_on: [kafka]
+
+volumes:
+  pgdata:
+  redisdata:
+  mongodata:
+  kafkadata:</code></pre>
+</div>
+
+<div class="code" data-lang="bash">
+<header><b>bringing it up, and proving each service answers</b></header>
+<pre><code>docker compose up -d
+
+# [+] Running 6/6
+#  Network badgedesk_default   Created
+#  Container badgedesk-postgres-1  Healthy
+#  Container badgedesk-redis-1     Healthy
+#  Container badgedesk-mongo-1     Healthy
+#  Container badgedesk-kafka-1     Started
+#  Container badgedesk-kafka-ui-1  Started
+
+docker compose ps                       # STATUS column should say healthy
+
+docker compose exec postgres psql -U badgedesk -d badgedesk -c "select version();"
+docker compose exec redis redis-cli ping                       # PONG
+docker compose exec mongo mongosh --quiet -u badgedesk -p badgedesk \
+  --authenticationDatabase admin --eval "db.adminCommand('ping')"
+docker compose exec kafka /opt/kafka/bin/kafka-topics.sh \
+  --bootstrap-server localhost:19092 --list
+
+# Kafka UI at <a href="https://urldefense.com/v3/__http://localhost:8080__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5KXeCO-i$">http://localhost:8080</a>
+
+docker compose down          # stop, keep the data
+docker compose down -v       # stop and DELETE the volumes - a clean slate
+</code></pre>
+</div>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 270" role="img" aria-label="The local Docker Compose network showing PostgreSQL on port 5432, Redis on 6379, MongoDB on 27017, Kafka on 9092 and Kafka UI on 8080, all reachable from the host and from each other by service name.">
+  <defs><marker id="s01y-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker></defs>
+
+  <rect class="box" x="30" y="60" width="220" height="70" rx="3"/>
+  <text class="t mid" x="140" y="86">Your code</text>
+  <text class="mm mid" x="140" y="104">RUNNING ON THE HOST</text>
+  <text class="mm mid" x="140" y="120">localhost:PORT</text>
+
+  <rect class="zone" x="330" y="40" width="840" height="150" rx="4"/>
+  <text class="mm c" x="344" y="62">DOCKER NETWORK badgedesk_default &mdash; SERVICES FIND EACH OTHER BY NAME, NOT BY localhost</text>
+
+  <rect class="box-c" x="350" y="76" width="150" height="60" rx="3"/>
+  <text class="t mid" x="425" y="100">postgres</text>
+  <text class="mm mid" x="425" y="116">5432</text>
+
+  <rect class="box-c" x="514" y="76" width="150" height="60" rx="3"/>
+  <text class="t mid" x="589" y="100">redis</text>
+  <text class="mm mid" x="589" y="116">6379</text>
+
+  <rect class="box-c" x="678" y="76" width="150" height="60" rx="3"/>
+  <text class="t mid" x="753" y="100">mongo</text>
+  <text class="mm mid" x="753" y="116">27017</text>
+
+  <rect class="box-a" x="842" y="76" width="150" height="60" rx="3"/>
+  <text class="t b mid" x="917" y="100">kafka</text>
+  <text class="mm mid" x="917" y="116">9092 / 19092</text>
+
+  <rect class="box" x="1006" y="76" width="150" height="60" rx="3"/>
+  <text class="t mid" x="1081" y="100">kafka-ui</text>
+  <text class="mm mid" x="1081" y="116">8080</text>
+
+  <path class="flow" d="M254,95 H326" marker-end="url(#s01y-ac)"/>
+  <text class="mm" x="30" y="164">FROM THE HOST: postgresql://badgedesk:badgedesk@localhost:5432/badgedesk</text>
+  <text class="mm" x="30" y="180">FROM ANOTHER CONTAINER: postgresql://badgedesk:badgedesk@postgres:5432/badgedesk</text>
+  <text class="mm r" x="30" y="216">THE MOST COMMON COMPOSE MISTAKE: A CONTAINER USING localhost TO REACH ANOTHER CONTAINER. INSIDE A CONTAINER, localhost IS THAT CONTAINER.</text>
+  <text class="mm b" x="30" y="240">KAFKA ADVERTISES TWO ADDRESSES ON PURPOSE &mdash; 19092 FOR CONTAINER-TO-CONTAINER, 9092 FOR YOU. THAT IS WHY THE LISTENER CONFIG LOOKS OVER-COMPLICATED.</text>
+</svg>
+<figcaption>Drawing 01-D &mdash; the local platform and its port map. <b>Brass</b> = the one with the confusing
+dual-listener setup.</figcaption>
+</figure>
+
+<!-- ===================================================================== -->
+<h2 id="editor">Editor</h2>
+<p class="sub">Same extensions and settings on both machines, so muscle memory transfers.</p>
+
+<div class="code" data-lang="bash">
+<header><b>install the extension set in one go (works for VS Code and Cursor)</b></header>
+<pre><code>for ext in \
+  ms-python.python ms-python.vscode-pylance charliermarsh.ruff \
+  dbaeumer.vscode-eslint esbenp.prettier-vscode \
+  bradlc.vscode-tailwindcss \
+  ms-azuretools.vscode-docker ms-kubernetes-tools.vscode-kubernetes-tools \
+  hashicorp.terraform \
+  humao.rest-client ckolkman.vscode-postgres \
+  ms-vscode-remote.remote-wsl eamodio.gitlens \
+  redhat.vscode-yaml graphql.vscode-graphql
+do
+  code --install-extension "$ext"
+done</code></pre>
+</div>
+
+<div class="code" data-lang="json">
+<header><b>settings.json &mdash; the parts worth copying</b></header>
+<pre><code>{
+  "editor.formatOnSave": true,
+  "editor.rulers": [100],
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.codeActionsOnSave": { "source.organizeImports": "explicit" }
+  },
+  "[typescript]":     { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[typescriptreact]":{ "editor.defaultFormatter": "esbenp.prettier-vscode" },
+
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "git.autofetch": true,
+  "git.confirmSync": false,
+
+  "http.proxyStrictSSL": true,
+  "http.proxySupport": "on"
+}</code></pre>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="cloud">Cloud accounts, and not getting a surprise bill</h2>
+<p class="sub">Personal laptop only. Do this in Week 00 so that Week 08 is about architecture rather than
+account admin.</p>
+
+<div class="grid g2">
+  <div class="card"><span class="cm">AWS &mdash; 40 minutes</span><b class="ct">Set-up order</b>
+    <p>1. Create the account. 2. Turn on MFA for the root user, then <b>stop using root</b>. 3. Enable IAM
+    Identity Center and create yourself an administrator user. 4. Set a budget alarm before you create
+    anything else. 5. Pick one region and stay in it &mdash; <code>ap-south-1</code> for Mumbai if you are in
+    India. 6. <code>aws configure sso</code> on the CLI.</p></div>
+  <div class="card"><span class="cm">Budget alarm &mdash; do this first</span><b class="ct">The exact path</b>
+    <p>Billing and Cost Management &rarr; Budgets &rarr; Create budget &rarr; Cost budget &rarr; Monthly,
+    fixed, <b>$10</b> &rarr; alert at 50%, 80% and 100% of budgeted amount &rarr; your email. Then Billing
+    Preferences &rarr; tick &ldquo;Receive Free Tier alerts&rdquo;. Ten minutes, and it is the difference
+    between a &pound;3 month and a &pound;300 one.</p></div>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Costs money while you sleep</th><th>Roughly</th><th>What to do</th></tr></thead>
+<tbody>
+<tr><td>NAT Gateway</td><td>~$32/month plus data</td><td>The classic surprise. Delete it the moment you finish a session; recreate from Terraform in two minutes.</td></tr>
+<tr><td>EKS control plane</td><td>~$73/month</td><td>Charged per cluster whether or not anything runs on it. Create it for one weekend in Week 09, then destroy it.</td></tr>
+<tr><td>RDS instance, even idle</td><td>~$15/month for a <code>db.t4g.micro</code></td><td>Free tier covers 750 hours for 12 months on a single micro instance. One instance only.</td></tr>
+<tr><td>Unattached Elastic IP</td><td>~$3.60/month each</td><td>Charged precisely because it is <i>not</i> attached. Release them.</td></tr>
+<tr><td>EBS volumes of terminated instances</td><td>~$0.08/GB/month</td><td>They survive the instance. Check the Volumes list for &ldquo;available&rdquo; ones.</td></tr>
+<tr><td>Provisioned IOPS, load balancers</td><td>$16&ndash;25/month each</td><td>Use one ALB and share it. Delete after the exercise.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">In production &mdash; the Sunday-night ritual</span>
+  <p>From Week 08 onwards, end every weekend with <code>terraform destroy</code> and then open the Billing
+  console to confirm the forecast is near zero. Real infrastructure is cheap for an evening and expensive
+  for a month, and the discipline of tearing down and rebuilding is itself the skill that Sheet 10 is
+  teaching you.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="verify">Verification &mdash; the Week 00 gate</h2>
+<p class="sub">Run this on both machines. Do not start Week 01 until the personal machine is fully green and
+the corporate machine is green except for the cloud and container rows.</p>
+
+<div class="code" data-lang="powershell">
+<header><b>tools/check-machine.ps1</b></header>
+<pre><code>$checks = [ordered]@{
+  'git'       = { git --version }
+  'node'      = { node --version }
+  'npm'       = { npm --version }
+  'python'    = { python --version }
+  'java'      = { java -version 2&gt;&amp;1 | Select-Object -First 1 }
+  'docker'    = { docker --version }
+  'compose'   = { docker compose version }
+  'aws'       = { aws --version }
+  'az'        = { az version --output tsv 2&gt;$null | Select-Object -First 1 }
+  'terraform' = { terraform version | Select-Object -First 1 }
+  'kubectl'   = { kubectl version --client=true -o yaml | Select-String gitVersion }
+  'wsl'       = { wsl --status }
+}
+
+foreach ($name in $checks.Keys) {
+  try {
+    $out = &amp; $checks[$name] 2&gt;$null
+    if ($out) { "{0,-10} OK   {1}" -f $name, ($out -join ' ').Trim() }
+    else      { "{0,-10} MISSING" -f $name }
+  } catch { "{0,-10} MISSING" -f $name }
+}
+
+# Prove the platform actually runs, not just that the CLI exists:
+docker compose ps --format "{{.Service}} {{.Status}}"
+</code></pre>
+</div>
+
+<div class="code" data-lang="text">
+<header><b>expected output &mdash; personal laptop</b></header>
+<pre><code>git        OK   git version 2.52.0.windows.1
+node       OK   v22.11.0
+npm        OK   10.9.0
+python     OK   Python 3.12.7
+java       OK   openjdk version "21.0.4" 2024-07-16 LTS
+docker     OK   Docker version 27.3.1, build ce12230
+compose    OK   Docker Compose version v2.29.7
+aws        OK   aws-cli/2.18.9 Python/3.12.6 Windows/11
+az         OK   2.65.0
+terraform  OK   Terraform v1.9.8
+kubectl    OK   gitVersion: v1.31.1
+wsl        OK   Default Distribution: Ubuntu-24.04  Default Version: 2
+
+postgres   Up 4 minutes (healthy)
+redis      Up 4 minutes (healthy)
+mongo      Up 4 minutes (healthy)
+kafka      Up 4 minutes
+kafka-ui   Up 4 minutes</code></pre>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="trouble">Troubleshooting</h2>
+<p class="sub">The errors you will actually hit, in the order you will hit them.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Error</th><th>What is really happening</th><th>Fix</th></tr></thead>
+<tbody>
+<tr><td><code>WslRegisterDistribution failed with error: 0x800701bc</code></td><td>The WSL2 Linux kernel component is missing or out of date</td><td><code>wsl --update</code>, then <code>wsl --shutdown</code>. Virtualisation must also be enabled in the BIOS.</td></tr>
+<tr><td><code>docker: error during connect ... the system cannot find the file specified</code></td><td>The Docker daemon is not running, or WSL integration is off for this distro</td><td>Start Docker Desktop, or Settings &rarr; Resources &rarr; WSL Integration &rarr; enable your distro. On Docker CE: <code>sudo service docker start</code>.</td></tr>
+<tr><td><code>SELF_SIGNED_CERT_IN_CHAIN</code> / <code>CERTIFICATE_VERIFY_FAILED</code></td><td>The corporate proxy re-signed the certificate and this tool does not trust the corporate root</td><td>Drawing 01-C and the three code blocks above. Configure the CA bundle; never disable verification.</td></tr>
+<tr><td><code>407 Proxy Authentication Required</code></td><td>The proxy wants credentials your tool is not sending</td><td>Set <code>HTTP_PROXY</code> with the auth form your organisation uses. If it is NTLM or Kerberos, run a local relay such as <code>px</code> or <code>cntlm</code> and point the tools at that.</td></tr>
+<tr><td><code>EACCES: permission denied ... /usr/lib/node_modules</code></td><td>Installing a package globally into a root-owned directory</td><td>Do not. Use <code>nvm</code>/<code>fnm</code> so Node lives in your home directory, and prefer <code>npx</code> over global installs.</td></tr>
+<tr><td><code>bind: address already in use</code> on 5432</td><td>A PostgreSQL server is installed natively on the host and holding the port</td><td><code>Get-NetTCPConnection -LocalPort 5432</code> to find it. Stop the native service, or remap the container to <code>5433:5432</code>.</td></tr>
+<tr><td>TLS fails only inside WSL, after the laptop sleeps</td><td>The WSL clock drifts from the host, and certificate validity checks fail</td><td><code>sudo hwclock -s</code>, or <code>wsl --shutdown</code> and restart. Systemd's <code>systemd-timesyncd</code> prevents recurrence.</td></tr>
+<tr><td><code>npm install</code> takes minutes and the fan spins</td><td>The project is on <code>/mnt/c</code>, so every file access crosses the 9p boundary</td><td>Move the repository into the Linux filesystem at <code>~/code</code>. Ten times faster, and the single biggest WSL performance fix.</td></tr>
+<tr><td>Builds are slow on Windows generally</td><td>Defender is scanning every file a build touches</td><td>Add exclusions for your repository folder, <code>%LOCALAPPDATA%\nvm</code>, the Docker data root and the WSL VHDX. On a corporate machine this needs IT &mdash; ask, it is a routine request.</td></tr>
+<tr><td><code>Cannot connect to Kafka at localhost:9092</code> from inside a container</td><td><code>localhost</code> inside a container is that container</td><td>Use the service name and the internal listener: <code>kafka:19092</code>. See Drawing 01-D.</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="connect">How the subtopics connect</h2>
+<p class="sub">Fresh machine to running platform. If you can execute this sequence from memory, Week 00 is
+done.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 300" role="img" aria-label="The Week 00 sequence: install the runtimes, enable WSL2, install Docker, clone the repository, copy the environment file, bring up the Compose platform and run the verification script, ending in a green machine ready for Week 01.">
+  <defs><marker id="s01z-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  <marker id="s01z-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker></defs>
+
+  <rect class="box-c" x="30" y="70" width="170" height="60" rx="3"/>
+  <text class="t mid" x="115" y="94">1 &middot; Runtimes</text>
+  <text class="mm mid" x="115" y="112">GIT NODE PYTHON JAVA</text>
+
+  <rect class="box-c" x="230" y="70" width="170" height="60" rx="3"/>
+  <text class="t mid" x="315" y="94">2 &middot; WSL2</text>
+  <text class="mm mid" x="315" y="112">+ SYSTEMD, CODE IN ~</text>
+
+  <rect class="box-c" x="430" y="70" width="170" height="60" rx="3"/>
+  <text class="t mid" x="515" y="94">3 &middot; Docker</text>
+  <text class="mm mid" x="515" y="112">DESKTOP OR CE-IN-WSL</text>
+
+  <rect class="box-c" x="630" y="70" width="170" height="60" rx="3"/>
+  <text class="t mid" x="715" y="94">4 &middot; Clone</text>
+  <text class="mm mid" x="715" y="112">SSH KEY PROVEN</text>
+
+  <rect class="box-c" x="830" y="70" width="170" height="60" rx="3"/>
+  <text class="t mid" x="915" y="94">5 &middot; .env</text>
+  <text class="mm mid" x="915" y="112">COPIED FROM EXAMPLE</text>
+
+  <rect class="box-a" x="1030" y="70" width="140" height="60" rx="3"/>
+  <text class="t b mid" x="1100" y="94">6 &middot; up -d</text>
+  <text class="mm mid" x="1100" y="112">FIVE CONTAINERS</text>
+
+  <path class="flow" d="M204,100 H224" marker-end="url(#s01z-ac)"/>
+  <path class="flow" d="M404,100 H424" marker-end="url(#s01z-ac)"/>
+  <path class="flow" d="M604,100 H624" marker-end="url(#s01z-ac)"/>
+  <path class="flow" d="M804,100 H824" marker-end="url(#s01z-ac)"/>
+  <path class="flow" d="M1004,100 H1024" marker-end="url(#s01z-ac)"/>
+
+  <rect class="box-a" x="430" y="186" width="340" height="60" rx="3"/>
+  <text class="t b mid" x="600" y="210">check-machine.ps1 &mdash; all green</text>
+  <text class="mm mid" x="600" y="228">THE GATE. DO NOT START WEEK 01 WITHOUT IT.</text>
+  <path class="flow-b" d="M1100,134 V206 H776" marker-end="url(#s01z-ab)"/>
+
+  <text class="mm" x="30" y="200">CORPORATE MACHINE: SAME SEQUENCE, PLUS THE CA</text>
+  <text class="mm" x="30" y="216">BUNDLE STEP BETWEEN 1 AND 2, AND PODMAN OR</text>
+  <text class="mm" x="30" y="232">DOCKER CE IN PLACE OF STEP 3.</text>
+
+  <text class="mm b" x="820" y="200">THEN: SHEET 02 STARTS ON MONDAY.</text>
+  <text class="mm" x="820" y="216">EVERYTHING ON THIS SET ASSUMES THIS</text>
+  <text class="mm" x="820" y="232">PLATFORM IS ONE COMMAND AWAY.</text>
+</svg>
+<figcaption>Drawing 01-E &mdash; fresh machine to Week 01. <b>Brass</b> = the gate you must pass.</figcaption>
+</figure>
+
+<div class="code" data-lang="bash">
+<header><b>the whole sequence, once the tools are installed</b></header>
+<pre><code>git clone git@github.com:you/badgedesk.git ~/code/badgedesk
+cd ~/code/badgedesk
+cp .env.example .env
+docker compose up -d
+docker compose ps                 # five services, healthy
+pwsh tools/check-machine.ps1      # all green
+git commit --allow-empty -m "chore: week 00 machine ready"
+git push</code></pre>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="drill">Drill book</h2>
+<p class="sub">Setup questions come up in interviews more than people expect, because they reveal whether
+you understand the machine or only follow instructions.</p>
+
+<div class="drill">
+  <div class="dh">Environment and tooling</div>
+  <details><summary>What is WSL2, and how is it different from WSL1?</summary>
+    <div class="ans"><p>WSL2 runs a real Linux kernel inside a lightweight, managed Hyper-V virtual machine,
+    so system calls are genuinely Linux system calls. WSL1 was a translation layer that mapped Linux calls
+    onto the Windows kernel &mdash; faster for files on <code>C:</code>, but incomplete, and it could not run
+    Docker. The trade-off in WSL2 is the filesystem boundary: files inside the VM are fast, files on
+    <code>/mnt/c</code> cross a 9p network share and are dramatically slower.</p></div></details>
+  <details><summary>Is a container a lightweight virtual machine?</summary>
+    <div class="ans"><p>No. A virtual machine virtualises hardware and runs its own kernel. A container is
+    just processes on the host kernel, isolated with namespaces and limited with cgroups. That is why
+    containers start in milliseconds and a VM takes tens of seconds, and also why a Linux container needs a
+    Linux kernel &mdash; which is exactly what WSL2 is providing on your Windows laptop.</p></div></details>
+  <details><summary>Why does <code>npm install</code> fail with a certificate error on your work laptop but the browser works fine?</summary>
+    <div class="ans"><p>A corporate proxy terminates TLS and re-signs traffic with its own root certificate.
+    Chrome and Edge read the Windows certificate store, where IT installed that root, so browsing works.
+    Node, Python and Git each ship their own bundled certificate authority list, which does not include it.
+    The fix is to export the corporate root and point <code>NODE_EXTRA_CA_CERTS</code>,
+    <code>REQUESTS_CA_BUNDLE</code> and <code>http.sslCAInfo</code> at it &mdash; not to disable
+    verification.</p></div></details>
+  <details><summary>Why should Node be installed with <code>nvm</code> or <code>fnm</code> rather than the installer?</summary>
+    <div class="ans"><p>Different projects pin different Node majors, and the installer gives you one global
+    version owned by root. A version manager keeps Node in your home directory, so global installs never
+    need elevation, and lets you switch per project with a <code>.nvmrc</code>. On a machine with no admin
+    rights it is the only approach that works at all.</p></div></details>
+  <details><summary>What goes in <code>.env</code> and what goes in <code>.env.example</code>?</summary>
+    <div class="ans"><p><code>.env.example</code> is committed and lists every variable the application
+    needs, with safe placeholder or local-development values, so a new clone runs immediately.
+    <code>.env</code> holds real values and is git-ignored. The rule is that the <i>names</i> of your
+    secrets are documentation and belong in the repository; the <i>values</i> never do.</p></div></details>
+  <details><summary>You committed an API key. What do you do, in order?</summary>
+    <div class="ans"><p>Rotate the key first &mdash; assume it is already compromised, because the push may
+    have been mirrored, cached or scraped within seconds. Only then clean history with
+    <code>git filter-repo</code> or BFG and force-push, and tell anyone who has cloned it. Rewriting history
+    without rotating is the common mistake, and it protects nothing.</p></div></details>
+  <details><summary>Two containers in the same Compose file cannot talk over <code>localhost</code>. Why?</summary>
+    <div class="ans"><p>Each container has its own network namespace, so <code>localhost</code> inside a
+    container means that container. On a Compose network they reach each other by service name &mdash;
+    <code>postgres:5432</code>, <code>kafka:19092</code>. <code>localhost:5432</code> only works from the
+    host, because of the published port mapping.</p></div></details>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="signoff">Sign-off</h2>
+<p class="sub">Both machines. Week 01 does not start until every box on the personal laptop is ticked.</p>
+
+<div class="signoff">
+  <div class="sh"><span>Week 00</span><span>Sheet 01</span></div>
+  <label><input type="checkbox"><span>WSL2 installed with systemd enabled, and the <code>badgedesk</code> repository lives in the Linux home directory, not <code>/mnt/c</code>.</span></label>
+  <label><input type="checkbox"><span>Git configured with name, email and an SSH key, and <code>ssh -T git@github.com</code> greets me by username.</span></label>
+  <label><input type="checkbox"><span>Node installed through a version manager, and <code>node --version</code> matches the project's <code>.nvmrc</code>.</span></label>
+  <label><input type="checkbox"><span>Python 3.12 with a working <code>.venv</code>, and Java 21 on the path.</span></label>
+  <label><input type="checkbox"><span><code>docker run --rm hello-world</code> succeeds on the personal machine.</span></label>
+  <label><input type="checkbox"><span>Containers work on the corporate machine too, via Podman or Docker CE in WSL &mdash; or I have confirmed it is genuinely blocked and know what I will do instead.</span></label>
+  <label><input type="checkbox"><span>Corporate root certificate exported, and npm, pip and git all reach their registries with verification still switched on.</span></label>
+  <label><input type="checkbox"><span><code>docker compose up -d</code> brings up all five services healthy, and I have connected to Postgres, Redis, Mongo and Kafka UI.</span></label>
+  <label><input type="checkbox"><span>AWS account created, root MFA on, an Identity Center admin user in use, and a $10 budget alarm confirmed by email.</span></label>
+  <label><input type="checkbox"><span>Azure free account created and <code>az login</code> works.</span></label>
+  <label><input type="checkbox"><span><code>check-machine.ps1</code> is all green on the personal laptop.</span></label>
+  <label><input type="checkbox"><span>An empty commit pushed from <b>both</b> machines, proving the whole loop works from each.</span></label>
+</div>
+
+</div><!-- /sheetbody -->
+</main>
+
+<aside class="toc" aria-label="Contents"></aside>
+</div>
+
+<script src="assets/js/nav-data.js"></script>
+<script src="assets/js/sheet.js"></script>
+</body>
+</html>

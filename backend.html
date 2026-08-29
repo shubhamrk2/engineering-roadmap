@@ -1,0 +1,2449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheet 04 &mdash; Backend &mdash; BadgeDesk Roadmap</title>
+<link rel="stylesheet" href="assets/css/sheet.css">
+</head>
+<body data-sheet="04">
+<a class="skip" href="#main">Skip to sheet</a>
+<div class="wrap">
+<nav class="rail" aria-label="Sheet index"></nav>
+
+<main id="main">
+
+<header class="sheethead">
+  <div>
+    <div class="no">Sheet 04 &middot; Build the product &middot; Weeks 05&ndash;06</div>
+    <h1>Back&shy;end<span>.</span></h1>
+    <p class="lede">Three frameworks, one job: take bytes off a socket, decide whether the caller is allowed,
+    do something durable, and put bytes back. Everything else &mdash; routers, decorators, dependency
+    containers, pipes, guards &mdash; is <b>ergonomics around that one loop</b>. Learn the loop first and
+    FastAPI, Express and NestJS stop looking like three different skills.</p>
+  </div>
+  <div class="specs">
+    <div><span>Weeks</span><span>05 &ndash; 06</span></div>
+    <div><span>Hours</span><span>32 &ndash; 36</span></div>
+    <div><span>Must know</span><span>FastAPI, Express</span></div>
+    <div><span>Nice to have</span><span>NestJS</span></div>
+    <div><span>Ships</span><span><code>core</code> + <code>notifier</code> + <code>gateway</code></span></div>
+  </div>
+</header>
+
+<div class="sheetbody">
+
+<!-- ===================================================================== -->
+<h2 id="lifecycle">What a backend service actually is</h2>
+<p class="sub">A process holding a listening socket. Everything a framework does happens between the kernel
+handing you a byte stream and you handing back a byte stream. Here is one real request, with the clock
+running.</p>
+
+<figure class="dwg dwg--hero">
+<svg viewBox="0 0 1200 600" role="img" aria-label="The full lifecycle of one HTTP request to the BadgeDesk core service: DNS resolution, TCP and TLS handshake, load balancer, socket accept by the ASGI server, then inside the process the middleware chain, routing, dependency tree, handler and connection pool, then the database, serialisation and the response back to the browser, with a stacked timing bar underneath showing that 140 of the 205 milliseconds are spent in one database query.">
+  <defs>
+    <marker id="s04-ac1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  </defs>
+
+  <text class="mm" x="30" y="34">OUTSIDE YOUR PROCESS &mdash; NOTHING HERE IS YOUR CODE</text>
+
+  <rect class="box" x="30" y="76" width="132" height="58" rx="3"/>
+  <text class="t mid" x="96" y="101">Browser</text><text class="mm mid" x="96" y="117">CLICKS APPROVE</text>
+
+  <rect class="box" x="196" y="76" width="150" height="58" rx="3"/>
+  <text class="t mid" x="271" y="101">DNS resolve</text><text class="mm mid" x="271" y="117">0 MS CACHED &middot; 20 COLD</text>
+
+  <rect class="box" x="382" y="76" width="168" height="58" rx="3"/>
+  <text class="t mid" x="466" y="101">TCP + TLS handshake</text><text class="mm mid" x="466" y="117">0 MS ON A KEPT-ALIVE CONN</text>
+
+  <rect class="box-c" x="586" y="76" width="168" height="58" rx="3"/>
+  <text class="t mid" x="670" y="101">Load balancer</text><text class="mm mid" x="670" y="117">PICKS A HEALTHY POD</text>
+
+  <rect class="box-c" x="790" y="76" width="180" height="58" rx="3"/>
+  <text class="t mid" x="880" y="101">accept() on :8000</text><text class="mm mid" x="880" y="117">THE KERNEL HANDS YOU A FD</text>
+
+  <rect class="box-c" x="1006" y="76" width="164" height="58" rx="3"/>
+  <text class="t mid" x="1088" y="101">uvicorn / ASGI</text><text class="mm mid" x="1088" y="117">PARSES HTTP INTO A DICT</text>
+
+  <path class="flow" d="M166,105 H190" marker-end="url(#s04-ac1)"/>
+  <path class="flow" d="M350,105 H376" marker-end="url(#s04-ac1)"/>
+  <path class="flow" d="M554,105 H580" marker-end="url(#s04-ac1)"/>
+  <path class="flow" d="M758,105 H784" marker-end="url(#s04-ac1)"/>
+  <path class="flow" d="M974,105 H1000" marker-end="url(#s04-ac1)"/>
+
+  <path class="flow" d="M1088,134 V170 H130 V198" marker-end="url(#s04-ac1)"/>
+  <text class="mm c" x="520" y="164">FROM HERE DOWN IT IS ALL YOUR PROCESS &mdash; ONE PYTHON OBJECT PER REQUEST, NO MORE SOCKETS</text>
+
+  <rect class="box-c" x="30" y="204" width="200" height="58" rx="3"/>
+  <text class="t mid" x="130" y="229">Middleware chain</text><text class="mm mid" x="130" y="245">CORS &middot; GZIP &middot; REQUEST ID</text>
+
+  <rect class="box-c" x="270" y="204" width="176" height="58" rx="3"/>
+  <text class="t mid" x="358" y="229">Route match</text><text class="mm mid" x="358" y="245">PATH + METHOD &rarr; FUNCTION</text>
+
+  <rect class="box-c" x="486" y="204" width="190" height="58" rx="3"/>
+  <text class="t mid" x="581" y="229">Dependency tree</text><text class="mm mid" x="581" y="245">SETTINGS &middot; SESSION &middot; USER</text>
+
+  <rect class="box-a" x="716" y="204" width="160" height="58" rx="3"/>
+  <text class="t b mid" x="796" y="229">Your handler</text><text class="mm mid" x="796" y="245">12 LINES OF DOMAIN LOGIC</text>
+
+  <rect class="box-c" x="916" y="204" width="190" height="58" rx="3"/>
+  <text class="t mid" x="1011" y="229">Connection pool</text><text class="mm mid" x="1011" y="245">CHECKOUT, NOT CONNECT</text>
+
+  <path class="flow" d="M234,233 H264" marker-end="url(#s04-ac1)"/>
+  <path class="flow" d="M450,233 H480" marker-end="url(#s04-ac1)"/>
+  <path class="flow" d="M680,233 H710" marker-end="url(#s04-ac1)"/>
+  <path class="flow" d="M880,233 H910" marker-end="url(#s04-ac1)"/>
+  <path class="flow" d="M1011,262 V334" marker-end="url(#s04-ac1)"/>
+
+  <rect class="box" x="916" y="340" width="190" height="58" rx="3"/>
+  <text class="t mid" x="1011" y="365">PostgreSQL</text><text class="mm mid" x="1011" y="381">SEQ SCAN &middot; 140 MS</text>
+
+  <rect class="box-c" x="676" y="340" width="190" height="58" rx="3"/>
+  <text class="t mid" x="771" y="365">Serialise</text><text class="mm mid" x="771" y="381">ORM ROW &rarr; PYDANTIC &rarr; JSON</text>
+
+  <rect class="box-c" x="436" y="340" width="190" height="58" rx="3"/>
+  <text class="t mid" x="531" y="365">200 + headers</text><text class="mm mid" x="531" y="381">CONTENT-TYPE &middot; X-REQUEST-ID</text>
+
+  <rect class="box" x="196" y="340" width="190" height="58" rx="3"/>
+  <text class="t mid" x="291" y="365">Browser paints</text><text class="mm mid" x="291" y="381">40 MS BACK OVER THE WIRE</text>
+
+  <path class="flow" d="M912,369 H872" marker-end="url(#s04-ac1)"/>
+  <path class="flow" d="M672,369 H632" marker-end="url(#s04-ac1)"/>
+  <path class="flow" d="M432,369 H392" marker-end="url(#s04-ac1)"/>
+
+  <text class="mm" x="30" y="462">0 MS</text>
+  <text class="mm end" x="1157" y="462">205 MS WALL CLOCK</text>
+
+  <rect class="box-c" x="50" y="470" width="43" height="26" rx="2"/>
+  <rect class="box-c" x="93" y="470" width="11" height="26" rx="1"/>
+  <rect class="box-c" x="104" y="470" width="5" height="26" rx="1"/>
+  <rect class="box-c" x="109" y="470" width="32" height="26" rx="1"/>
+  <rect class="box-c" x="141" y="470" width="16" height="26" rx="1"/>
+  <rect class="box-c" x="157" y="470" width="5" height="26" rx="1"/>
+  <rect class="box-a" x="162" y="470" width="756" height="26" rx="2"/>
+  <rect class="box-c" x="918" y="470" width="22" height="26" rx="1"/>
+  <rect class="box" x="940" y="470" width="217" height="26" rx="2"/>
+
+  <text class="m mid" x="540" y="488">SELECT &hellip; FROM access_requests WHERE site_id = 'BLR-01' &nbsp;&middot;&nbsp; 140 ms</text>
+  <text class="m mid" x="1048" y="488">on the wire &middot; 40 ms</text>
+
+  <path class="ln" d="M93,502 V510 H157 V502"/>
+  <text class="mm mid" x="125" y="526">MIDDLEWARE + ROUTING + DI</text>
+  <text class="mm mid" x="125" y="540">+ HANDLER = 13 MS</text>
+  <text class="mm" x="30" y="526">LB + TLS</text>
+  <text class="mm" x="30" y="540">8 MS</text>
+
+  <text class="mm b" x="380" y="566">88% OF THE WALL CLOCK IS ONE QUERY PLUS THE NETWORK. TUNING THE FRAMEWORK BUYS YOU 13 MS; AN INDEX BUYS YOU 130.</text>
+
+  <circle class="bub" cx="271" cy="44" r="13"/><text class="bubt" x="271" y="48">1</text>
+  <path class="lead" d="M271,57 V70"/>
+  <circle class="bub" cx="670" cy="44" r="13"/><text class="bubt" x="670" y="48">2</text>
+  <path class="lead" d="M670,57 V70"/>
+  <circle class="bub" cx="130" cy="292" r="13"/><text class="bubt" x="130" y="296">3</text>
+  <path class="lead" d="M130,279 V266"/>
+  <circle class="bub" cx="581" cy="292" r="13"/><text class="bubt" x="581" y="296">4</text>
+  <path class="lead" d="M581,279 V266"/>
+  <circle class="bub" cx="771" cy="306" r="13"/><text class="bubt" x="771" y="310">6</text>
+  <path class="lead" d="M771,319 V334"/>
+  <circle class="bub" cx="540" cy="440" r="13"/><text class="bubt" x="540" y="444">5</text>
+  <path class="lead" d="M540,453 V464"/>
+</svg>
+<figcaption>Drawing 04-A &mdash; one request, end to end, with the clock running. <b>Cyan</b> = the synchronous
+path someone is waiting on. <b>Brass</b> = where the time actually went.</figcaption>
+</figure>
+
+<div class="notes">
+  <div class="n"><b>1</b><div><b>Three round trips happen before a single line of your code runs.</b> DNS,
+  then the TCP three-way handshake, then the TLS handshake. On a warm connection all three cost zero because
+  the browser reuses an existing socket &mdash; which is exactly why <code>Connection: keep-alive</code> and
+  HTTP/2 matter, and why a service that closes connections aggressively feels slow for reasons that never
+  appear in your application logs.</div></div>
+  <div class="n"><b>2</b><div><b>The load balancer is the first thing that can make you disappear.</b> It picks
+  a pod that is passing its readiness probe. If your process is up but cannot reach Postgres, you want it
+  taken out of rotation here rather than returning 500s &mdash; that is the whole point of the
+  readiness/liveness split covered later on this sheet and used in anger on
+  <a href="devops.html">Sheet 09</a>.</div></div>
+  <div class="n"><b>3</b><div><b>Middleware runs for every request, including the ones that 404.</b> It is the
+  only place you can attach a request id, start a timer or set CORS headers on responses your handler never
+  produced. Put cheap things here. Anything that touches the database belongs in a dependency, not in
+  middleware, because middleware cannot easily return a typed error body.</div></div>
+  <div class="n"><b>4</b><div><b>The dependency tree is resolved per request, in order, before your handler is
+  called.</b> Settings, then a database session, then the current user decoded from the token, then a role
+  check. If <code>require_role</code> raises 403, the handler never runs and the session is still closed
+  correctly. This ordering is what makes authorisation reliable instead of something you remember to write
+  at the top of each function.</div></div>
+  <div class="n"><b>5</b><div><b>The bar is the whole lesson.</b> Your framework, your router, your dependency
+  injection and your business logic together cost 13&nbsp;ms. One unindexed query costs 140&nbsp;ms. Every
+  &ldquo;is FastAPI faster than Express&rdquo; argument is an argument about the 13, and you have not yet
+  looked at the 140. Query tuning is <a href="databases.html">Sheet 06</a>.</div></div>
+  <div class="n"><b>6</b><div><b>Serialisation is not free and is not automatic.</b> Turning ORM rows into a
+  response model validates every field, converts dates to ISO-8601 strings and drops anything not declared.
+  That last part is a security control, not a formatting detail &mdash; it is why the response model is
+  mandatory, argued in full below.</div></div>
+</div>
+
+<h3 id="workers">The process and worker model</h3>
+<p>&ldquo;How many concurrent requests can this hold?&rdquo; has a different answer in each of the three
+runtimes on this sheet, and the answer is not about language speed. It is about what a request occupies
+while it waits.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 440" role="img" aria-label="Three concurrency models side by side: FastAPI on four uvicorn worker processes each with one event loop, Node with a cluster primary forking one child per core each with a single event loop, and Java with one JVM holding a fixed pool of two hundred request threads, several of which are blocked on the database.">
+  <defs>
+    <marker id="s04-ab2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+  </defs>
+
+  <rect class="zone" x="30" y="48" width="370" height="330" rx="4"/>
+  <text class="mm c" x="30" y="40">FASTAPI &middot; CORE &middot; PYTHON</text>
+  <rect class="zone" x="418" y="48" width="364" height="330" rx="4"/>
+  <text class="mm c" x="418" y="40">EXPRESS / NESTJS &middot; NOTIFIER &middot; NODE</text>
+  <rect class="zone" x="800" y="48" width="370" height="330" rx="4"/>
+  <text class="mm c" x="800" y="40">SPRING BOOT &middot; THE ONE YOU WILL BE ASKED TO COMPARE</text>
+
+  <text class="t" x="48" y="76">gunicorn &minus;k uvicorn.workers &minus;w 4</text>
+  <rect class="box-c" x="48" y="92" width="158" height="52" rx="3"/>
+  <text class="t mid" x="127" y="114">worker 1</text><text class="mm mid" x="127" y="130">1 PROCESS &middot; 1 LOOP</text>
+  <rect class="box-c" x="222" y="92" width="158" height="52" rx="3"/>
+  <text class="t mid" x="301" y="114">worker 2</text><text class="mm mid" x="301" y="130">1 PROCESS &middot; 1 LOOP</text>
+  <rect class="box-c" x="48" y="156" width="158" height="52" rx="3"/>
+  <text class="t mid" x="127" y="178">worker 3</text><text class="mm mid" x="127" y="194">OWN MEMORY</text>
+  <rect class="box-c" x="222" y="156" width="158" height="52" rx="3"/>
+  <text class="t mid" x="301" y="178">worker 4</text><text class="mm mid" x="301" y="194">OWN DB POOL</text>
+  <line class="ln" x1="48" y1="224" x2="382" y2="224"/>
+  <text class="m" x="48" y="248">Four OS processes, no shared memory. Each</text>
+  <text class="m" x="48" y="266">holds hundreds of requests parked on await.</text>
+  <text class="mm b" x="48" y="296">CEILING &asymp; WORKERS &times; IN-FLIGHT AWAITS</text>
+  <text class="mm" x="48" y="314">ONE BLOCKING CALL FREEZES A QUARTER</text>
+  <text class="mm" x="48" y="330">OF ALL CAPACITY, NOT ONE REQUEST</text>
+  <text class="mm r" x="48" y="356">POOL_SIZE &times; 4 CONNECTIONS HIT POSTGRES</text>
+
+  <text class="t" x="436" y="76">node cluster / PM2</text>
+  <rect class="box-a" x="436" y="92" width="328" height="44" rx="3"/>
+  <text class="t b mid" x="600" y="114">primary &mdash; forks one child per core</text>
+  <rect class="box-c" x="436" y="152" width="100" height="56" rx="3"/>
+  <text class="t mid" x="486" y="176">child 1</text><text class="mm mid" x="486" y="192">1 THREAD</text>
+  <rect class="box-c" x="550" y="152" width="100" height="56" rx="3"/>
+  <text class="t mid" x="600" y="176">child 2</text><text class="mm mid" x="600" y="192">1 THREAD</text>
+  <rect class="box-c" x="664" y="152" width="100" height="56" rx="3"/>
+  <text class="t mid" x="714" y="176">child 3</text><text class="mm mid" x="714" y="192">1 THREAD</text>
+  <path class="flow-b" d="M486,136 V146" marker-end="url(#s04-ab2)"/>
+  <path class="flow-b" d="M600,136 V146" marker-end="url(#s04-ab2)"/>
+  <path class="flow-b" d="M714,136 V146" marker-end="url(#s04-ab2)"/>
+  <line class="ln" x1="436" y1="224" x2="764" y2="224"/>
+  <text class="m" x="436" y="248">One thread runs your JavaScript; libuv runs</text>
+  <text class="m" x="436" y="266">the sockets on a small background pool.</text>
+  <text class="mm b" x="436" y="296">CEILING &asymp; CHILDREN &times; IN-FLIGHT AWAITS</text>
+  <text class="mm" x="436" y="314">A 200 MS JSON.parse STALLS EVERY OTHER</text>
+  <text class="mm" x="436" y="330">REQUEST ON THAT CHILD, WITH NO WARNING</text>
+  <text class="mm r" x="436" y="356">NO SHARED STATE &mdash; SESSIONS GO IN REDIS</text>
+
+  <text class="t" x="818" y="76">one JVM, Tomcat thread pool</text>
+  <rect class="box-a" x="818" y="92" width="334" height="44" rx="3"/>
+  <text class="t b mid" x="985" y="114">server.tomcat.threads.max = 200</text>
+  <rect class="box-c" x="818" y="152" width="30" height="56" rx="2"/>
+  <rect class="box-c" x="858" y="152" width="30" height="56" rx="2"/>
+  <rect class="box-r" x="898" y="152" width="30" height="56" rx="2"/>
+  <rect class="box-r" x="938" y="152" width="30" height="56" rx="2"/>
+  <rect class="box-r" x="978" y="152" width="30" height="56" rx="2"/>
+  <rect class="box-c" x="1018" y="152" width="30" height="56" rx="2"/>
+  <rect class="box-r" x="1058" y="152" width="30" height="56" rx="2"/>
+  <rect class="box-c" x="1098" y="152" width="30" height="56" rx="2"/>
+  <text class="mm r" x="818" y="224">RED THREADS ARE PARKED ON THE DATABASE, HOLDING 1 MB EACH</text>
+  <line class="ln" x1="818" y1="234" x2="1152" y2="234"/>
+  <text class="m" x="818" y="256">One thread is held for the whole request,</text>
+  <text class="m" x="818" y="274">including the 140 ms it spends blocked.</text>
+  <text class="mm b" x="818" y="300">CEILING = POOL SIZE. A HARD, COUNTABLE WALL.</text>
+  <text class="mm" x="818" y="318">REQUEST 201 QUEUES, THEN TIMES OUT</text>
+  <text class="mm" x="818" y="334">VIRTUAL THREADS (JAVA 21) REMOVE THE WALL</text>
+  <text class="mm c" x="818" y="358">AND MAKE JAVA BEHAVE LIKE THE LEFT TWO COLUMNS</text>
+
+  <text class="mm" x="30" y="404">THE SENTENCE TO SAY OUT LOUD: &ldquo;ASYNC RUNTIMES SCALE ON WAITING, THREAD-PER-REQUEST RUNTIMES SCALE ON MEMORY. NEITHER SCALES ON CPU WORK.&rdquo;</text>
+  <text class="mm" x="30" y="422">FOR CPU WORK &mdash; HASHING 10,000 BADGE PHOTOS &mdash; ALL THREE PUSH IT OUT OF THE REQUEST PATH AND ONTO A WORKER. SHEET 11.</text>
+</svg>
+<figcaption>Drawing 04-B &mdash; three concurrency models. <b>Cyan</b> = a request in flight. <b>Red</b> = a
+resource held while doing nothing. <b>Brass</b> = the process that owns the others.</figcaption>
+</figure>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p>&ldquo;Your FastAPI service has 4 workers and a pool of 10 connections. How many requests can it serve
+  at once?&rdquo; Two numbers, and the honest answer names both: it can <i>accept</i> thousands, because an
+  awaiting coroutine costs kilobytes; it can have at most <b>40</b> touching the database at once, because
+  4&nbsp;&times;&nbsp;10 is the real ceiling. Requests past 40 queue at the pool, latency climbs, and the
+  symptom looks like a slow database when it is actually a small pool.</p>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why this exists</span>
+  <p>Every framework on this sheet is solving the same four problems: match a URL to a function, get
+  structured data out of an untrusted byte stream, give the function the things it needs (a database
+  session, the current user) without hard-coding them, and turn the return value plus any exception into a
+  correct HTTP response. FastAPI solves them with type hints, Express with a callback chain, NestJS with
+  decorators and a container. Same four problems.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; how a request actually travels</div>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@hnasr__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5BLEvZzq$" target="_blank" rel="noopener"><span>Hussein Nasser &mdash; Backend Engineering fundamentals<i>Sockets, connection pooling, keep-alive, proxying. The best free source for everything in Drawing 04-A that is not your code.</i></span><span class="dur">series</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@ByteByteGo__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5I97tz61$" target="_blank" rel="noopener"><span>ByteByteGo<i>Short animated explainers on load balancers, connection pools and process models. One a week.</i></span><span class="dur">8 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=ArjanCodes*python*asyncio*event*loop*web*server__;KysrKysr!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5DkyOTCO$" target="_blank" rel="noopener"><span>ArjanCodes &mdash; asyncio and web servers in Python<i>Bridges the Sheet 02 event-loop material into how uvicorn actually serves requests.</i></span><span class="dur">25 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.uvicorn.org/deployment/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5OCWshm8$" target="_blank" rel="noopener"><span>uvicorn &mdash; deployment docs<i>Official. Workers, gunicorn integration, proxy headers, signals. Short and worth reading in full.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=*22thread*per*request*22*vs**A22event*loop*22*concurrency*model*explained__;JSsrJSsrJSslKysr!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5H-I7L2t$" target="_blank" rel="noopener"><span>Thread-per-request vs event loop<i>Watch one before any backend system-design round. Expect Drawing 04-B as a question.</i></span><span class="dur">18 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="fastapi">FastAPI &mdash; building the <code>core</code> service</h2>
+<p class="sub">The source of truth for BadgeDesk. Python, async, typed end to end. The whole framework is one
+idea executed relentlessly: <b>your type hints are the API contract, the validator, the documentation and
+the dependency graph, all at once.</b></p>
+
+<h3 id="fa-layout">Project layout</h3>
+<p>Four layers, and a rule for each: routers know HTTP and nothing else, services know the domain, repositories
+know SQL, schemas know the wire format. A router that writes SQL and a repository that raises
+<code>HTTPException</code> are the two failures this layout exists to prevent.</p>
+
+<div class="code" data-lang="text">
+<header><b>badgedesk/core/ &mdash; the layout you will build this week</b></header>
+<pre><code>core/
+  app/
+    main.py                  # create_app(), middleware, exception handlers, lifespan
+    core/
+      settings.py            # pydantic-settings, read once, cached
+      logging.py             # JSON formatter + request-id contextvar
+      security.py            # password hashing, token encode/decode
+    api/
+      deps.py                # the dependency tree: settings, session, user, role
+      routers/
+        access_requests.py   # POST /access-requests, GET, POST /{id}/approve
+        health.py            # /healthz and /readyz
+    schemas/
+      access_request.py      # Pydantic v2 in/out models. The wire contract.
+    services/
+      access_requests.py     # domain rules: overlap, policy, state machine
+    repositories/
+      access_requests.py     # SQLAlchemy 2.0 statements. No HTTP words in here.
+    db/
+      models.py              # ORM tables
+      session.py             # engine + async_sessionmaker
+  tests/
+    conftest.py              # app fixture + dependency overrides
+    test_access_requests.py
+  pyproject.toml
+  Dockerfile                 # Sheet 09</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil</span>
+  <p>The most common FastAPI codebase in the wild is one 1,400-line <code>main.py</code> with the database
+  connection as a module-level global. It works until you write your first test, at which point you discover
+  that importing the module opens a connection and there is no seam to replace it. The layout above exists
+  so that <b>every external thing enters through a dependency</b>, and dependencies can be swapped.</p>
+</div>
+
+<h3 id="fa-params">Path, query and body parameters</h3>
+<p>FastAPI reads the function signature and decides where each argument comes from, so you never parse a
+request object by hand. A name that appears in the route path (<code>"/{request_id}"</code>) is a path
+parameter and is always required. A parameter annotated with a Pydantic model is the JSON body. Everything
+else is a query parameter, required if it has no default and optional if it does. Wrap any of them in
+<code>Annotated[T, Path(&hellip;)]</code>, <code>Annotated[T, Query(&hellip;)]</code> or
+<code>Annotated[T, Body(&hellip;)]</code> to add constraints &mdash; <code>ge</code>, <code>le</code>,
+<code>min_length</code>, <code>pattern</code>, an <code>alias</code> when the wire name differs from the
+Python name &mdash; and every one of those constraints appears in the generated OpenAPI schema. All three
+kinds appear in the endpoints below.</p>
+
+<h3 id="fa-pydantic">Pydantic v2, and why the response model is not optional</h3>
+<p>Two models per resource, always. <code>AccessRequestCreate</code> is what a client may send;
+<code>AccessRequestOut</code> is what you promise to return. They are deliberately different objects,
+because the set of fields a client may set and the set you may reveal are different sets.</p>
+
+<div class="code" data-lang="python">
+<header><b>app/schemas/access_request.py</b></header>
+<pre><code>from datetime import date, datetime
+from typing import Annotated, Generic, Literal, TypeVar
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+SiteId = Annotated[str, Field(pattern=r"^[A-Z]{3}-\d{2}$", examples=["BLR-01"])]
+Status = Literal["pending", "approved", "rejected"]
+
+class AccessRequestCreate(BaseModel):
+    # extra="forbid" turns a typo in the client into a 422 instead of a silent no-op.
+    model_config = ConfigDict(extra="forbid")
+
+    site_id: SiteId
+    starts_on: date
+    ends_on: date
+    reason: Annotated[str, Field(min_length=10, max_length=500)]
+
+    @model_validator(mode="after")
+    def dates_make_sense(self) -&gt; "AccessRequestCreate":
+        if self.ends_on &lt; self.starts_on:
+            raise ValueError("ends_on must not be before starts_on")
+        if (self.ends_on - self.starts_on).days &gt; 90:
+            raise ValueError("access may not be requested for more than 90 days")
+        return self
+
+class AccessRequestOut(BaseModel):
+    # from_attributes lets Pydantic read an ORM object, not just a dict.
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    employee_id: str
+    site_id: str
+    starts_on: date
+    ends_on: date
+    status: Status
+    reason: str
+    created_at: datetime
+
+T = TypeVar("T")
+
+class Page(BaseModel, Generic[T]):
+    items: list[T]
+    next_cursor: str | None = None
+    total: int | None = None      # None when the count would cost a full scan
+</code></pre>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why the response model is not optional</span>
+  <p>Three separate jobs, and you lose all three if you return a raw dict or an ORM object.
+  <b>One &mdash; it is a filter.</b> Your <code>AccessRequest</code> ORM row also carries
+  <code>internal_risk_score</code>, <code>reviewer_notes</code> and the employee's home address. With
+  <code>response_model=AccessRequestOut</code>, anything not declared is dropped before it reaches the
+  socket, so adding a column to the table can never leak it through the API. Without one, it ships the day
+  the migration runs. <b>Two &mdash; it is the contract.</b> It generates the OpenAPI schema, which generates
+  the TypeScript client the <code>web</code> app on <a href="frontend.html">Sheet 03</a> imports.
+  <b>Three &mdash; it is a test.</b> If the handler returns a row with <code>status="aproved"</code>,
+  serialisation raises in your CI rather than corrupting the frontend three days later.</p>
+</div>
+
+<h3 id="fa-endpoints">The three endpoints</h3>
+
+<div class="code" data-lang="python">
+<header><b>app/api/routers/access_requests.py</b></header>
+<pre><code>from typing import Annotated
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Response, status
+
+from app.api.deps import CurrentUser, DbSession, require_role
+from app.schemas.access_request import (
+    AccessRequestCreate, AccessRequestOut, ApprovalIn, Page, Status,
+)
+from app.services import access_requests as svc
+
+router = APIRouter(prefix="/access-requests", tags=["access-requests"])
+
+@router.post(
+    "",
+    response_model=AccessRequestOut,
+    status_code=status.HTTP_201_CREATED,
+    responses={409: {"description": "An overlapping request for this site already exists"}},
+)
+async def create_access_request(
+    body: AccessRequestCreate,          # the JSON body
+    db: DbSession,                      # injected
+    user: CurrentUser,                  # injected
+    response: Response,
+    background: BackgroundTasks,
+) -&gt; AccessRequestOut:
+    """Create a pending request for the calling employee."""
+    created = await svc.create(db, body, employee_id=user.employee_id)
+    response.headers["Location"] = f"/access-requests/{created.id}"   # 201 must say where
+    background.add_task(svc.emit_created_metric, created.id)          # best-effort only
+    return created
+
+@router.get("", response_model=Page[AccessRequestOut])
+async def list_access_requests(
+    db: DbSession,
+    user: CurrentUser,
+    status_filter: Annotated[Status | None, Query(alias="status")] = None,
+    site_id: Annotated[str | None, Query(pattern=r"^[A-Z]{3}-\d{2}$")] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 25,
+    cursor: Annotated[str | None, Query(description="Opaque cursor from the last page")] = None,
+) -&gt; Page[AccessRequestOut]:
+    """Managers see their reports' requests; everyone else sees their own."""
+    return await svc.list_for(db, viewer=user, status=status_filter,
+                              site_id=site_id, limit=limit, cursor=cursor)
+
+@router.post(
+    "/{request_id}/approve",
+    response_model=AccessRequestOut,
+    # A dependency listed here runs before the handler and its return value is
+    # discarded - exactly right for a "must be true to proceed" check.
+    dependencies=[Depends(require_role("manager"))],
+    responses={403: {"description": "Not this employee's manager"},
+               409: {"description": "Request is not pending"}},
+)
+async def approve_access_request(
+    request_id: str,                    # in the path, so a path parameter
+    body: ApprovalIn,
+    db: DbSession,
+    user: CurrentUser,
+) -&gt; AccessRequestOut:
+    return await svc.approve(db, request_id, approver=user, note=body.note)
+</code></pre>
+</div>
+
+<div class="code" data-lang="python">
+<header><b>app/services/access_requests.py &mdash; where the domain rules live</b></header>
+<pre><code>from sqlalchemy.exc import IntegrityError
+
+from app.repositories import access_requests as repo
+from app.core.errors import Conflict, Forbidden, NotFound
+
+async def create(db, body, *, employee_id: str):
+    # A unique partial index in Postgres does the real enforcement; this check
+    # exists to give a good message. The index is what survives a race.
+    if await repo.overlapping_exists(db, employee_id, body.site_id,
+                                     body.starts_on, body.ends_on):
+        raise Conflict("an overlapping request for this site is already pending")
+    try:
+        return await repo.insert(db, body, employee_id=employee_id)
+    except IntegrityError as exc:                 # two requests arrived at once
+        raise Conflict("an overlapping request for this site is already pending") from exc
+
+async def approve(db, request_id: str, *, approver, note: str | None):
+    row = await repo.get_for_update(db, request_id)   # SELECT ... FOR UPDATE
+    if row is None:
+        raise NotFound(f"access request {request_id} does not exist")
+    if row.manager_id != approver.employee_id:
+        raise Forbidden("only the requester's manager may approve")
+    if row.status != "pending":
+        # 409, not 400: the request was valid, the resource state was wrong.
+        raise Conflict(f"request is already {row.status}")
+    return await repo.set_approved(db, row, approver.employee_id, note)
+</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p>&ldquo;What status code do you return when someone creates a duplicate?&rdquo;
+  <b>409 Conflict.</b> 400 means the request was malformed &mdash; it was not. 422 means the body failed
+  validation &mdash; it did not. 409 means &ldquo;your request is well formed and permitted, but the current
+  state of the resource refuses it.&rdquo; The follow-up is always &ldquo;what if the client retries after a
+  timeout and the first call actually succeeded?&rdquo; &mdash; that is an idempotency key, and it lives on
+  <a href="apis.html">Sheet 05</a>.</p>
+</div>
+
+<h3 id="fa-422">Validation errors and the 422 body</h3>
+<p>When a body fails a Pydantic model, FastAPI never calls your handler. It returns
+<code>422 Unprocessable Entity</code> with a machine-readable list of every failure &mdash; not the first
+one, all of them, which is what lets a form highlight three fields at once.</p>
+
+<div class="code" data-lang="bash">
+<header><b>terminal &mdash; a deliberately bad request</b></header>
+<pre><code>curl -sS -X POST localhost:8000/access-requests \
+  -H 'content-type: application/json' \
+  -H "authorization: Bearer $TOKEN" \
+  -d '{"site_id":"blr1","starts_on":"2026-09-10","ends_on":"2026-09-01","reason":"x","urgent":true}'
+# HTTP/1.1 422 Unprocessable Entity</code></pre>
+</div>
+
+<div class="code" data-lang="json">
+<header><b>the 422 body &mdash; four failures, one round trip</b></header>
+<pre><code>{
+  "detail": [
+    {"type": "string_pattern_mismatch",
+     "loc": ["body", "site_id"],
+     "msg": "String should match pattern '^[A-Z]{3}-\\d{2}$'",
+     "input": "blr1"},
+    {"type": "string_too_short",
+     "loc": ["body", "reason"],
+     "msg": "String should have at least 10 characters",
+     "input": "x"},
+    {"type": "extra_forbidden",
+     "loc": ["body", "urgent"],
+     "msg": "Extra inputs are not permitted",
+     "input": true},
+    {"type": "value_error",
+     "loc": ["body"],
+     "msg": "Value error, ends_on must not be before starts_on"}
+  ]
+}</code></pre>
+</div>
+
+<p><code>loc</code> is the path to the offending value, so a frontend can map
+<code>["body","site_id"]</code> straight onto a form field. Note the model-level error has
+<code>loc: ["body"]</code> &mdash; it belongs to the whole object, not one field.</p>
+
+<h3 id="fa-di">Dependency injection, in depth</h3>
+<p>A dependency is a callable whose result FastAPI computes before your handler and passes in. That sounds
+small. It is the single most important feature of the framework, because it turns &ldquo;things my handler
+needs from the outside world&rdquo; into a graph the framework owns &mdash; and anything the framework owns,
+you can replace.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 360" role="img" aria-label="The FastAPI dependency tree for the approve endpoint: get_settings feeds get_db_session and get_bearer_token, both feed get_current_user, which feeds require_role, which guards the approve handler, and a dashed box below shows the same tree with two nodes replaced in tests.">
+  <defs>
+    <marker id="s04-ac3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  </defs>
+
+  <text class="mm" x="30" y="34">RESOLVED ONCE PER REQUEST, LEFT TO RIGHT, BEFORE THE HANDLER RUNS</text>
+
+  <rect class="box-c" x="30" y="140" width="180" height="56" rx="3"/>
+  <text class="t mid" x="120" y="164">get_settings</text><text class="mm mid" x="120" y="180">@lru_cache &middot; ONCE PER PROC</text>
+
+  <rect class="box-c" x="260" y="60" width="200" height="56" rx="3"/>
+  <text class="t mid" x="360" y="84">get_db_session</text><text class="mm mid" x="360" y="100">YIELD &middot; COMMIT &middot; CLOSE</text>
+
+  <rect class="box-c" x="260" y="220" width="200" height="56" rx="3"/>
+  <text class="t mid" x="360" y="244">get_bearer_token</text><text class="mm mid" x="360" y="260">401 IF ABSENT OR EXPIRED</text>
+
+  <rect class="box-c" x="520" y="140" width="210" height="56" rx="3"/>
+  <text class="t mid" x="625" y="164">get_current_user</text><text class="mm mid" x="625" y="180">DECODE &rarr; LOAD EMPLOYEE</text>
+
+  <rect class="box-c" x="790" y="140" width="190" height="56" rx="3"/>
+  <text class="t mid" x="885" y="164">require_role(&ldquo;manager&rdquo;)</text><text class="mm mid" x="885" y="180">403 IF THE ROLE IS MISSING</text>
+
+  <rect class="box-a" x="1010" y="140" width="160" height="56" rx="3"/>
+  <text class="t b mid" x="1090" y="164">approve()</text><text class="mm mid" x="1090" y="180">YOUR 12 LINES</text>
+
+  <path class="flow" d="M210,158 V88 H254" marker-end="url(#s04-ac3)"/>
+  <path class="flow" d="M210,178 V248 H254" marker-end="url(#s04-ac3)"/>
+  <path class="flow" d="M460,88 H492 V158 H514" marker-end="url(#s04-ac3)"/>
+  <path class="flow" d="M460,248 H492 V178 H514" marker-end="url(#s04-ac3)"/>
+  <path class="flow" d="M730,168 H784" marker-end="url(#s04-ac3)"/>
+  <path class="flow" d="M980,168 H1004" marker-end="url(#s04-ac3)"/>
+
+  <rect class="zone" x="30" y="292" width="1140" height="52" rx="4"/>
+  <text class="mm b" x="46" y="314">IN TESTS: app.dependency_overrides[get_db_session] = a session bound to a rolled-back transaction;</text>
+  <text class="mm b" x="46" y="332">app.dependency_overrides[get_current_user] = lambda: FakeUser(&ldquo;e-902&rdquo;, roles=[&ldquo;manager&rdquo;]). NOTHING ELSE CHANGES.</text>
+</svg>
+<figcaption>Drawing 04-C &mdash; the dependency tree for one endpoint. <b>Cyan</b> = resolved per request.
+<b>Brass</b> = the two nodes a test replaces to make the whole tree fake.</figcaption>
+</figure>
+
+<div class="code" data-lang="python">
+<header><b>app/api/deps.py</b></header>
+<pre><code>from functools import lru_cache
+from typing import Annotated, AsyncIterator, Callable
+
+import jwt
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+from app.core.settings import Settings
+from app.db.models import Employee
+
+bearer = HTTPBearer(auto_error=False)
+
+@lru_cache                      # built once per worker process, not per request
+def get_settings() -&gt; Settings:
+    return Settings()
+
+SettingsDep = Annotated[Settings, Depends(get_settings)]
+
+@lru_cache
+def _sessionmaker(dsn: str) -&gt; async_sessionmaker[AsyncSession]:
+    engine = create_async_engine(
+        dsn,
+        pool_size=10,           # steady-state connections PER WORKER
+        max_overflow=5,         # burst headroom
+        pool_timeout=3,         # fail fast rather than pile up
+        pool_pre_ping=True,     # survive a database failover
+        pool_recycle=1800,      # beat a proxy that culls idle connections
+    )
+    return async_sessionmaker(engine, expire_on_commit=False)
+
+async def get_db_session(s: SettingsDep) -&gt; AsyncIterator[AsyncSession]:
+    """One transaction per request. Code after `yield` runs on the way out even
+    if the handler raised, which is why cleanup is never forgotten."""
+    async with _sessionmaker(str(s.database_dsn))() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+
+DbSession = Annotated[AsyncSession, Depends(get_db_session)]
+
+async def get_current_user(
+    creds: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
+    settings: SettingsDep,
+    db: DbSession,
+) -&gt; Employee:
+    if creds is None:
+        raise HTTPException(401, "missing bearer token",
+                            headers={"WWW-Authenticate": "Bearer"})
+    try:
+        claims = jwt.decode(
+            creds.credentials, settings.jwt_public_key,
+            algorithms=["RS256"],        # a fixed allow-list. See the trap below.
+            audience="badgedesk-core", issuer="badgedesk-gateway",
+        )
+    except jwt.PyJWTError as exc:
+        raise HTTPException(401, "invalid token") from exc
+    employee = await db.get(Employee, claims["sub"])
+    if employee is None or not employee.active:
+        raise HTTPException(401, "unknown or disabled employee")
+    employee.roles = claims.get("roles", [])
+    return employee
+
+CurrentUser = Annotated[Employee, Depends(get_current_user)]
+
+def require_role(role: str) -&gt; Callable:
+    """A dependency FACTORY: called at import time, returns the real dependency."""
+    async def checker(user: CurrentUser) -&gt; None:
+        if role not in user.roles:
+            raise HTTPException(403, f"requires role: {role}")
+    return checker
+</code></pre>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">In production</span>
+  <p>Notice <code>pool_size=10</code> is per worker. Four gunicorn workers on three pods is
+  <b>4&nbsp;&times;&nbsp;3&nbsp;&times;&nbsp;15&nbsp;=&nbsp;180 possible connections</b> against an RDS
+  instance whose <code>max_connections</code> may be 200 &mdash; and the reconciler and the worker also need
+  some. The classic production incident is scaling pods for throughput and taking the database down instead.
+  Either put PgBouncer in front, or do the multiplication every time you change a replica count.</p>
+</div>
+
+<h3 id="fa-async">Async endpoints, and the trap inside one</h3>
+<p>Declare a handler <code>async def</code> and it runs on the event loop. Declare it plain <code>def</code>
+and FastAPI runs it in a thread pool so it cannot block the loop. Both are correct; mixing them up is not.</p>
+
+<div class="vs">
+  <div>
+    <div class="vh">Wrong &mdash; blocking inside async</div>
+    <div class="code" data-lang="python"><header><b>freezes every request on this worker</b></header><pre><code>import requests, time
+
+@router.get("/sites/{site_id}/policy")
+async def policy(site_id: str):
+    # requests is synchronous. This parks the
+    # ENTIRE event loop for 800 ms - every other
+    # in-flight request on this worker stalls.
+    r = requests.get(f"{VENDOR}/p/{site_id}",
+                     timeout=2)
+    time.sleep(0.1)          # same bug, smaller
+    return r.json()</code></pre></div>
+    <div class="vb"><p><b>Symptom:</b> p99 latency collapses under load while CPU sits at 8%. Drawing 02-B
+    on <a href="programming.html">Sheet 02</a> is the same lesson one layer down.</p></div>
+  </div>
+  <div>
+    <div class="vh">Right &mdash; two valid fixes</div>
+    <div class="code" data-lang="python"><header><b>await it, or push it to a thread</b></header><pre><code>import anyio, httpx
+
+@router.get("/sites/{site_id}/policy")
+async def policy(site_id: str, client: HttpDep):
+    r = await client.get(f"/p/{site_id}")   # awaits
+    return r.json()
+
+# When the library has no async version at all:
+@router.post("/badges/{id}/render")
+async def render(id: str):
+    return await anyio.to_thread.run_sync(
+        blocking_pdf_render, id)   # off the loop
+
+# Or simply drop the `async` - FastAPI will run a
+# plain `def` handler in its own thread pool.</code></pre></div>
+    <div class="vb"><p><b>Rule:</b> if a handler is <code>async def</code>, every call inside it must be
+    awaitable or provably instant.</p></div>
+  </div>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil</span>
+  <p>The blocking call that catches everyone is the database driver. <code>psycopg2</code> and plain
+  <code>SQLAlchemy</code> sessions are synchronous; <code>asyncpg</code> and
+  <code>sqlalchemy.ext.asyncio</code> are not. An <code>async def</code> handler using a sync session looks
+  fine in development with one user and falls over at twenty. Check the driver, not the ORM.</p>
+</div>
+
+<h3 id="fa-middleware">Middleware, CORS and consistent error bodies</h3>
+<p>Middleware wraps every request, including 404s and 500s. Exception handlers turn your domain errors into
+one predictable JSON shape so the frontend has exactly one error branch to write.</p>
+
+<div class="code" data-lang="python">
+<header><b>app/main.py</b></header>
+<pre><code>import httpx, time, uuid
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from app.api.routers import access_requests, health
+from app.core.errors import BadgeDeskError
+from app.core.logging import log, request_id_var
+from app.api.deps import get_settings
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # startup: open shared clients ONCE, not per request
+    app.state.http = httpx.AsyncClient(timeout=httpx.Timeout(2.0, connect=1.0))
+    yield
+    # shutdown: uvicorn calls this after it stops accepting new connections
+    await app.state.http.aclose()
+
+def create_app() -&gt; FastAPI:
+    s = get_settings()
+    app = FastAPI(title="BadgeDesk core", version="1.4.0", lifespan=lifespan)
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=s.cors_origins,        # ["<a href="https://urldefense.com/v3/__https://badgedesk.example.com__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5CysWVAK$">https://badgedesk.example.com</a>"]
+        allow_credentials=True,              # NEVER combine this with allow_origins=["*"]
+        allow_methods=["GET", "POST", "PATCH"],
+        allow_headers=["authorization", "content-type", "x-request-id"],
+        max_age=600,                         # cache the preflight for 10 minutes
+    )
+
+    @app.middleware("http")
+    async def observability(request: Request, call_next):
+        rid = request.headers.get("x-request-id") or str(uuid.uuid4())
+        token = request_id_var.set(rid)      # every log line below inherits it
+        started = time.perf_counter()
+        try:
+            response = await call_next(request)
+        finally:
+            request_id_var.reset(token)
+        ms = (time.perf_counter() - started) * 1000
+        response.headers["x-request-id"] = rid
+        log.info("request", extra={"method": request.method,
+                                   "path": request.url.path,
+                                   "status": response.status_code,
+                                   "duration_ms": round(ms, 1)})
+        return response
+
+    @app.exception_handler(BadgeDeskError)
+    async def domain_error(request: Request, exc: BadgeDeskError):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"error": {"code": exc.code, "message": str(exc),
+                               "request_id": request_id_var.get()}},
+        )
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_error(request: Request, exc: RequestValidationError):
+        # Reshape FastAPI's default 422 into the SAME envelope as everything else.
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={"error": {"code": "validation_failed",
+                               "message": "the request body is not valid",
+                               "fields": exc.errors(),
+                               "request_id": request_id_var.get()}},
+        )
+
+    app.include_router(access_requests.router, prefix="/v1")
+    app.include_router(health.router)         # unversioned, never behind auth
+    return app
+
+app = create_app()
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; CORS is not a security feature</span>
+  <p>CORS is a browser rule about which origins may <i>read</i> a response. It stops nothing else: curl,
+  Postman, a server and a mobile app all ignore it completely. Setting
+  <code>allow_origins=["*"]</code> to make an error go away, and then relying on &ldquo;only our frontend
+  calls this&rdquo;, is two mistakes at once. Also note that <code>allow_credentials=True</code> with
+  <code>"*"</code> is rejected by browsers outright &mdash; if that combination silently &ldquo;works&rdquo;
+  in your setup, something is echoing the origin back and you have effectively disabled CORS.</p>
+</div>
+
+<h3 id="fa-background">Background tasks vs a real queue</h3>
+<p><code>BackgroundTasks</code> runs a coroutine <i>after the response is sent, in the same process</i>. That
+is the entire feature, and both the strength and the disqualifier are in that sentence.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Question</th><th><code>BackgroundTasks</code></th><th>Kafka / a real queue</th></tr></thead>
+<tbody>
+<tr><td>Survives a pod restart mid-task?</td><td>No. The work is gone, silently.</td><td>Yes. The message is still on the topic.</td></tr>
+<tr><td>Retries on failure?</td><td>No. It logs and dies.</td><td>Yes, with backoff and a dead-letter topic.</td></tr>
+<tr><td>Scales independently?</td><td>No. It competes with request traffic.</td><td>Yes. Add consumers without touching the API.</td></tr>
+<tr><td>Latency cost to the caller</td><td>Zero &mdash; response is already sent.</td><td>~2&nbsp;ms to publish.</td></tr>
+<tr><td>Right for</td><td>Emitting a metric, warming a cache, writing an audit line you can afford to lose.</td><td>Provisioning a badge, sending an email, anything a person will ask about.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Getting this wrong in either direction is a real cost. Using <code>BackgroundTasks</code> to call the
+badge vendor means a rolling deploy silently drops provisioning for everyone mid-request; standing up Kafka
+to increment a counter is a week of infrastructure for a line of code. The seam is drawn at callout 4 of
+Drawing 00-A and built on <a href="messaging.html">Sheet 11</a>.</p>
+
+<h3 id="fa-settings">Settings and secrets</h3>
+<div class="code" data-lang="python">
+<header><b>app/core/settings.py</b></header>
+<pre><code>from pydantic import Field, PostgresDsn, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",            # local only; in AWS these come from the task definition
+        env_prefix="BADGEDESK_",
+        extra="forbid",
+    )
+
+    environment: str = "local"
+    database_dsn: PostgresDsn                      # no default -&gt; refuses to boot without it
+    redis_url: str = "redis://localhost:6379/0"
+    jwt_public_key: str
+    vendor_api_key: SecretStr                      # repr() prints '**********'
+    cors_origins: list[str] = Field(default_factory=list)
+    request_timeout_seconds: float = 2.0
+
+# BADGEDESK_DATABASE_DSN=postgresql+asyncpg://badgedesk:...@db:5432/badgedesk
+# A missing or malformed variable raises at import time - the pod crash-loops on
+# deploy instead of returning 500s at 3 a.m. That is the behaviour you want.
+</code></pre>
+</div>
+
+<h3 id="fa-repo">SQLAlchemy 2.0 async and the repository</h3>
+<div class="code" data-lang="python">
+<header><b>app/repositories/access_requests.py</b></header>
+<pre><code>from datetime import date, datetime, timezone
+from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.models import AccessRequest
+
+async def overlapping_exists(db: AsyncSession, employee_id: str, site_id: str,
+                             starts_on: date, ends_on: date) -&gt; bool:
+    stmt = (
+        select(func.count())
+        .select_from(AccessRequest)
+        .where(
+            AccessRequest.employee_id == employee_id,
+            AccessRequest.site_id == site_id,
+            AccessRequest.status == "pending",
+            AccessRequest.starts_on &lt;= ends_on,      # classic overlap test:
+            AccessRequest.ends_on &gt;= starts_on,      # A.start &lt;= B.end AND A.end &gt;= B.start
+        )
+    )
+    return bool((await db.execute(stmt)).scalar_one())
+
+async def page(db: AsyncSession, *, employee_ids: list[str], status: str | None,
+               site_id: str | None, limit: int, after_created_at: datetime | None):
+    stmt = select(AccessRequest).where(AccessRequest.employee_id.in_(employee_ids))
+    if status:
+        stmt = stmt.where(AccessRequest.status == status)
+    if site_id:
+        stmt = stmt.where(AccessRequest.site_id == site_id)
+    if after_created_at:                       # keyset pagination, not OFFSET
+        stmt = stmt.where(AccessRequest.created_at &lt; after_created_at)
+    stmt = stmt.order_by(AccessRequest.created_at.desc()).limit(limit + 1)
+    rows = list((await db.execute(stmt)).scalars())
+    has_more = len(rows) &gt; limit
+    return rows[:limit], has_more
+
+async def get_for_update(db: AsyncSession, request_id: str) -&gt; AccessRequest | None:
+    # Row lock held until this request's transaction commits, so two managers
+    # clicking Approve at the same instant cannot both win.
+    stmt = select(AccessRequest).where(AccessRequest.id == request_id).with_for_update()
+    return (await db.execute(stmt)).scalar_one_or_none()
+</code></pre>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why keyset pagination and not <code>OFFSET</code></span>
+  <p><code>LIMIT 25 OFFSET 10000</code> makes Postgres produce 10,025 rows and throw 10,000 away, so page 400
+  is 400&times; slower than page 1. Worse, if a row is inserted between requests every subsequent page
+  shifts and the user sees a duplicate. A cursor over <code>(created_at, id)</code> is O(log n) on every page
+  and stable under inserts. <a href="databases.html">Sheet 06</a> proves it with
+  <code>EXPLAIN ANALYZE</code>.</p>
+</div>
+
+<h3 id="fa-logging">Structured logging with a request id</h3>
+<div class="code" data-lang="python">
+<header><b>app/core/logging.py</b></header>
+<pre><code>import json, logging, sys
+from contextvars import ContextVar
+
+# A ContextVar is per-task, so concurrent requests on one event loop do not
+# see each other's id. A module-level global would be a data race.
+request_id_var: ContextVar[str] = ContextVar("request_id", default="-")
+
+RESERVED = set(logging.LogRecord("", 0, "", 0, "", (), None).__dict__)
+
+class JsonFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -&gt; str:
+        payload = {
+            "ts": self.formatTime(record, "%Y-%m-%dT%H:%M:%S%z"),
+            "level": record.levelname,
+            "logger": record.name,
+            "msg": record.getMessage(),
+            "request_id": request_id_var.get(),
+            "service": "core",
+        }
+        payload.update({k: v for k, v in record.__dict__.items() if k not in RESERVED})
+        if record.exc_info:
+            payload["exc"] = self.formatException(record.exc_info)
+        return json.dumps(payload, default=str)
+
+handler = logging.StreamHandler(sys.stdout)   # stdout, always. The platform ships it.
+handler.setFormatter(JsonFormatter())
+log = logging.getLogger("badgedesk")
+log.addHandler(handler)
+log.setLevel(logging.INFO)
+
+# {"ts":"2026-09-01T10:22:41+0000","level":"INFO","msg":"request","request_id":
+#  "9c1f...","service":"core","method":"POST","path":"/v1/access-requests",
+#  "status":201,"duration_ms":41.8}
+</code></pre>
+</div>
+
+<h3 id="fa-tests">Testing with <code>httpx.AsyncClient</code> and overrides</h3>
+<div class="code" data-lang="python">
+<header><b>tests/conftest.py</b></header>
+<pre><code>import pytest, pytest_asyncio
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+from app.main import create_app
+from app.api.deps import get_db_session, get_current_user
+from app.db.models import Base, Employee
+
+TEST_DSN = "postgresql+asyncpg://badgedesk:badgedesk@localhost:5433/test"
+
+@pytest_asyncio.fixture
+async def session() -&gt; AsyncSession:
+    engine = create_async_engine(TEST_DSN)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    # Each test runs inside a transaction that is rolled back afterwards, so
+    # tests are isolated without recreating the schema 400 times.
+    async with engine.connect() as conn:
+        trans = await conn.begin()
+        yield async_sessionmaker(bind=conn, expire_on_commit=False)()
+        await trans.rollback()
+
+@pytest_asyncio.fixture
+async def client(session) -&gt; AsyncClient:
+    app = create_app()
+    app.dependency_overrides[get_db_session] = lambda: session
+    app.dependency_overrides[get_current_user] = lambda: Employee(
+        id="e-902", manager_id="e-100", active=True, roles=["employee", "manager"])
+    # ASGITransport calls the app in-process: no port, no uvicorn, ~3 ms per test.
+    async with AsyncClient(transport=ASGITransport(app=app),
+                           base_url="<a href="https://urldefense.com/v3/__http://test__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5LvgeKX_$">http://test</a>") as c:
+        yield c
+    app.dependency_overrides.clear()
+</code></pre>
+</div>
+
+<div class="code" data-lang="python">
+<header><b>tests/test_access_requests.py</b></header>
+<pre><code>import pytest
+
+BODY = {"site_id": "BLR-01", "starts_on": "2026-09-01", "ends_on": "2026-09-05",
+        "reason": "quarterly datacentre audit"}
+
+@pytest.mark.asyncio
+async def test_create_returns_201_and_a_location(client):
+    r = await client.post("/v1/access-requests", json=BODY)
+    assert r.status_code == 201
+    assert r.headers["location"].startswith("/access-requests/req-")
+    assert r.json()["status"] == "pending"
+    assert "internal_risk_score" not in r.json()   # the response model is filtering
+
+@pytest.mark.asyncio
+async def test_second_overlapping_request_is_409(client):
+    await client.post("/v1/access-requests", json=BODY)
+    r = await client.post("/v1/access-requests", json=BODY)
+    assert r.status_code == 409
+    assert r.json()["error"]["code"] == "conflict"
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("field,value", [("site_id", "blr1"), ("reason", "short")])
+async def test_bad_field_is_422_and_names_the_field(client, field, value):
+    r = await client.post("/v1/access-requests", json={**BODY, field: value})
+    assert r.status_code == 422
+    assert any(e["loc"][-1] == field for e in r.json()["error"]["fields"])
+</code></pre>
+</div>
+
+<h3 id="fa-run">Running it: dev and production</h3>
+<div class="code" data-lang="bash">
+<header><b>terminal &mdash; two very different commands</b></header>
+<pre><code># Development: one process, auto-reload on save, pretty tracebacks.
+uvicorn app.main:app --reload --port 8000
+#   <a href="https://urldefense.com/v3/__http://localhost:8000/docs__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5AteS6fO$">http://localhost:8000/docs</a>   interactive OpenAPI UI, generated from your types
+#   <a href="https://urldefense.com/v3/__http://localhost:8000/openapi.json__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5ER65ai5$">http://localhost:8000/openapi.json</a>   the spec the gateway generates clients from
+
+# Production: gunicorn supervises N uvicorn workers and restarts crashed ones.
+gunicorn app.main:app \
+  --worker-class uvicorn.workers.UvicornWorker \
+  --workers 4 \                 # start at (2 x cores) + 1, then measure. Never guess twice.
+  --bind 0.0.0.0:8000 \
+  --timeout 30 \                # kill a worker wedged for 30 s
+  --graceful-timeout 20 \       # ...but let in-flight requests finish first
+  --max-requests 2000 \         # recycle workers to cap slow memory growth
+  --max-requests-jitter 200 \   # so they do not all recycle at the same second
+  --access-logfile -            # stdout; the platform collects it
+
+# --reload in production is a resource leak and a security hole. It is never right.</code></pre>
+</div>
+
+<p class="eyebrow">Two-machine note: install Python and create the virtualenv on both laptops, but run
+Postgres in Docker on the personal machine only. On the corporate laptop use a user-scope Postgres or point
+<code>BADGEDESK_DATABASE_DSN</code> at SQLite via <code>aiosqlite</code> for unit tests. Details on
+<a href="setup.html">Sheet 01</a>.</p>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; FastAPI</div>
+  <a class="r" href="https://urldefense.com/v3/__https://fastapi.tiangolo.com/tutorial/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5OZvb3v3$" target="_blank" rel="noopener"><span>FastAPI &mdash; the official tutorial<i>Unusually good docs. Work through &ldquo;Dependencies&rdquo; and &ldquo;Bigger Applications&rdquo; in full; they are the two chapters this section compresses.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=ArjanCodes*FastAPI*dependency*injection*clean*architecture__;KysrKys!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5CiySIXM$" target="_blank" rel="noopener"><span>ArjanCodes &mdash; FastAPI dependency injection and structure<i>Senior-level opinions on layering a FastAPI project. Watch after you have built the messy version.</i></span><span class="dur">25 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=freeCodeCamp*FastAPI*course*python*api*sqlalchemy*full__;KysrKysr!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5JEDy9wk$" target="_blank" rel="noopener"><span>freeCodeCamp &mdash; full FastAPI course<i>The one long structured run if you want a single primary source. Covers SQLAlchemy, auth and deployment.</i></span><span class="dur">19 h</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://docs.pydantic.dev/latest/concepts/models/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5MoFOfwl$" target="_blank" rel="noopener"><span>Pydantic v2 &mdash; models and validators<i>v1 and v2 differ enough that old blog posts will mislead you. Read <code>model_config</code> and <code>model_validator</code>.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://docs.sqlalchemy.org/en/20/orm/extensions/asyncio.html__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5G-zoBFP$" target="_blank" rel="noopener"><span>SQLAlchemy 2.0 &mdash; asyncio extension<i>The &ldquo;when it breaks&rdquo; reference. Explains lazy-load errors under async, which will be your first real bug.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@Fireship__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Cc14g7u$" target="_blank" rel="noopener"><span>Fireship &mdash; FastAPI in 100 seconds<i>Orientation only. Two minutes to decide the shape before you commit a week.</i></span><span class="dur">2 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="express">Node + Express &mdash; building the <code>notifier</code></h2>
+<p class="sub">Express gives you almost nothing and gets out of the way. That is simultaneously why it is
+still everywhere and why every Express codebase past 5,000 lines looks different from every other one.</p>
+
+<h3 id="ex-chain">The middleware chain, and the branch nobody draws</h3>
+<p>An Express app is an array of functions. Each gets <code>(req, res, next)</code> and must do exactly one
+of three things: send a response, call <code>next()</code>, or call <code>next(err)</code>. Forget all three
+and the request hangs until the client times out &mdash; no error, no log, nothing.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 400" role="img" aria-label="The Express middleware pipeline for the notifier service: helmet, cors, json body parser, request id, router match, zod validation and the handler in a row, with a cyan arrow to a 200 response and red arrows from three stages down into the four-argument error-handling middleware, which produces a 500 JSON body.">
+  <defs>
+    <marker id="s04-ac4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s04-ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <text class="mm" x="30" y="40">app.use(...) IN ORDER &mdash; THE ARRAY IS THE PROGRAM</text>
+
+  <rect class="box-c" x="30" y="90" width="142" height="54" rx="3"/>
+  <text class="t mid" x="101" y="113">helmet()</text><text class="mm mid" x="101" y="129">SECURITY HEADERS</text>
+  <rect class="box-c" x="195" y="90" width="142" height="54" rx="3"/>
+  <text class="t mid" x="266" y="113">cors()</text><text class="mm mid" x="266" y="129">PREFLIGHT + ORIGIN</text>
+  <rect class="box-c" x="360" y="90" width="142" height="54" rx="3"/>
+  <text class="t mid" x="431" y="113">express.json()</text><text class="mm mid" x="431" y="129">BYTES &rarr; req.body</text>
+  <rect class="box-c" x="525" y="90" width="142" height="54" rx="3"/>
+  <text class="t mid" x="596" y="113">requestId()</text><text class="mm mid" x="596" y="129">YOURS &middot; 6 LINES</text>
+  <rect class="box-c" x="690" y="90" width="142" height="54" rx="3"/>
+  <text class="t mid" x="761" y="113">router match</text><text class="mm mid" x="761" y="129">METHOD + PATH</text>
+  <rect class="box-c" x="855" y="90" width="142" height="54" rx="3"/>
+  <text class="t mid" x="926" y="113">validate(schema)</text><text class="mm mid" x="926" y="129">ZOD &rarr; 400</text>
+  <rect class="box-a" x="1020" y="90" width="142" height="54" rx="3"/>
+  <text class="t b mid" x="1091" y="113">handler</text><text class="mm mid" x="1091" y="129">YOUR CODE</text>
+
+  <path class="flow" d="M172,117 H189" marker-end="url(#s04-ac4)"/>
+  <path class="flow" d="M337,117 H354" marker-end="url(#s04-ac4)"/>
+  <path class="flow" d="M502,117 H519" marker-end="url(#s04-ac4)"/>
+  <path class="flow" d="M667,117 H684" marker-end="url(#s04-ac4)"/>
+  <path class="flow" d="M832,117 H849" marker-end="url(#s04-ac4)"/>
+  <path class="flow" d="M997,117 H1014" marker-end="url(#s04-ac4)"/>
+
+  <text class="mm c" x="30" y="172">EACH ONE CALLS next() &mdash; OR SENDS A RESPONSE AND THE CHAIN STOPS THERE</text>
+
+  <rect class="box-c" x="1000" y="262" width="170" height="60" rx="3"/>
+  <text class="t mid" x="1085" y="286">200 / 202 JSON</text><text class="mm mid" x="1085" y="302">res.status().json()</text>
+  <path class="flow" d="M1091,144 V256" marker-end="url(#s04-ac4)"/>
+
+  <rect class="box-r" x="240" y="262" width="520" height="60" rx="3"/>
+  <text class="t r" x="258" y="286">app.use((err, req, res, next) =&gt; { &hellip; })</text>
+  <text class="mm" x="258" y="304">FOUR ARGUMENTS. THAT ARITY IS HOW EXPRESS RECOGNISES IT. REGISTER IT LAST.</text>
+
+  <path class="flow-r" d="M431,144 V256" marker-end="url(#s04-ar4)"/>
+  <path class="flow-r" d="M926,144 V196 H620 V256" marker-end="url(#s04-ar4)"/>
+  <path class="flow-r" d="M1050,144 V222 H500 V256" marker-end="url(#s04-ar4)"/>
+  <text class="mm r" x="640" y="190">next(err) FROM ANY STAGE JUMPS STRAIGHT HERE, SKIPPING EVERY REMAINING MIDDLEWARE</text>
+
+  <text class="mm r" x="30" y="356">IN EXPRESS 4, A `throw` INSIDE AN async HANDLER NEVER REACHES THIS BOX. IT BECOMES AN UNHANDLED REJECTION AND THE REQUEST HANGS UNTIL THE CLIENT GIVES UP.</text>
+  <text class="mm b" x="30" y="376">EXPRESS 5 FIXES IT: A REJECTED PROMISE FROM A HANDLER IS FORWARDED TO next(err) AUTOMATICALLY. UNTIL YOU UPGRADE, WRAP EVERY ASYNC HANDLER.</text>
+</svg>
+<figcaption>Drawing 04-D &mdash; the Express pipeline. <b>Cyan</b> = the happy path. <b>Red</b> = the branch that
+only exists if you call <code>next(err)</code>. <b>Brass</b> = your handler.</figcaption>
+</figure>
+
+<div class="code" data-lang="javascript">
+<header><b>notifier/src/app.js</b></header>
+<pre><code>import express from 'express';
+import helmet from 'helmet';
+import cors from 'cors';
+import { randomUUID } from 'node:crypto';
+import { webhooksRouter } from './routes/webhooks.js';
+import { log } from './log.js';
+
+export function createApp() {
+  const app = express();
+
+  app.use(helmet());
+  app.use(cors({ origin: process.env.CORS_ORIGIN?.split(',') ?? [] }));
+
+  // The raw body is needed to verify the vendor's HMAC signature, so keep a copy
+  // BEFORE json() consumes the stream. Doing this after parsing is impossible.
+  app.use(express.json({
+    limit: '256kb',
+    verify: (req, _res, buf) =&gt; { req.rawBody = buf; },
+  }));
+
+  app.use((req, res, next) =&gt; {
+    req.id = req.header('x-request-id') ?? randomUUID();
+    res.setHeader('x-request-id', req.id);
+    const t0 = process.hrtime.bigint();
+    res.on('finish', () =&gt; {
+      const ms = Number(process.hrtime.bigint() - t0) / 1e6;
+      log.info({ requestId: req.id, method: req.method, path: req.originalUrl,
+                 status: res.statusCode, durationMs: +ms.toFixed(1) }, 'request');
+    });
+    next();                       // forget this line and the request hangs forever
+  });
+
+  app.use('/webhooks', webhooksRouter);
+
+  // 404 is just the middleware that runs when no route matched.
+  app.use((req, res) =&gt; res.status(404).json({
+    error: { code: 'not_found', message: `no route for ${req.method} ${req.path}` },
+  }));
+
+  // Error handler LAST, and with exactly four parameters.
+  app.use((err, req, res, _next) =&gt; {
+    const status = err.status ?? 500;
+    if (status &gt;= 500) log.error({ requestId: req.id, err }, 'unhandled');
+    res.status(status).json({
+      error: { code: err.code ?? 'internal_error',
+               message: status &gt;= 500 ? 'internal error' : err.message,
+               requestId: req.id },
+    });
+  });
+
+  return app;
+}
+</code></pre>
+</div>
+
+<h3 id="ex-asyncerr">The async error trap</h3>
+<div class="vs">
+  <div>
+    <div class="vh">Express 4 &mdash; the bug</div>
+    <div class="code" data-lang="javascript"><header><b>the request never completes</b></header><pre><code>router.post('/vendor', async (req, res) =&gt; {
+  const event = await parseVendorEvent(req.body);
+  // If this rejects, Express 4 does NOT catch it.
+  // The promise rejection is unhandled, next(err)
+  // is never called, the error middleware never
+  // runs, and res is never written to.
+  await forwardToCore(event);
+  res.status(202).json({ accepted: true });
+});</code></pre></div>
+    <div class="vb"><p><b>Symptom:</b> <code>UnhandledPromiseRejection</code> in the logs (if you are lucky),
+    a client that times out after 30&nbsp;s, and a socket held open until then.</p></div>
+  </div>
+  <div>
+    <div class="vh">The two fixes</div>
+    <div class="code" data-lang="javascript"><header><b>wrap it, or upgrade</b></header><pre><code>// Fix 1 - a five-line wrapper, Express 4.
+export const ah = (fn) =&gt; (req, res, next) =&gt;
+  Promise.resolve(fn(req, res, next)).catch(next);
+
+router.post('/vendor', ah(async (req, res) =&gt; {
+  const event = await parseVendorEvent(req.body);
+  await forwardToCore(event);
+  res.status(202).json({ accepted: true });
+}));
+
+// Fix 2 - Express 5 (npm i express@5). A rejected
+// promise returned by a handler is forwarded to
+// next(err) for you. Delete the wrapper.</code></pre></div>
+    <div class="vb"><p><b>Either way</b>, add <code>process.on('unhandledRejection', ...)</code> so the next
+    one is loud instead of silent.</p></div>
+  </div>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p>&ldquo;How does Express know a function is error-handling middleware?&rdquo; By
+  <code>fn.length === 4</code>. It literally inspects the declared parameter count. Which means
+  <code>app.use((err, req, res) =&gt; {})</code> is registered as ordinary middleware, gets called with
+  <code>(req, res, next)</code>, and your &ldquo;error handler&rdquo; silently starts handling successful
+  requests. You must keep the unused fourth parameter.</p>
+</div>
+
+<h3 id="ex-zod">Validation with Zod, and the layered structure</h3>
+<div class="code" data-lang="javascript">
+<header><b>notifier/src/middleware/validate.js</b></header>
+<pre><code>import { ZodError } from 'zod';
+
+export const validate = (schemas) =&gt; (req, _res, next) =&gt; {
+  try {
+    // Reassign: from here on req.body is the PARSED, coerced, trusted value.
+    if (schemas.body)  req.body  = schemas.body.parse(req.body);
+    if (schemas.query) req.query = schemas.query.parse(req.query);
+    if (schemas.params) req.params = schemas.params.parse(req.params);
+    next();
+  } catch (err) {
+    if (err instanceof ZodError) {
+      next(Object.assign(new Error('validation failed'), {
+        status: 400, code: 'validation_failed',
+        fields: err.issues.map(i =&gt; ({ path: i.path, message: i.message })),
+      }));
+    } else next(err);
+  }
+};
+</code></pre>
+</div>
+
+<div class="code" data-lang="javascript">
+<header><b>notifier/src/routes/webhooks.js &mdash; inbound and outbound in one file</b></header>
+<pre><code>import { Router } from 'express';
+import { z } from 'zod';
+import { createHmac, timingSafeEqual } from 'node:crypto';
+import { validate } from '../middleware/validate.js';
+import { ah } from '../middleware/asyncHandler.js';
+import { postToCore, sendTeamsCard } from '../clients.js';
+
+export const webhooksRouter = Router();
+
+const VendorEvent = z.object({
+  event_id: z.string().uuid(),
+  type: z.enum(['badge.activated', 'badge.revoked', 'badge.failed']),
+  badge_id: z.string(),
+  request_id: z.string().regex(/^req-\d+$/),
+  occurred_at: z.coerce.date(),
+});
+
+function signatureIsValid(req) {
+  const header = req.header('x-vendor-signature') ?? '';
+  const expected = createHmac('sha256', process.env.VENDOR_WEBHOOK_SECRET)
+    .update(req.rawBody)                 // the raw bytes, not JSON.stringify(req.body)
+    .digest('hex');
+  const a = Buffer.from(header, 'utf8');
+  const b = Buffer.from(expected, 'utf8');
+  // Constant-time compare: `a === b` leaks the secret one byte at a time.
+  return a.length === b.length &amp;&amp; timingSafeEqual(a, b);
+}
+
+// INBOUND: the vendor tells us a badge went live.
+webhooksRouter.post('/vendor', ah(async (req, res, next) =&gt; {
+  if (!signatureIsValid(req)) {
+    return next(Object.assign(new Error('bad signature'),
+                              { status: 401, code: 'bad_signature' }));
+  }
+  const event = VendorEvent.parse(req.body);
+
+  // Answer FAST. The vendor will retry if we take longer than 5 s, and a retry
+  // storm from a slow receiver is a self-inflicted outage.
+  res.status(202).json({ accepted: true, eventId: event.event_id });
+
+  // Then do the work. event_id makes the downstream call idempotent, so the
+  // vendor's inevitable duplicate delivery is harmless.
+  queueMicrotask(() =&gt; handleVendorEvent(event).catch(
+    (err) =&gt; log.error({ err, eventId: event.event_id }, 'vendor event failed')));
+}));
+
+// OUTBOUND: tell core, then tell the human.
+async function handleVendorEvent(event) {
+  await postToCore(`/v1/access-requests/${event.request_id}/provisioned`, {
+    badge_id: event.badge_id,
+    occurred_at: event.occurred_at.toISOString(),
+    idempotency_key: event.event_id,
+  });
+  await sendTeamsCard({
+    title: 'Badge ready',
+    text: `Badge ${event.badge_id} is active for ${event.request_id}.`,
+  });
+}
+</code></pre>
+</div>
+
+<div class="code" data-lang="javascript">
+<header><b>notifier/src/clients.js &mdash; every outbound call has a timeout and a retry budget</b></header>
+<pre><code>const sleep = (ms) =&gt; new Promise(r =&gt; setTimeout(r, ms));
+
+export async function postToCore(path, body, { attempts = 3 } = {}) {
+  let lastErr;
+  for (let i = 0; i &lt; attempts; i++) {
+    try {
+      const res = await fetch(`${process.env.CORE_URL}${path}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json',
+                   'authorization': `Bearer ${await serviceToken()}` },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(2000),   // 2 s per ATTEMPT, not per call
+      });
+      if (res.status &gt;= 500) throw new Error(`core ${res.status}`); // retryable
+      if (!res.ok) return res;               // 4xx: our fault, retrying cannot help
+      return res;
+    } catch (err) {
+      lastErr = err;
+      // Exponential backoff with full jitter: 0-200 ms, 0-400 ms, 0-800 ms.
+      // Without jitter every retrying client returns at the same instant and
+      // knocks the service over exactly as it recovers.
+      await sleep(Math.random() * 200 * 2 ** i);
+    }
+  }
+  throw lastErr;
+}
+</code></pre>
+</div>
+
+<h3 id="ex-shutdown">Graceful shutdown</h3>
+<div class="code" data-lang="javascript">
+<header><b>notifier/src/server.js</b></header>
+<pre><code>import { createApp } from './app.js';
+import { log } from './log.js';
+
+const server = createApp().listen(5000, () =&gt; log.info('notifier on :5000'));
+server.keepAliveTimeout = 65_000;   // must exceed the load balancer's idle timeout
+server.headersTimeout   = 66_000;   // or you will see random 502s under keep-alive
+
+let shuttingDown = false;
+
+async function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  log.info({ signal }, 'draining');
+
+  // 1. Fail readiness immediately so the load balancer stops sending new work.
+  //    Kubernetes needs a few seconds to notice; keep serving during that window.
+  global.__ready = false;
+  await new Promise(r =&gt; setTimeout(r, 5000));
+
+  // 2. Stop accepting connections; the callback fires when the last one closes.
+  server.close(async () =&gt; {
+    await Promise.allSettled([pool.end(), redis.quit()]);
+    log.info('drained cleanly');
+    process.exit(0);
+  });
+
+  // 3. Hard deadline. Must be shorter than terminationGracePeriodSeconds (30 s)
+  //    or Kubernetes SIGKILLs you mid-write.
+  setTimeout(() =&gt; { log.error('forced exit'); process.exit(1); }, 20_000).unref();
+}
+
+process.on('SIGTERM', () =&gt; shutdown('SIGTERM'));   // what Kubernetes sends
+process.on('SIGINT',  () =&gt; shutdown('SIGINT'));    // what Ctrl-C sends
+process.on('unhandledRejection', (err) =&gt; { log.error({ err }, 'unhandled'); });
+</code></pre>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">In production</span>
+  <p>The five-second sleep before <code>server.close()</code> looks wrong and is the most important line in
+  the file. When Kubernetes terminates a pod it sends SIGTERM and removes the endpoint <i>at the same time,
+  asynchronously</i>. If you stop accepting instantly, every request the load balancer already routed in that
+  window gets a connection reset &mdash; visible to users as intermittent 502s on every single deploy. Fail
+  the readiness probe, wait, then drain. Probes are on <a href="devops.html">Sheet 09</a>.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; Node and Express</div>
+  <a class="r" href="https://urldefense.com/v3/__https://expressjs.com/en/guide/error-handling.html__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Hff2mjA$" target="_blank" rel="noopener"><span>Express &mdash; error handling guide<i>Official, short, and the exact page that explains the four-argument rule and the Express 5 async change.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@hnasr__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5BLEvZzq$" target="_blank" rel="noopener"><span>Hussein Nasser &mdash; Node internals and libuv<i>What the event loop, the thread pool and backpressure actually do under an Express app.</i></span><span class="dur">deep</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@traversymedia__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5NInNDBp$" target="_blank" rel="noopener"><span>Traversy Media &mdash; Express crash courses<i>Fast, practical, project-shaped. Good for getting the first router working today.</i></span><span class="dur">60 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://nodejs.org/en/learn/asynchronous-work/understanding-processnexttick__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5LtEG2Og$" target="_blank" rel="noopener"><span>Node.js &mdash; event loop, timers and nextTick<i>Official. Read it once properly; it settles most Node interview questions.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=nodejs*graceful*shutdown*kubernetes*sigterm*express__;KysrKys!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5BGdhNjV$" target="_blank" rel="noopener"><span>Graceful shutdown in Node on Kubernetes<i>The &ldquo;when it breaks&rdquo; resource. Watch it the first time a deploy causes 502s.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://zod.dev/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5PlO0Npz$" target="_blank" rel="noopener"><span>Zod &mdash; documentation<i>The boundary validator from Sheet 02, used here for real. <code>z.coerce</code> and <code>safeParse</code> are the two to learn.</i></span><span class="dur">docs</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="nestjs">NestJS &mdash; building the <code>gateway</code></h2>
+<p class="sub">Express with structure and a dependency-injection container, expressed in TypeScript
+decorators. If FastAPI is &ldquo;your types are the framework&rdquo;, NestJS is &ldquo;your classes are the
+framework&rdquo;.</p>
+
+<h3 id="nest-why">Why it exists</h3>
+<p>Take the Express app above and give it to six engineers for a year. You will end up inventing modules to
+group things, a factory to build services with their dependencies, a shared validation middleware, a
+consistent error shape, and a convention for where the auth check goes. NestJS is that set of decisions,
+made once, borrowed from Angular and Spring, with Express still underneath serving the requests.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 330" role="img" aria-label="The NestJS module graph for the gateway: a root AppModule containing a global ConfigModule, an AuthModule providing a JWT strategy and roles guard, an AccessRequestsModule containing a controller and a service, and a CoreClientModule wrapping the HTTP client, with import arrows and injection arrows.">
+  <defs>
+    <marker id="s04-ac5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s04-ab5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+  </defs>
+
+  <rect class="zone" x="30" y="46" width="1140" height="238" rx="4"/>
+  <text class="mm c" x="44" y="38">AppModule &mdash; THE ROOT. NEST BUILDS THIS GRAPH ONCE AT BOOT AND FAILS LOUDLY IF ANYTHING IS UNRESOLVABLE.</text>
+
+  <rect class="box-a" x="56" y="80" width="200" height="58" rx="3"/>
+  <text class="t b mid" x="156" y="104">ConfigModule</text><text class="mm mid" x="156" y="120">isGlobal: true</text>
+
+  <rect class="box-c" x="296" y="80" width="228" height="58" rx="3"/>
+  <text class="t mid" x="410" y="104">AuthModule</text><text class="mm mid" x="410" y="120">EXPORTS JwtAuthGuard</text>
+
+  <rect class="box-c" x="564" y="80" width="300" height="58" rx="3"/>
+  <text class="t mid" x="714" y="104">AccessRequestsModule</text><text class="mm mid" x="714" y="120">CONTROLLER + SERVICE + DTOs</text>
+
+  <rect class="box-c" x="904" y="80" width="236" height="58" rx="3"/>
+  <text class="t mid" x="1022" y="104">CoreClientModule</text><text class="mm mid" x="1022" y="120">HttpModule, TIMEOUT 2 S</text>
+
+  <rect class="box" x="296" y="186" width="228" height="56" rx="3"/>
+  <text class="t mid" x="410" y="209">JwtStrategy &middot; RolesGuard</text><text class="mm mid" x="410" y="225">@Injectable() PROVIDERS</text>
+
+  <rect class="box-a" x="564" y="186" width="146" height="56" rx="3"/>
+  <text class="t b mid" x="637" y="209">Controller</text><text class="mm mid" x="637" y="225">HTTP ONLY</text>
+
+  <rect class="box" x="722" y="186" width="142" height="56" rx="3"/>
+  <text class="t mid" x="793" y="209">Service</text><text class="mm mid" x="793" y="225">LOGIC ONLY</text>
+
+  <rect class="box" x="904" y="186" width="236" height="56" rx="3"/>
+  <text class="t mid" x="1022" y="209">CoreHttpClient</text><text class="mm mid" x="1022" y="225">TALKS TO FASTAPI :8000</text>
+
+  <path class="flow-b dash" d="M564,109 H530" marker-end="url(#s04-ab5)"/>
+  <path class="flow-b dash" d="M864,109 H898" marker-end="url(#s04-ab5)"/>
+  <text class="mm b" x="546" y="70">imports</text>
+  <text class="mm b" x="872" y="70">imports</text>
+
+  <path class="flow" d="M410,138 V180" marker-end="url(#s04-ac5)"/>
+  <path class="flow" d="M637,138 V180" marker-end="url(#s04-ac5)"/>
+  <path class="flow" d="M1022,138 V180" marker-end="url(#s04-ac5)"/>
+  <path class="flow" d="M710,214 H716" marker-end="url(#s04-ac5)"/>
+  <path class="flow" d="M864,214 H898" marker-end="url(#s04-ac5)"/>
+  <text class="mm c" x="784" y="176">constructor injection &mdash; no `new`, ever</text>
+
+  <text class="mm" x="30" y="308">A PROVIDER IS A SINGLETON BY DEFAULT. SCOPE.REQUEST GIVES YOU ONE INSTANCE PER REQUEST (AND COSTS YOU A CONSTRUCTOR CALL PER REQUEST).</text>
+  <text class="mm" x="30" y="324">SCOPE.TRANSIENT GIVES EVERY CONSUMER ITS OWN. IF YOU CANNOT NAME WHY YOU NEED EITHER, YOU WANT THE DEFAULT SINGLETON.</text>
+</svg>
+<figcaption>Drawing 04-E &mdash; the gateway module graph. <b>Brass dashed</b> = a module importing another.
+<b>Cyan</b> = a provider being injected into a constructor.</figcaption>
+</figure>
+
+<h3 id="nest-pipeline">Pipes, guards, interceptors and filters &mdash; and where each sits</h3>
+<p>These four names cause more confusion than the rest of Nest combined, and the confusion evaporates once
+you see the order. They are not four ways of doing the same thing; they are four positions in one pipeline.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 300" role="img" aria-label="The NestJS request pipeline in order: middleware, guards, interceptors on the way in, pipes, the controller handler, interceptors on the way out, exception filters, and the response, with red arrows showing that a throw from guards, pipes or the handler jumps to the exception filter.">
+  <defs>
+    <marker id="s04-ac6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s04-ar6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <text class="mm" x="20" y="36">THE ORDER IS FIXED. LEARN IT ONCE.</text>
+
+  <rect class="box-c" x="20" y="66" width="132" height="64" rx="3"/>
+  <text class="t mid" x="86" y="90">Middleware</text><text class="mm mid" x="86" y="106">EXPRESS-LEVEL</text><text class="mm mid" x="86" y="120">req/res, NO DI CONTEXT</text>
+
+  <rect class="box-c" x="165" y="66" width="132" height="64" rx="3"/>
+  <text class="t mid" x="231" y="90">Guards</text><text class="mm mid" x="231" y="106">canActivate()</text><text class="mm mid" x="231" y="120">MAY I? &rarr; 401 / 403</text>
+
+  <rect class="box-c" x="310" y="66" width="132" height="64" rx="3"/>
+  <text class="t mid" x="376" y="90">Interceptors &darr;</text><text class="mm mid" x="376" y="106">BEFORE THE HANDLER</text><text class="mm mid" x="376" y="120">START TIMER, LOG</text>
+
+  <rect class="box-c" x="455" y="66" width="132" height="64" rx="3"/>
+  <text class="t mid" x="521" y="90">Pipes</text><text class="mm mid" x="521" y="106">TRANSFORM + VALIDATE</text><text class="mm mid" x="521" y="120">BAD BODY &rarr; 400</text>
+
+  <rect class="box-a" x="600" y="66" width="132" height="64" rx="3"/>
+  <text class="t b mid" x="666" y="90">Handler</text><text class="mm mid" x="666" y="106">YOUR CONTROLLER</text><text class="mm mid" x="666" y="120">METHOD</text>
+
+  <rect class="box-c" x="745" y="66" width="132" height="64" rx="3"/>
+  <text class="t mid" x="811" y="90">Interceptors &uarr;</text><text class="mm mid" x="811" y="106">AFTER THE HANDLER</text><text class="mm mid" x="811" y="120">map(), SHAPE THE BODY</text>
+
+  <rect class="box-r" x="890" y="66" width="132" height="64" rx="3"/>
+  <text class="t r mid" x="956" y="90">Exception filter</text><text class="mm mid" x="956" y="106">catch()</text><text class="mm mid" x="956" y="120">ONE ERROR ENVELOPE</text>
+
+  <rect class="box" x="1035" y="66" width="132" height="64" rx="3"/>
+  <text class="t mid" x="1101" y="90">Response</text><text class="mm mid" x="1101" y="106">JSON ON THE WIRE</text>
+
+  <path class="flow" d="M152,98 H159" marker-end="url(#s04-ac6)"/>
+  <path class="flow" d="M297,98 H304" marker-end="url(#s04-ac6)"/>
+  <path class="flow" d="M442,98 H449" marker-end="url(#s04-ac6)"/>
+  <path class="flow" d="M587,98 H594" marker-end="url(#s04-ac6)"/>
+  <path class="flow" d="M732,98 H739" marker-end="url(#s04-ac6)"/>
+  <path class="flow" d="M877,98 H884" marker-end="url(#s04-ac6)"/>
+  <path class="flow" d="M1022,98 H1029" marker-end="url(#s04-ac6)"/>
+
+  <path class="flow-r" d="M231,130 V186 H956 V136" marker-end="url(#s04-ar6)"/>
+  <path class="flow-r" d="M521,130 V208 H930 V136" marker-end="url(#s04-ar6)"/>
+  <path class="flow-r" d="M666,130 V230 H904 V136" marker-end="url(#s04-ar6)"/>
+  <text class="mm r" x="260" y="182">ForbiddenException</text>
+  <text class="mm r" x="550" y="204">BadRequestException FROM class-validator</text>
+  <text class="mm r" x="695" y="226">ANY throw FROM YOUR CODE, INCLUDING ONES YOU DID NOT MEAN</text>
+
+  <text class="mm b" x="20" y="266">GUARDS ANSWER &ldquo;IS THIS CALLER ALLOWED?&rdquo; &middot; PIPES ANSWER &ldquo;IS THIS INPUT USABLE?&rdquo; &middot; INTERCEPTORS WRAP &ldquo;WHAT HAPPENS AROUND IT?&rdquo; &middot; FILTERS ANSWER &ldquo;HOW DO WE REPORT FAILURE?&rdquo;</text>
+  <text class="mm" x="20" y="286">GUARDS RUN BEFORE PIPES. SO A GUARD SEES THE RAW, UNVALIDATED BODY &mdash; NEVER MAKE AN AUTHORISATION DECISION FROM req.body IN A GUARD.</text>
+</svg>
+<figcaption>Drawing 04-F &mdash; the NestJS request pipeline. <b>Cyan</b> = the ordered happy path.
+<b>Red</b> = every throw, from anywhere, converging on the filter.</figcaption>
+</figure>
+
+<h3 id="nest-code">The gateway controller, DTO, service and guard</h3>
+
+<div class="code" data-lang="typescript">
+<header><b>gateway/src/access-requests/dto/create-access-request.dto.ts</b></header>
+<pre><code>import { IsDateString, IsIn, Length, Matches } from 'class-validator';
+
+// Note the casing: camelCase on the wire for the TypeScript services,
+// snake_case for the Python core. The client below does the translation
+// in exactly one place, so nothing else has to think about it.
+export class CreateAccessRequestDto {
+  @Matches(/^[A-Z]{3}-\d{2}$/, { message: 'siteId must look like BLR-01' })
+  siteId!: string;
+
+  @IsDateString()
+  startsOn!: string;
+
+  @IsDateString()
+  endsOn!: string;
+
+  @Length(10, 500)
+  reason!: string;
+}
+
+export class ListQueryDto {
+  @IsIn(['pending', 'approved', 'rejected'])
+  status?: 'pending' | 'approved' | 'rejected';
+}
+</code></pre>
+</div>
+
+<div class="code" data-lang="typescript">
+<header><b>gateway/src/access-requests/access-requests.controller.ts</b></header>
+<pre><code>import {
+  Body, Controller, Get, HttpCode, Param, Post, Query, UseGuards, UseInterceptors,
+} from '@nestjs/common';
+
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { CurrentUser, type AuthUser } from '../auth/current-user.decorator';
+import { LoggingInterceptor } from '../common/logging.interceptor';
+import { AccessRequestsService } from './access-requests.service';
+import { CreateAccessRequestDto, ListQueryDto } from './dto/create-access-request.dto';
+
+@Controller('access-requests')
+@UseGuards(JwtAuthGuard, RolesGuard)      // order matters: authenticate, then authorise
+@UseInterceptors(LoggingInterceptor)
+export class AccessRequestsController {
+  // No `new`, no imports of concrete implementations. Nest reads the parameter
+  // types at boot and supplies the instances. This is what makes it testable.
+  constructor(private readonly service: AccessRequestsService) {}
+
+  @Post()
+  create(@Body() dto: CreateAccessRequestDto, @CurrentUser() user: AuthUser) {
+    // dto is already validated by the global ValidationPipe. If it were not,
+    // this method would be the wrong place to find out.
+    return this.service.create(dto, user);
+  }
+
+  @Get()
+  list(@Query() query: ListQueryDto, @CurrentUser() user: AuthUser) {
+    return this.service.list(query, user);
+  }
+
+  @Post(':id/approve')
+  @Roles('manager')                        // read by RolesGuard via the Reflector
+  @HttpCode(200)                           // @Post defaults to 201; an approval is not a creation
+  approve(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.service.approve(id, user);
+  }
+}
+</code></pre>
+</div>
+
+<div class="code" data-lang="typescript">
+<header><b>gateway/src/auth/jwt-auth.guard.ts and roles.guard.ts</b></header>
+<pre><code>import {
+  CanActivate, ExecutionContext, Injectable, UnauthorizedException, ForbiddenException,
+} from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+
+@Injectable()
+export class JwtAuthGuard implements CanActivate {
+  constructor(private readonly jwt: JwtService,
+              private readonly config: ConfigService) {}
+
+  async canActivate(ctx: ExecutionContext): Promise&lt;boolean&gt; {
+    const req = ctx.switchToHttp().getRequest();
+    const [scheme, token] = (req.headers.authorization ?? '').split(' ');
+    if (scheme !== 'Bearer' || !token) throw new UnauthorizedException('missing token');
+    try {
+      req.user = await this.jwt.verifyAsync(token, {
+        publicKey: this.config.getOrThrow('JWT_PUBLIC_KEY'),
+        algorithms: ['RS256'],       // an allow-list, so `alg: none` is rejected
+        issuer: 'badgedesk-gateway',
+        audience: 'badgedesk-gateway',
+      });
+    } catch {
+      throw new UnauthorizedException('invalid or expired token');
+    }
+    return true;                     // false would give a bare 403 with no message
+  }
+}
+
+@Injectable()
+export class RolesGuard implements CanActivate {
+  constructor(private readonly reflector: Reflector) {}
+
+  canActivate(ctx: ExecutionContext): boolean {
+    // Read the @Roles('manager') metadata off the method, falling back to the class.
+    const required = this.reflector.getAllAndOverride&lt;string[]&gt;('roles', [
+      ctx.getHandler(), ctx.getClass(),
+    ]);
+    if (!required?.length) return true;          // no @Roles = no role requirement
+
+    const { user } = ctx.switchToHttp().getRequest();
+    const ok = required.some((r) =&gt; user?.roles?.includes(r));
+    if (!ok) throw new ForbiddenException(`requires one of: ${required.join(', ')}`);
+    return true;
+  }
+}
+</code></pre>
+</div>
+
+<div class="code" data-lang="typescript">
+<header><b>gateway/src/main.ts and app.module.ts</b></header>
+<pre><code>// ---- main.ts
+import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
+import { AppModule } from './app.module';
+import { AllExceptionsFilter } from './common/all-exceptions.filter';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,              // strip properties with no decorator
+    forbidNonWhitelisted: true,   // ...or 400 on them. Same idea as extra="forbid".
+    transform: true,              // turn the plain object into a real DTO instance
+    transformOptions: { enableImplicitConversion: true },
+  }));
+  app.useGlobalFilters(new AllExceptionsFilter());
+  app.enableShutdownHooks();      // wires SIGTERM into onModuleDestroy()
+
+  await app.listen(4000);
+}
+bootstrap();
+
+// ---- app.module.ts
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import * as Joi from 'joi';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,             // available everywhere without re-importing
+      validationSchema: Joi.object({           // fail at boot, not at 3 a.m.
+        CORE_URL: Joi.string().uri().required(),
+        JWT_PUBLIC_KEY: Joi.string().required(),
+        NODE_ENV: Joi.string().valid('development', 'test', 'production'),
+      }),
+    }),
+    AuthModule, AccessRequestsModule, CoreClientModule,
+  ],
+})
+export class AppModule {}
+</code></pre>
+</div>
+
+<div class="code" data-lang="typescript">
+<header><b>gateway/test/access-requests.service.spec.ts</b></header>
+<pre><code>import { Test } from '@nestjs/testing';
+import { AccessRequestsService } from '../src/access-requests/access-requests.service';
+import { CoreHttpClient } from '../src/core-client/core-http.client';
+
+describe('AccessRequestsService', () =&gt; {
+  let service: AccessRequestsService;
+  const core = { post: jest.fn(), get: jest.fn() };
+
+  beforeEach(async () =&gt; {
+    // The container is the test seam: swap the real HTTP client for a mock and
+    // nothing inside the service changes. No network, no ports, ~4 ms per test.
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        AccessRequestsService,
+        { provide: CoreHttpClient, useValue: core },
+      ],
+    }).compile();
+    service = moduleRef.get(AccessRequestsService);
+  });
+
+  it('translates camelCase to the snake_case core expects', async () =&gt; {
+    core.post.mockResolvedValue({ id: 'req-1', status: 'pending' });
+    await service.create(
+      { siteId: 'BLR-01', startsOn: '2026-09-01', endsOn: '2026-09-05',
+        reason: 'quarterly datacentre audit' },
+      { employeeId: 'e-902', roles: ['employee'] },
+    );
+    expect(core.post).toHaveBeenCalledWith('/v1/access-requests',
+      expect.objectContaining({ site_id: 'BLR-01', starts_on: '2026-09-01' }));
+  });
+});
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil</span>
+  <p>Two Nest traps that cost an evening each. <b>One:</b> a DTO must be a <code>class</code>, not an
+  <code>interface</code> or a <code>type</code>. Interfaces are erased at compile time (Sheet 02, note 2), so
+  Nest has nothing to read at runtime and the <code>ValidationPipe</code> silently validates nothing.
+  <b>Two:</b> a circular import between two modules produces
+  <code>Nest can't resolve dependencies</code> at boot with a cryptic <code>?</code> in the parameter list.
+  Read the message carefully &mdash; the <code>?</code> marks exactly which constructor argument it could not
+  supply.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; NestJS</div>
+  <a class="r" href="https://urldefense.com/v3/__https://docs.nestjs.com/first-steps__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5CeH2_x3$" target="_blank" rel="noopener"><span>NestJS &mdash; official documentation<i>Read Modules, Providers, Guards, Interceptors, Pipes and Exception Filters in that order. It is the same order as Drawing 04-F.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@academind__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5I53hWUC$" target="_blank" rel="noopener"><span>Academind &mdash; NestJS courses<i>Careful, well-paced explanations of the decorator model and the DI container.</i></span><span class="dur">long</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=NestJS*crash*course*guards*interceptors*pipes*explained__;KysrKysr!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5I7kPo76$" target="_blank" rel="noopener"><span>NestJS crash course &mdash; guards, pipes, interceptors<i>Watch after you have drawn Drawing 04-F from memory once. It will confirm or correct you.</i></span><span class="dur">45 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=Fireship*NestJS*in*100*seconds__;KysrKw!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5LaOt1zP$" target="_blank" rel="noopener"><span>Fireship &mdash; NestJS in 100 Seconds<i>Orientation. Decide whether the structure is worth it for your team size before you invest.</i></span><span class="dur">2 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://docs.nestjs.com/fundamentals/testing__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5PbLLAih$" target="_blank" rel="noopener"><span>NestJS &mdash; testing<i><code>Test.createTestingModule</code> and provider overriding. This is the payoff for the whole DI container.</i></span><span class="dur">docs</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="compare">FastAPI vs Express vs NestJS</h2>
+<p class="sub">The same endpoint &mdash; create an access request &mdash; written twice, then the
+dimension-by-dimension breakdown.</p>
+
+<div class="vs">
+  <div>
+    <div class="vh">FastAPI</div>
+    <div class="code" data-lang="python"><header><b>core/app/api/routers/access_requests.py</b></header><pre><code>@router.post(
+    "",
+    response_model=AccessRequestOut,
+    status_code=201,
+)
+async def create_access_request(
+    body: AccessRequestCreate,   # validated
+    db: DbSession,               # injected
+    user: CurrentUser,           # injected
+) -&gt; AccessRequestOut:
+    return await svc.create(
+        db, body, employee_id=user.employee_id
+    )
+
+# Validation, injection, serialisation, the
+# OpenAPI schema and the /docs page all come
+# from the annotations. There is no second
+# place where the contract is written down.
+</code></pre></div>
+    <div class="vb"><p><b>Lines to first endpoint:</b> about 20, in one file. <b>Structure imposed:</b> none &mdash;
+    the layout above is a convention you chose, and nothing stops the next engineer ignoring it.</p></div>
+  </div>
+  <div>
+    <div class="vh">NestJS</div>
+    <div class="code" data-lang="typescript"><header><b>gateway/src/access-requests/*.ts</b></header><pre><code>// dto/create-access-request.dto.ts
+export class CreateAccessRequestDto {
+  @Matches(/^[A-Z]{3}-\d{2}$/) siteId!: string;
+  @IsDateString() startsOn!: string;
+  @IsDateString() endsOn!: string;
+  @Length(10, 500) reason!: string;
+}
+
+// access-requests.controller.ts
+@Controller('access-requests')
+@UseGuards(JwtAuthGuard)
+export class AccessRequestsController {
+  constructor(
+    private readonly service: AccessRequestsService,
+  ) {}
+
+  @Post()
+  create(@Body() dto: CreateAccessRequestDto,
+         @CurrentUser() user: AuthUser) {
+    return this.service.create(dto, user);
+  }
+}
+</code></pre></div>
+    <div class="vb"><p><b>Lines to first endpoint:</b> about 60, across four files plus a module. <b>Structure
+    imposed:</b> total &mdash; and that is the product, not a side effect.</p></div>
+  </div>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Dimension</th><th>FastAPI</th><th>Express</th><th>NestJS</th></tr></thead>
+<tbody>
+<tr><td>Language</td><td>Python 3.11+, type hints load-bearing</td><td>JavaScript or TypeScript, types optional</td><td>TypeScript, decorators required</td></tr>
+<tr><td>Structure imposed</td><td>None. You choose the layout.</td><td>None at all. Every codebase differs.</td><td>Strong. Modules, controllers, providers, one way.</td></tr>
+<tr><td>Dependency injection</td><td>Built in, function-based, per request, trivially overridable</td><td>None. You pass arguments or import modules.</td><td>A real container with scopes, tokens and lifecycle hooks</td></tr>
+<tr><td>Validation</td><td>Pydantic, from the annotations, automatic</td><td>Bring your own &mdash; Zod, Joi, express-validator</td><td>class-validator via the global <code>ValidationPipe</code></td></tr>
+<tr><td>Docs generation</td><td>OpenAPI + Swagger UI free, always accurate</td><td>Nothing. Write and maintain the spec by hand.</td><td><code>@nestjs/swagger</code>, mostly automatic, some decorators</td></tr>
+<tr><td>Concurrency model</td><td>Event loop per worker; N worker processes</td><td>One event loop; N children via cluster</td><td>Identical to Express &mdash; it is Express underneath</td></tr>
+<tr><td>Ecosystem</td><td>Python: data, ML, Pandas, the AI stack on Sheet 12</td><td>npm: the largest package registry there is</td><td>npm, plus first-party modules for GraphQL, queues, microservices</td></tr>
+<tr><td>Cold start / boot</td><td>~0.4&nbsp;s. Slower with heavy imports.</td><td>~0.05&nbsp;s. The fastest of the three.</td><td>~1&nbsp;s. It builds the whole DI graph at boot.</td></tr>
+<tr><td>Team size it suits</td><td>1&ndash;10. Needs discipline past that.</td><td>1&ndash;3, or a service small enough to hold in your head</td><td>5&ndash;50. The structure pays for itself with people.</td></tr>
+<tr><td>Pick it when</td><td>Python is already in the stack, or the service touches data/ML</td><td>The service is one job: a webhook receiver, a proxy, a sidecar</td><td>A long-lived TypeScript service several people will own</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><b>Which to pick:</b> use FastAPI when the work belongs near Python's data and AI ecosystem or the API
+contract must be generated rather than maintained; use Express when the whole service fits on one screen and
+structure would be overhead; use NestJS when more than a handful of engineers will share a TypeScript
+codebase for more than a year &mdash; and note that BadgeDesk uses all three for exactly those three
+reasons.</p>
+
+<!-- ===================================================================== -->
+<h2 id="auth">Authentication and authorisation</h2>
+<p class="sub">Two words, two questions, two different failure modes. <b>Authentication is who you are.
+Authorisation is what you may do.</b> A 401 means we do not know you; a 403 means we know you and the answer
+is still no.</p>
+
+<h3 id="auth-flow">The token flow, with real expiry times</h3>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 600" role="img" aria-label="A sequence diagram of the BadgeDesk login flow: the browser posts credentials to the gateway, which asks the core to authenticate, the core verifies an argon2 hash in eighty milliseconds, the gateway stores the refresh token identifier in Redis and returns a fifteen-minute access token plus a fourteen-day httpOnly refresh cookie, then a protected request verifies the signature locally, expires, and is renewed through the refresh endpoint.">
+  <defs>
+    <marker id="s04-ac7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s04-ab7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s04-ar7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <rect class="box" x="30" y="30" width="180" height="44" rx="3"/>
+  <text class="t mid" x="120" y="58">Browser</text>
+  <rect class="box-c" x="330" y="30" width="200" height="44" rx="3"/>
+  <text class="t mid" x="430" y="58">gateway :4000</text>
+  <rect class="box-c" x="660" y="30" width="200" height="44" rx="3"/>
+  <text class="t mid" x="760" y="58">core :8000</text>
+  <rect class="box" x="960" y="30" width="200" height="44" rx="3"/>
+  <text class="t mid" x="1060" y="58">Redis</text>
+
+  <line class="ln dash" x1="120" y1="74" x2="120" y2="560"/>
+  <line class="ln dash" x1="430" y1="74" x2="430" y2="560"/>
+  <line class="ln dash" x1="760" y1="74" x2="760" y2="560"/>
+  <line class="ln dash" x1="1060" y1="74" x2="1060" y2="560"/>
+
+  <path class="flow" d="M124,110 H424" marker-end="url(#s04-ac7)"/>
+  <text class="mm c" x="140" y="104">POST /auth/login &nbsp; { email, password } &nbsp;&middot;&nbsp; TLS ONLY, NEVER IN A QUERY STRING</text>
+
+  <path class="flow" d="M434,148 H754" marker-end="url(#s04-ac7)"/>
+  <text class="mm c" x="446" y="142">POST /internal/authenticate</text>
+
+  <path class="flow" d="M766,172 H830 V202 H768" marker-end="url(#s04-ac7)"/>
+  <text class="mm" x="840" y="192">argon2.verify(hash, password) &middot; 80 MS &middot; DELIBERATELY SLOW</text>
+
+  <path class="flow" d="M756,236 H436" marker-end="url(#s04-ac7)"/>
+  <text class="mm c" x="446" y="230">200 &nbsp; { employee_id: &ldquo;e-902&rdquo;, roles: [&ldquo;employee&rdquo;, &ldquo;manager&rdquo;] }</text>
+
+  <path class="flow-b" d="M434,274 H1054" marker-end="url(#s04-ab7)"/>
+  <text class="mm b" x="446" y="268">SET refresh:&lt;jti&gt; e-902 EX 1209600 &nbsp;&middot;&nbsp; SO IT CAN BE REVOKED</text>
+
+  <path class="flow" d="M424,312 H124" marker-end="url(#s04-ac7)"/>
+  <text class="mm c" x="140" y="290">200 &nbsp; access token in the BODY &middot; 15 MIN</text>
+  <text class="mm c" x="140" y="306">Set-Cookie: refresh=&hellip; HttpOnly; Secure; SameSite=Strict; Path=/auth/refresh; Max-Age=1209600</text>
+
+  <path class="flow" d="M124,364 H424" marker-end="url(#s04-ac7)"/>
+  <text class="mm c" x="140" y="358">GET /access-requests &nbsp; Authorization: Bearer eyJhbGciOiJSUzI1NiJ9&hellip;</text>
+
+  <path class="flow" d="M436,388 H500 V418 H438" marker-end="url(#s04-ac7)"/>
+  <text class="mm" x="512" y="408">verify signature with the cached public key &middot; 0.2 MS &middot; NO NETWORK CALL &mdash; THAT IS THE POINT OF JWT</text>
+
+  <path class="flow-r" d="M424,456 H124" marker-end="url(#s04-ar7)"/>
+  <text class="mm r" x="140" y="450">401 { code: &ldquo;token_expired&rdquo; } &nbsp;&mdash;&nbsp; 15 MINUTES LATER</text>
+
+  <path class="flow" d="M124,494 H424" marker-end="url(#s04-ac7)"/>
+  <text class="mm c" x="140" y="488">POST /auth/refresh &nbsp;&mdash;&nbsp; THE COOKIE IS SENT BY THE BROWSER, THE JS NEVER TOUCHES IT</text>
+
+  <path class="flow-b" d="M434,532 H1054" marker-end="url(#s04-ab7)"/>
+  <text class="mm b" x="446" y="526">GET refresh:&lt;jti&gt; &mdash; PRESENT? THEN ROTATE: DELETE THE OLD jti, ISSUE A NEW PAIR</text>
+
+  <text class="mm" x="30" y="580">SHORT ACCESS TOKEN = SMALL BLAST RADIUS IF STOLEN. LONG REFRESH TOKEN = THE USER IS NOT LOGGED OUT EVERY 15 MINUTES. THE SPLIT IS THE WHOLE DESIGN.</text>
+</svg>
+<figcaption>Drawing 04-G &mdash; login, access, expiry, refresh. <b>Cyan</b> = the user is waiting.
+<b>Brass</b> = server-side state that makes revocation possible. <b>Red</b> = the expiry that is supposed to
+happen.</figcaption>
+</figure>
+
+<h3 id="auth-jwt">What is actually inside a JWT</h3>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 340" role="img" aria-label="A JWT drawn as three base64url segments separated by dots: header with algorithm and key id, payload with subject roles issued-at expiry issuer audience and jti, and signature computed over the first two segments, with a red warning that base64 is not encryption.">
+  <text class="mm" x="30" y="30">ONE STRING, THREE BASE64URL SEGMENTS, TWO DOTS</text>
+
+  <rect class="box-c" x="30" y="42" width="280" height="40" rx="3"/>
+  <text class="m mid" x="170" y="67">eyJhbGciOiJSUzI1NiIsImtpZCI6&hellip;</text>
+  <text class="t c" x="316" y="70">.</text>
+  <rect class="box-a" x="330" y="42" width="520" height="40" rx="3"/>
+  <text class="m mid" x="590" y="67">eyJzdWIiOiJlLTkwMiIsInJvbGVzIjpbIm1hbmFnZXIiXSwiZXhwIjoxNzg&hellip;</text>
+  <text class="t b" x="856" y="70">.</text>
+  <rect class="box" x="870" y="42" width="300" height="40" rx="3"/>
+  <text class="m mid" x="1020" y="67">Yk3nQ2p&hellip;_signature_&hellip;7fA</text>
+
+  <rect class="box-c" x="30" y="110" width="280" height="150" rx="3"/>
+  <text class="t c" x="46" y="134">1 &middot; Header</text>
+  <text class="m" x="46" y="158">{ &quot;alg&quot;: &quot;RS256&quot;,</text>
+  <text class="m" x="46" y="178">&nbsp;&nbsp;&quot;typ&quot;: &quot;JWT&quot;,</text>
+  <text class="m" x="46" y="198">&nbsp;&nbsp;&quot;kid&quot;: &quot;2026-08-key&quot; }</text>
+  <text class="mm" x="46" y="226">kid TELLS THE VERIFIER WHICH</text>
+  <text class="mm" x="46" y="242">PUBLIC KEY TO USE &mdash; IT IS HOW</text>
+  <text class="mm" x="46" y="258">YOU ROTATE KEYS WITHOUT DOWNTIME</text>
+
+  <rect class="box-a" x="330" y="110" width="520" height="150" rx="3"/>
+  <text class="t b" x="346" y="134">2 &middot; Payload &mdash; the claims. READABLE BY ANYONE.</text>
+  <text class="m" x="346" y="158">{ &quot;sub&quot;: &quot;e-902&quot;,          // who</text>
+  <text class="m" x="346" y="178">&nbsp;&nbsp;&quot;roles&quot;: [&quot;manager&quot;],    // what they may do &mdash; small, stable facts only</text>
+  <text class="m" x="346" y="198">&nbsp;&nbsp;&quot;iss&quot;: &quot;badgedesk-gateway&quot;, &quot;aud&quot;: &quot;badgedesk-core&quot;,</text>
+  <text class="m" x="346" y="218">&nbsp;&nbsp;&quot;iat&quot;: 1788259200, &quot;exp&quot;: 1788260100,   // 15 minutes apart</text>
+  <text class="m" x="346" y="238">&nbsp;&nbsp;&quot;jti&quot;: &quot;9c1f&hellip;&quot; }        // the id you revoke</text>
+  <text class="mm r" x="346" y="256">NEVER: PASSWORDS, BADGE PHOTOS, HOME ADDRESSES, A LIST OF 400 PERMISSIONS</text>
+
+  <rect class="box" x="870" y="110" width="300" height="150" rx="3"/>
+  <text class="t" x="886" y="134">3 &middot; Signature</text>
+  <text class="m" x="886" y="158">RSA-SHA256(</text>
+  <text class="m" x="886" y="178">&nbsp;&nbsp;b64(header) + &quot;.&quot; + b64(payload),</text>
+  <text class="m" x="886" y="198">&nbsp;&nbsp;privateKey )</text>
+  <text class="mm" x="886" y="226">PROVES THE FIRST TWO SEGMENTS</text>
+  <text class="mm" x="886" y="242">WERE NOT EDITED. PROVES NOTHING</text>
+  <text class="mm" x="886" y="258">ABOUT SECRECY.</text>
+
+  <rect class="box-r" x="30" y="284" width="1140" height="42" rx="3"/>
+  <text class="t r" x="48" y="311">BASE64 IS NOT ENCRYPTION &mdash; paste any token into jwt.io and read it. Assume the user, and anyone who steals it, can see every claim.</text>
+</svg>
+<figcaption>Drawing 04-H &mdash; JWT anatomy. <b>Cyan</b> = routing metadata. <b>Brass</b> = the claims your
+authorisation depends on. <b>Red</b> = the misunderstanding that causes real breaches.</figcaption>
+</figure>
+
+<h3 id="auth-storage">Where to keep the token</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Concern</th><th><code>localStorage</code></th><th>httpOnly cookie</th></tr></thead>
+<tbody>
+<tr><td>Readable by JavaScript</td><td>Yes &mdash; so any XSS exfiltrates it instantly</td><td>No. Even your own code cannot read it.</td></tr>
+<tr><td>Sent automatically</td><td>No. You attach the header yourself.</td><td>Yes &mdash; which is exactly what enables CSRF</td></tr>
+<tr><td>CSRF exposure</td><td>None, by construction</td><td>Real. Needs <code>SameSite=Strict|Lax</code> and, for cross-site flows, a CSRF token.</td></tr>
+<tr><td>Works cross-origin</td><td>Trivially</td><td>Needs <code>SameSite=None; Secure</code> and correct CORS credentials</td></tr>
+<tr><td>Survives a tab close</td><td>Yes, until cleared</td><td>Yes, until <code>Max-Age</code></td></tr>
+<tr><td>Mobile / server-to-server</td><td>Natural fit</td><td>Awkward &mdash; cookies are a browser concept</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>BadgeDesk uses both, deliberately: the <b>short-lived access token lives in memory</b> in the JavaScript
+heap (not <code>localStorage</code>, so a page refresh drops it), and the <b>long-lived refresh token is an
+httpOnly, Secure, SameSite=Strict cookie scoped to <code>/auth/refresh</code></b>. XSS cannot read the
+refresh token; CSRF cannot use it anywhere except the one endpoint, which rotates it. Neither attack gets a
+usable credential on its own.</p>
+
+<h3 id="auth-passwords">Password hashing</h3>
+<div class="code" data-lang="python">
+<header><b>app/core/security.py</b></header>
+<pre><code>from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError, VerificationError
+
+# Deliberately slow and memory-hard. ~80 ms and 64 MB per verify makes an
+# offline GPU attack on a stolen dump economically painful. Tune with
+# `argon2-cli benchmark` on the target hardware, not by guessing.
+ph = PasswordHasher(time_cost=3, memory_cost=65536, parallelism=4)
+
+def hash_password(plain: str) -&gt; str:
+    # The salt is generated per password and stored INSIDE the returned string:
+    # $argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHQ$hash...
+    return ph.hash(plain)
+
+def verify_password(stored_hash: str, plain: str) -&gt; bool:
+    try:
+        ok = ph.verify(stored_hash, plain)
+    except (VerifyMismatchError, VerificationError):
+        return False
+    if ph.check_needs_rehash(stored_hash):
+        # Parameters were raised since this user last logged in. Upgrade silently.
+        save_new_hash(ph.hash(plain))
+    return ok
+
+# Never: md5, sha1, sha256, or "sha256 with a salt". Fast hashes are the wrong
+# tool - a modern GPU does billions of sha256 per second. bcrypt is acceptable
+# (cost &gt;= 12); argon2id is the current default recommendation.
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the <code>alg: none</code> attack</span>
+  <p>The JWT header declares its own algorithm, and some libraries used to trust it. An attacker edits the
+  payload to <code>{"sub":"e-001","roles":["admin"]}</code>, sets the header to
+  <code>{"alg":"none"}</code>, drops the signature and sends it. A verifier that reads
+  <code>alg</code> from the token and dispatches on it says &ldquo;no algorithm, nothing to check&rdquo; and
+  lets it through. The variant that still catches people: a service verifying an
+  <code>RS256</code> token where the attacker re-signs with <code>HS256</code> using the
+  <i>public</i> key as the HMAC secret &mdash; which is public. <b>Always pass an explicit allow-list</b>
+  (<code>algorithms=["RS256"]</code> in PyJWT, <code>algorithms: ['RS256']</code> in
+  <code>@nestjs/jwt</code>) and always verify <code>iss</code>, <code>aud</code> and <code>exp</code> as
+  well. A token that is valid but was minted for a different audience is not valid for you.</p>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p>&ldquo;JWT or server-side sessions?&rdquo; Sessions are a random id in a cookie plus state in Redis:
+  revocation is a <code>DEL</code>, but every request needs a lookup. JWTs are self-contained: verification
+  is local and free, which is what lets the gateway and the core both check a token without a shared
+  database &mdash; but you cannot un-issue one, so a fired employee stays authorised until <code>exp</code>.
+  The real answer is the hybrid in Drawing 04-G: short access tokens so the window is 15 minutes, plus a
+  server-side record of refresh tokens so logout and revocation actually work.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; auth</div>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=Fireship*JWT*session*authentication*explained__;KysrKw!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Lag8WHi$" target="_blank" rel="noopener"><span>Fireship &mdash; JWT vs sessions<i>The three-minute orientation. Watch first, then read the OWASP page below.</i></span><span class="dur">5 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5MzjUO1v$" target="_blank" rel="noopener"><span>OWASP &mdash; JWT cheat sheet<i>The definitive list of what goes wrong, including <code>alg</code> confusion. Language-neutral despite the title.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5FFOWebJ$" target="_blank" rel="noopener"><span>OWASP &mdash; password storage cheat sheet<i>Current argon2id and bcrypt parameters. Re-read it every year; the numbers move.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@hnasr__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5BLEvZzq$" target="_blank" rel="noopener"><span>Hussein Nasser &mdash; authentication and cookies<i>Deep, protocol-level treatment of cookies, SameSite, and why token storage is a trade-off, not a best practice.</i></span><span class="dur">deep</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5MOU7daf$" target="_blank" rel="noopener"><span>FastAPI &mdash; OAuth2 with JWT<i>Official walk-through that matches the dependency structure used on this sheet.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=refresh*token*rotation*reuse*detection*explained__;KysrKys!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5EUtZZDR$" target="_blank" rel="noopener"><span>Refresh token rotation and reuse detection<i>The &ldquo;when it breaks&rdquo; resource: what to do when a refresh token is replayed.</i></span><span class="dur">20 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="production">Cross-cutting production concerns</h2>
+<p class="sub">The seven things every one of the three services needs, none of which any tutorial builds.
+This is most of the difference between a demo and a service.</p>
+
+<h3 id="prod-health">Health and readiness are not the same endpoint</h3>
+<p>The distinction matters because the two answers cause opposite actions. <b>Liveness</b> answers &ldquo;is
+this process wedged and in need of a restart?&rdquo; &mdash; a failure kills the pod. <b>Readiness</b>
+answers &ldquo;should this instance receive traffic right now?&rdquo; &mdash; a failure removes it from the
+load balancer and leaves it running. Wire the database check into liveness and a thirty-second database
+blip restarts every pod you own simultaneously, turning a small outage into a total one.</p>
+
+<div class="code" data-lang="python">
+<header><b>app/api/routers/health.py</b></header>
+<pre><code>import asyncio, time
+from fastapi import APIRouter, Response, status
+from sqlalchemy import text
+
+from app.api.deps import DbSession, RedisDep
+
+router = APIRouter(tags=["ops"])
+BOOTED_AT = time.time()
+
+@router.get("/healthz", include_in_schema=False)
+async def liveness() -&gt; dict:
+    """Checks nothing external. If the event loop can answer, the process is alive.
+    A dependency check here means a database blip restarts every pod at once."""
+    return {"status": "ok", "uptime_s": round(time.time() - BOOTED_AT)}
+
+@router.get("/readyz", include_in_schema=False)
+async def readiness(db: DbSession, redis: RedisDep, response: Response) -&gt; dict:
+    checks: dict[str, str] = {}
+
+    async def probe(name: str, coro, timeout: float) -&gt; None:
+        started = time.perf_counter()
+        try:
+            # A readiness probe without a timeout is how one slow dependency
+            # hangs the probe, which the platform then reads as "not ready".
+            await asyncio.wait_for(coro, timeout=timeout)
+            checks[name] = f"ok in {(time.perf_counter() - started) * 1000:.0f}ms"
+        except asyncio.TimeoutError:
+            checks[name] = f"timeout after {timeout}s"
+        except Exception as exc:
+            checks[name] = f"error: {type(exc).__name__}"
+
+    # SELECT 1 proves the pool can hand out a connection AND the server answers.
+    # `SELECT 1` is not a real query - it is deliberately the cheapest possible one.
+    await probe("postgres", db.execute(text("SELECT 1")), timeout=1.0)
+    await probe("redis", redis.ping(), timeout=0.5)
+
+    healthy = all(v.startswith("ok") for v in checks.values())
+    response.status_code = (status.HTTP_200_OK if healthy
+                            else status.HTTP_503_SERVICE_UNAVAILABLE)
+    return {"ready": healthy, "checks": checks, "version": "1.4.0"}
+
+# {"ready": false,
+#  "checks": {"postgres": "ok in 3ms", "redis": "timeout after 0.5s"},
+#  "version": "1.4.0"}    -&gt; HTTP 503, pod stays up, traffic goes elsewhere
+</code></pre>
+</div>
+
+<h3 id="prod-timeouts">A timeout on every outbound call</h3>
+<div class="code" data-lang="python">
+<header><b>app/clients/vendor.py &mdash; four timeouts, not one</b></header>
+<pre><code>import httpx
+
+# The single most valuable line of configuration in a distributed system.
+# Without it, httpx waits FOREVER by default and one hung vendor socket
+# holds a request, a worker slot and a database connection, indefinitely.
+timeout = httpx.Timeout(
+    connect=1.0,    # TCP + TLS. If it takes a second, the host is gone.
+    read=2.0,       # waiting for bytes after the request was sent
+    write=1.0,      # sending the body
+    pool=0.5,       # waiting for a free connection from OUR client pool
+)
+
+vendor = httpx.AsyncClient(
+    base_url=settings.vendor_base_url,
+    timeout=timeout,
+    limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
+    headers={"user-agent": "badgedesk-core/1.4.0"},
+)
+
+# The rule to state out loud: your timeout must be SHORTER than your caller's
+# timeout, all the way up the chain. Browser 30 s &gt; gateway 10 s &gt; core 5 s &gt;
+# vendor 2 s. Invert it anywhere and the client gives up while you are still
+# holding every resource for a call whose answer nobody will read.
+</code></pre>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">In production</span>
+  <p>Retries without a budget are how a small failure becomes an outage. Three services in a chain each
+  retrying three times is <b>27 calls</b> to the thing that is already struggling. Retry only idempotent
+  operations, only on 5xx and connection errors (never on 4xx &mdash; the answer will not change), cap total
+  attempts across the chain, use exponential backoff <i>with jitter</i>, and put a circuit breaker in front
+  of anything known to be flaky. The badge vendor is known to be flaky; that is why it is behind Kafka on
+  <a href="messaging.html">Sheet 11</a> and not on the request path at all.</p>
+</div>
+
+<h3 id="prod-pool">Connection pool sizing</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead>
+<tbody>
+<tr><td>Latency climbs under load, database CPU is idle</td><td>Requests queueing at <code>pool_timeout</code></td><td>Raise <code>pool_size</code>, or reduce time held per request</td></tr>
+<tr><td><code>FATAL: sorry, too many clients already</code></td><td>replicas &times; workers &times; pool &gt; <code>max_connections</code></td><td>Do the multiplication; add PgBouncer in transaction mode</td></tr>
+<tr><td>Errors immediately after a failover</td><td>Pooled connections point at the dead primary</td><td><code>pool_pre_ping=True</code></td></tr>
+<tr><td>Connections die after exactly 5 minutes idle</td><td>A proxy or NAT gateway culling idle TCP</td><td><code>pool_recycle</code> below that idle limit</td></tr>
+<tr><td>One slow endpoint starves everything else</td><td>Shared pool, long transactions</td><td>Shorten the transaction; never hold a session across an HTTP call</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>The formula worth memorising: <code>total_db_connections = replicas &times; workers_per_replica &times;
+(pool_size + max_overflow)</code>. For BadgeDesk in production that is
+3&nbsp;&times;&nbsp;4&nbsp;&times;&nbsp;15&nbsp;=&nbsp;180 &mdash; against an RDS
+<code>db.t3.medium</code> whose default <code>max_connections</code> is about 340, shared with the worker,
+the reconciler and whatever a colleague has open in psql. Comfortable, but not by as much as it looks.</p>
+
+<h3 id="prod-shutdown">Configuration, secrets and shutdown</h3>
+<div class="chips">
+  <span class="chip on">config from the environment</span>
+  <span class="chip on">secrets from a secret manager, never the image</span>
+  <span class="chip cy">validate at boot, crash if wrong</span>
+  <span class="chip cy">one JSON log line per request</span>
+  <span class="chip cy">correlation id propagated on every hop</span>
+  <span class="chip">fail readiness first, then drain</span>
+  <span class="chip">grace period longer than the drain</span>
+</div>
+
+<div class="code" data-lang="bash">
+<header><b>the shutdown sequence, in order, for all three services</b></header>
+<pre><code># 1. Kubernetes sends SIGTERM and removes the pod from the Service endpoints.
+#    These two happen concurrently, NOT in order. That race is the whole problem.
+# 2. Your process flips readiness to false and keeps serving for ~5 s while
+#    every load balancer in the path notices.
+# 3. Stop accepting new connections. Let in-flight requests finish.
+# 4. Close the database pool, the Redis client, the Kafka producer (flush!).
+# 5. exit(0) - or exit(1) at a hard deadline shorter than the grace period.
+
+# uvicorn and gunicorn already do steps 3-4 on SIGTERM. What they cannot do is
+# step 2, because only your app knows what "ready" means. That is why the
+# readiness endpoint above reads a flag you control.
+
+kubectl get pod core-7d9 -o jsonpath='{.spec.terminationGracePeriodSeconds}'   # 30
+# Your hard deadline must be BELOW this number or the kernel kills you mid-write.</code></pre>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; running it for real</div>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@TechWorldwithNana__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5CyCI6xD$" target="_blank" rel="noopener"><span>TechWorld with Nana &mdash; probes, config and secrets<i>The clearest explanation of liveness vs readiness and why the distinction is not academic.</i></span><span class="dur">25 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://12factor.net/config__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5OCnwM_Q$" target="_blank" rel="noopener"><span>The Twelve-Factor App &mdash; config<i>Twenty-year-old advice that is still exactly right. Read factors III, VI, IX and XI.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=exponential*backoff*jitter*retry*storm*explained__;KysrKys!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5MVMtg0q$" target="_blank" rel="noopener"><span>Backoff, jitter and retry storms<i>Why naive retries amplify an outage. Watch before you add your first retry loop.</i></span><span class="dur">15 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@AntonPutra__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5KbA-kUS$" target="_blank" rel="noopener"><span>Anton Putra &mdash; load testing and tuning<i>Actually measures worker counts, pool sizes and latency instead of asserting numbers.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://docs.sqlalchemy.org/en/20/core/pooling.html__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5BP0J2fp$" target="_blank" rel="noopener"><span>SQLAlchemy &mdash; connection pooling<i>Official reference for <code>pool_pre_ping</code>, <code>pool_recycle</code> and overflow behaviour.</i></span><span class="dur">docs</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="connect">How the subtopics connect</h2>
+<p class="sub">Three services, three ports, one flow. By the end of Week 06 all of this runs on your laptop
+with <code>docker compose up</code> and the Week 04 frontend talks to it.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 500" role="img" aria-label="The Week 05 to 06 deliverable: the browser calls the Next.js web app on port 3000, which calls the NestJS gateway on port 4000, which calls the FastAPI core on port 8000, which reads and writes PostgreSQL on 5432 and Redis on 6379; the core calls the Express notifier on port 5000 to send a Teams message, and the badge vendor posts a signed webhook back to the notifier, which patches the core.">
+  <defs>
+    <marker id="s04-ac9" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s04-ab9" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+  </defs>
+
+  <rect class="box" x="30" y="60" width="150" height="58" rx="3"/>
+  <text class="t mid" x="105" y="85">Browser</text><text class="mm mid" x="105" y="101">SHEET 03</text>
+
+  <rect class="box-c" x="220" y="60" width="180" height="58" rx="3"/>
+  <text class="t mid" x="310" y="85">web :3000</text><text class="mm mid" x="310" y="101">NEXT.JS</text>
+
+  <rect class="box-a" x="440" y="60" width="200" height="58" rx="3"/>
+  <text class="t b mid" x="540" y="85">gateway :4000</text><text class="mm mid" x="540" y="101">NESTJS &middot; AUTH EDGE</text>
+
+  <rect class="box-a" x="680" y="60" width="200" height="58" rx="3"/>
+  <text class="t b mid" x="780" y="85">core :8000</text><text class="mm mid" x="780" y="101">FASTAPI &middot; SOURCE OF TRUTH</text>
+
+  <rect class="box" x="940" y="60" width="230" height="58" rx="3"/>
+  <text class="t mid" x="1055" y="85">JWKS / Entra ID</text><text class="mm mid" x="1055" y="101">PUBLIC KEY, CACHED 1 H</text>
+
+  <path class="flow" d="M184,89 H214" marker-end="url(#s04-ac9)"/>
+  <path class="flow" d="M404,89 H434" marker-end="url(#s04-ac9)"/>
+  <path class="flow" d="M644,89 H674" marker-end="url(#s04-ac9)"/>
+  <path class="flow dash" d="M884,89 H934" marker-end="url(#s04-ac9)"/>
+  <text class="mm c" x="220" y="46">POST /api/access-requests</text>
+  <text class="mm c" x="440" y="46">POST /v1/access-requests + Bearer</text>
+
+  <rect class="box" x="680" y="180" width="200" height="58" rx="3"/>
+  <text class="t mid" x="780" y="205">PostgreSQL :5432</text><text class="mm mid" x="780" y="221">access_requests, approvals</text>
+
+  <rect class="box" x="940" y="180" width="230" height="58" rx="3"/>
+  <text class="t mid" x="1055" y="205">Redis :6379</text><text class="mm mid" x="1055" y="221">SITE POLICY CACHE &middot; refresh:jti</text>
+
+  <path class="flow" d="M780,118 V174" marker-end="url(#s04-ac9)"/>
+  <path class="flow" d="M880,140 H1055 V174" marker-end="url(#s04-ac9)"/>
+
+  <rect class="box-a" x="440" y="300" width="200" height="58" rx="3"/>
+  <text class="t b mid" x="540" y="325">notifier :5000</text><text class="mm mid" x="540" y="341">EXPRESS</text>
+
+  <rect class="box" x="940" y="300" width="230" height="58" rx="3"/>
+  <text class="t mid" x="1055" y="325">Teams / SMTP</text><text class="mm mid" x="1055" y="341">OUTBOUND, 2 S TIMEOUT</text>
+
+  <rect class="box" x="30" y="300" width="200" height="58" rx="3"/>
+  <text class="t mid" x="130" y="325">Badge vendor</text><text class="mm mid" x="130" y="341">SLOW &middot; FLAKY &middot; RETRIES</text>
+
+  <path class="flow-b" d="M700,124 V270 H548 V294" marker-end="url(#s04-ab9)"/>
+  <text class="mm b" x="560" y="266">POST /internal/notify &nbsp;&middot;&nbsp; FIRE AND FORGET</text>
+
+  <path class="flow" d="M644,329 H934" marker-end="url(#s04-ac9)"/>
+  <text class="mm c" x="680" y="322">adaptive card</text>
+
+  <path class="flow-b" d="M234,329 H434" marker-end="url(#s04-ab9)"/>
+  <text class="mm b" x="248" y="322">POST /webhooks/vendor &nbsp; X-Vendor-Signature: HMAC-SHA256</text>
+
+  <path class="flow-b" d="M600,294 V420 H820 V420 H820 V124" marker-end="url(#s04-ab9)"/>
+  <text class="mm b" x="620" y="414">POST /v1/access-requests/req-1/provisioned &nbsp;&middot;&nbsp; IDEMPOTENCY-KEY: event_id</text>
+
+  <rect class="zone" x="30" y="440" width="1140" height="48" rx="4"/>
+  <text class="mm b" x="46" y="462">SHIPS BY SUNDAY OF WEEK 06 &mdash; docker compose up BRINGS ALL FIVE CONTAINERS UP; THE WEEK 04 UI CREATES A REQUEST, A MANAGER APPROVES IT,</text>
+  <text class="mm b" x="46" y="478">A SIGNED WEBHOOK MARKS IT PROVISIONED, AND EVERY LOG LINE IN ALL THREE SERVICES CARRIES THE SAME x-request-id. THAT LAST CLAUSE IS THE HARD PART.</text>
+</svg>
+<figcaption>Drawing 04-I &mdash; the Week 05&ndash;06 deliverable. <b>Cyan</b> = a user is waiting.
+<b>Brass</b> = server-to-server, nobody is watching.</figcaption>
+</figure>
+
+<div class="grid g3">
+  <div class="card"><span class="cm">Ships &middot; 01</span><b class="ct"><code>core</code> on :8000</b>
+    <p>Three endpoints, Pydantic in and out, the four-node dependency tree, JSON logs with a request id,
+    <code>/healthz</code> and <code>/readyz</code>, and a test suite that runs with no database container by
+    overriding two dependencies.</p></div>
+  <div class="card"><span class="cm">Ships &middot; 02</span><b class="ct"><code>notifier</code> on :5000</b>
+    <p>Signed inbound webhook with a constant-time comparison, 202 within 50&nbsp;ms, an outbound call with a
+    timeout and jittered backoff, an async error wrapper on every handler, and a graceful shutdown that
+    survives a rolling deploy.</p></div>
+  <div class="card"><span class="cm">Ships &middot; 03</span><b class="ct"><code>gateway</code> on :4000</b>
+    <p>A controller, a DTO validated by the global pipe, a JWT guard plus a roles guard, an interceptor
+    logging duration, one exception filter producing the same error envelope as the other two services, and
+    unit tests that mock the core client through the container.</p></div>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why this is the right week to stop</span>
+  <p>Everything above runs against a schema you have not designed properly yet, behind an API whose status
+  codes and versioning you have not thought about yet, on a laptop rather than a cluster. That is
+  deliberate. <a href="apis.html">Sheet 05</a> takes the endpoints and makes them a designed API;
+  <a href="databases.html">Sheet 06</a> takes the 140&nbsp;ms query from Drawing 04-A and makes it 4;
+  <a href="devops.html">Sheet 09</a> puts all three services in containers with the probes wired up. Build
+  it working first, then build it right.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="drill">Drill book</h2>
+<p class="sub">Answer out loud, standing up, no notes. Any answer that takes more than 90 seconds is not
+ready yet.</p>
+
+<div class="drill">
+  <div class="dh">Drill &mdash; the request path</div>
+  <details><summary>Walk me through everything that happens between the TCP socket and your handler function.</summary>
+    <div class="ans"><p>The kernel completes the handshake and <code>accept()</code> hands the server a file
+    descriptor. The ASGI or HTTP server reads bytes, parses the request line, headers and body into a
+    structure, and hands it to the application. Middleware runs in registration order &mdash; CORS, request
+    id, timing. The router matches method and path to a function, extracting path parameters. Dependencies
+    resolve in order: settings, a database session, the decoded user, the role check. Parameters are
+    coerced and validated; a failure short-circuits to 422 without calling the handler. Only then does your
+    code run. On the way out the return value is serialised through the response model, middleware unwinds
+    in reverse, and the bytes go back on the same socket. <b>Follow-up:</b> &ldquo;where would you add a
+    timeout?&rdquo; &mdash; on every outbound call inside the handler, and at the server for the request as
+    a whole.</p></div></details>
+  <details><summary>In FastAPI, when should a handler be <code>async def</code> and when plain <code>def</code>?</summary>
+    <div class="ans"><p><code>async def</code> when everything inside it is awaitable &mdash;
+    <code>httpx</code>, <code>asyncpg</code>, an async SQLAlchemy session. Plain <code>def</code> when the
+    work is blocking and there is no async version, because FastAPI runs plain functions in a thread pool
+    where blocking is harmless. The failure case is the mix: a blocking call inside an
+    <code>async def</code> parks the entire event loop, so every other request being served by that worker
+    stalls too. The symptom is p99 latency collapsing while CPU sits near idle.</p></div></details>
+  <details><summary>How does dependency injection make a service testable? Be specific.</summary>
+    <div class="ans"><p>Because the handler never constructs its collaborators, it only declares them. The
+    framework owns the graph, so a test can replace any node. In FastAPI,
+    <code>app.dependency_overrides[get_db_session]</code> swaps in a session bound to a transaction that is
+    rolled back after the test, and <code>get_current_user</code> becomes a lambda returning a fake manager
+    &mdash; no token minting, no auth server. In NestJS the equivalent is
+    <code>Test.createTestingModule</code> with <code>{ provide: CoreHttpClient, useValue: mock }</code>.
+    Without DI the alternative is monkey-patching module globals, which is order-dependent and leaks between
+    tests.</p></div></details>
+  <details><summary>What status code do you return when a client creates something that already exists?</summary>
+    <div class="ans"><p>409 Conflict. 400 is for a malformed request and 422 for one that failed validation;
+    this request was well formed and permitted, and the current state of the resource refused it. Return a
+    body naming the conflicting resource so the client can act. <b>Follow-up:</b> &ldquo;what if it was a
+    retry of a request that actually succeeded?&rdquo; &mdash; then it should be 200 or 201 with the original
+    resource, keyed off an <code>Idempotency-Key</code> header. Sheet 05.</p></div></details>
+  <details><summary>Where do you put a timeout, and what number do you choose?</summary>
+    <div class="ans"><p>On every outbound call without exception: HTTP clients, database statements, cache
+    reads, queue publishes. The number comes from the chain, not from taste &mdash; each layer's timeout
+    must be shorter than its caller's, so browser 30&nbsp;s, gateway 10&nbsp;s, core 5&nbsp;s, vendor
+    2&nbsp;s. If a downstream timeout exceeds the upstream one, the caller has already given up while you
+    still hold a worker slot, a connection and a socket for an answer nobody will read. Separate the connect
+    timeout from the read timeout; a connect that takes a second means the host is gone.</p></div></details>
+  <details><summary>How do you deploy a new version without dropping in-flight requests?</summary>
+    <div class="ans"><p>On SIGTERM, first fail the readiness probe and keep serving for about five seconds,
+    because Kubernetes removes the endpoint asynchronously and the load balancer needs time to notice. Then
+    stop accepting new connections and let in-flight requests finish. Then close the database pool, the
+    Redis client and flush the queue producer. Then exit, with a hard deadline shorter than
+    <code>terminationGracePeriodSeconds</code>. Skipping the first step is what causes intermittent 502s on
+    every deploy &mdash; the classic symptom that looks random and is not.</p></div></details>
+  <details><summary>JWT or server-side sessions?</summary>
+    <div class="ans"><p>Sessions store state server-side and the cookie holds only an opaque id: revocation
+    is instant, but every request costs a lookup and all services need the session store. JWTs are
+    self-contained, so verification is a local signature check &mdash; that is what lets the gateway and the
+    core both authorise without a shared database &mdash; but you cannot un-issue one. Use both: a
+    15-minute access token so a stolen one expires quickly, and a refresh token whose <code>jti</code> is
+    recorded in Redis so logout and revocation genuinely work.</p></div></details>
+  <details><summary>Why is the response model important? Is it not just documentation?</summary>
+    <div class="ans"><p>It does three jobs. It filters: fields not declared on the model never reach the
+    socket, so adding <code>internal_risk_score</code> to the table cannot leak it through the API. It is the
+    contract: it generates the OpenAPI schema that generates the frontend's typed client. And it validates
+    outbound data, so a handler returning a bad status string fails in CI rather than corrupting the UI. Drop
+    it and you have chosen to make every future database migration a potential data-exposure incident.</p></div></details>
+  <details><summary>Your FastAPI service has 4 workers and <code>pool_size=10</code>. How many concurrent requests can it handle?</summary>
+    <div class="ans"><p>Two different numbers. It can hold thousands of connections, because a coroutine
+    awaiting a socket costs kilobytes. But at most 40 can be executing a query at once, because the pool is
+    per worker. Past that, requests block at <code>pool_timeout</code> and latency climbs while the database
+    looks idle. Multiply by replicas before you scale: 3 pods is 120 connections, and the worker and the
+    reconciler need some of <code>max_connections</code> too.</p></div></details>
+  <details><summary>Why does a thrown error inside an Express async handler not reach your error middleware?</summary>
+    <div class="ans"><p>Express 4 calls the handler and ignores the promise it returns. A rejection therefore
+    becomes an unhandled rejection rather than a call to <code>next(err)</code>, so the error middleware
+    never runs, no response is written, and the client hangs until it times out. Fix it with a wrapper &mdash;
+    <code>const ah = fn =&gt; (req, res, next) =&gt; Promise.resolve(fn(req, res, next)).catch(next)</code>
+    &mdash; or upgrade to Express 5, which forwards rejected promises automatically. Also remember error
+    middleware is identified by having exactly four parameters.</p></div></details>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="signoff">Sign-off</h2>
+<p class="sub">Tick only what you have typed yourself and can explain with this sheet closed.</p>
+
+<div class="signoff">
+  <div class="sh"><span>Weeks 05&ndash;06</span><span>Sheet 04</span></div>
+  <label><input type="checkbox"><span>Narrated Drawing 04-A from memory, naming what happens at each hop and where the 200&nbsp;ms goes.</span></label>
+  <label><input type="checkbox"><span>Built <code>core</code> with <code>POST /access-requests</code>, <code>GET</code> with filters and keyset pagination, and <code>POST /{id}/approve</code>.</span></label>
+  <label><input type="checkbox"><span>Sent a deliberately invalid body and read the 422 <code>loc</code> paths back to yourself field by field.</span></label>
+  <label><input type="checkbox"><span>Drew the four-node dependency tree and overrode two of its nodes in a test that runs with no live database.</span></label>
+  <label><input type="checkbox"><span>Put <code>time.sleep(2)</code> in an <code>async def</code> handler, measured the damage under 20 concurrent requests, then fixed it.</span></label>
+  <label><input type="checkbox"><span>Made every service return the same error envelope, including the reshaped 422.</span></label>
+  <label><input type="checkbox"><span>Built <code>notifier</code> with a signature-verified inbound webhook and an outbound call with a timeout and jittered backoff.</span></label>
+  <label><input type="checkbox"><span>Reproduced the Express 4 async-throw hang, then fixed it with the wrapper and confirmed the error middleware ran.</span></label>
+  <label><input type="checkbox"><span>Built the <code>gateway</code> controller with a validated DTO, a JWT guard and a roles guard, and can order the pipeline from memory.</span></label>
+  <label><input type="checkbox"><span>Explained the difference between <code>/healthz</code> and <code>/readyz</code> and wrote one that actually queries Postgres with a timeout.</span></label>
+  <label><input type="checkbox"><span>Killed a service with SIGTERM mid-request and watched it drain without dropping the response.</span></label>
+  <label><input type="checkbox"><span>Traced one <code>x-request-id</code> through all three services' logs for a single approval.</span></label>
+</div>
+
+</div><!-- /sheetbody -->
+</main>
+
+<aside class="toc" aria-label="Contents"></aside>
+</div>
+
+<script src="assets/js/nav-data.js"></script>
+<script src="assets/js/sheet.js"></script>
+</body>
+</html>

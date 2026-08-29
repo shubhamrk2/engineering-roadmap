@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheet 06 &mdash; Databases &mdash; BadgeDesk Roadmap</title>
+<link rel="stylesheet" href="assets/css/sheet.css">
+</head>
+<body data-sheet="06">
+<a class="skip" href="#main">Skip to sheet</a>
+<div class="wrap">
+<nav class="rail" aria-label="Sheet index"></nav>
+
+<main id="main">
+
+<header class="sheethead">
+  <div>
+    <div class="no">Sheet 06 &middot; Build the product &middot; Week 07</div>
+    <h1>Data&shy;bases<span>.</span></h1>
+    <p class="lede">PostgreSQL, MongoDB and Redis, plus the relational theory that makes all three make
+    sense. The organising idea: <b>a database is a set of guarantees, and you pick the store whose
+    guarantees match the data.</b> BadgeDesk uses all three because it has three genuinely different kinds
+    of data &mdash; not because three is fashionable.</p>
+  </div>
+  <div class="specs">
+    <div><span>Week</span><span>07</span></div>
+    <div><span>Hours</span><span>28 &ndash; 32</span></div>
+    <div><span>Must know</span><span>SQL, indexes, ACID</span></div>
+    <div><span>Nice to have</span><span>Window functions</span></div>
+    <div><span>Interview weight</span><span>Very high</span></div>
+  </div>
+</header>
+
+<div class="sheetbody">
+
+<!-- ===================================================================== -->
+<h2 id="topology">Three stores, three jobs</h2>
+<p class="sub">Every polyglot persistence answer in an interview lives or dies on whether you can justify
+each store in one sentence. Here are the three sentences.</p>
+
+<figure class="dwg dwg--hero">
+<svg viewBox="0 0 1200 440" role="img" aria-label="BadgeDesk data topology: PostgreSQL is the system of record for access requests, employees, sites and approvals; Redis holds idempotency keys, rate limit counters and cached lookups; MongoDB stores variable-shaped access events from door controllers. Each store is annotated with the guarantee that justifies it.">
+  <defs>
+    <marker id="s06-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s06-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+  </defs>
+
+  <text class="mm" x="30" y="40">SERVICES</text>
+  <text class="mm c" x="330" y="40">STORES</text>
+  <text class="mm" x="700" y="40">THE GUARANTEE THAT JUSTIFIES IT</text>
+
+  <rect class="box" x="30" y="80" width="200" height="56" rx="3"/>
+  <text class="t mid" x="130" y="103">core</text>
+  <text class="mm mid" x="130" y="119">FASTAPI</text>
+
+  <rect class="box" x="30" y="192" width="200" height="56" rx="3"/>
+  <text class="t mid" x="130" y="215">gateway</text>
+  <text class="mm mid" x="130" y="231">NESTJS</text>
+
+  <rect class="box" x="30" y="320" width="200" height="56" rx="3"/>
+  <text class="t mid" x="130" y="343">audit-reconciler</text>
+  <text class="mm mid" x="130" y="359">LAMBDA</text>
+
+  <rect class="box-c" x="330" y="66" width="290" height="102" rx="3"/>
+  <text class="t mid" x="475" y="92">PostgreSQL 16</text>
+  <text class="mm c mid" x="475" y="110">SYSTEM OF RECORD</text>
+  <text class="mm mid" x="475" y="132">access_requests &middot; approvals</text>
+  <text class="mm mid" x="475" y="150">employees &middot; sites &middot; badges</text>
+
+  <rect class="box-a" x="330" y="192" width="290" height="90" rx="3"/>
+  <text class="t b mid" x="475" y="218">Redis 7</text>
+  <text class="mm b mid" x="475" y="236">SPEED AND COORDINATION</text>
+  <text class="mm mid" x="475" y="258">idempotency keys &middot; rate limits</text>
+  <text class="mm mid" x="475" y="274">site directory cache &middot; sessions</text>
+
+  <rect class="box-c" x="330" y="306" width="290" height="90" rx="3"/>
+  <text class="t mid" x="475" y="332">MongoDB 7</text>
+  <text class="mm c mid" x="475" y="350">SHAPE VARIES BY VENDOR</text>
+  <text class="mm mid" x="475" y="372">access_events &mdash; RAW DOOR</text>
+  <text class="mm mid" x="475" y="388">READS FROM SIX CONTROLLERS</text>
+
+  <rect class="box" x="700" y="66" width="470" height="102" rx="3"/>
+  <text class="m" x="716" y="90">Multi-row transactions, foreign keys and unique</text>
+  <text class="m" x="716" y="110">constraints. An approval that half-happened is a</text>
+  <text class="m" x="716" y="130">building-access incident, so the database itself</text>
+  <text class="m" x="716" y="150">must refuse to store an invalid state.</text>
+
+  <rect class="box" x="700" y="192" width="470" height="90" rx="3"/>
+  <text class="m" x="716" y="216">Sub-millisecond reads and atomic primitives such</text>
+  <text class="m" x="716" y="236">as SET NX and INCR. Everything here is either</text>
+  <text class="m" x="716" y="256">derived or expendable &mdash; if Redis is wiped we lose</text>
+  <text class="m" x="716" y="276">performance and duplicate protection, not truth.</text>
+
+  <rect class="box" x="700" y="306" width="470" height="90" rx="3"/>
+  <text class="m" x="716" y="330">Every controller model emits a different payload,</text>
+  <text class="m" x="716" y="350">and vendors add fields without warning. Storing</text>
+  <text class="m" x="716" y="370">them verbatim beats a migration per firmware</text>
+  <text class="m" x="716" y="390">release. Queried by aggregation, not by joins.</text>
+
+  <path class="flow" d="M234,100 H286 V117 H326" marker-end="url(#s06-ac)"/>
+  <path class="flow-b" d="M234,122 H262 V237 H326" marker-end="url(#s06-ab)"/>
+  <path class="flow-b" d="M234,220 H300 V237 H326" marker-end="url(#s06-ab)"/>
+  <path class="flow" d="M234,348 H286 V351 H326" marker-end="url(#s06-ac)"/>
+
+  <line class="ln dash" x1="20" y1="410" x2="1180" y2="410"/>
+  <text class="mm" x="30" y="432">THE RULE: ONE SYSTEM OF RECORD. REDIS AND MONGO MAY BE REBUILT FROM POSTGRES AND THE EVENT LOG. IF LOSING A STORE WOULD LOSE TRUTH, IT IS NOT A CACHE &mdash; IT IS A SECOND SYSTEM OF RECORD, AND YOU NOW HAVE A CONSISTENCY PROBLEM.</text>
+
+  <circle class="bub" cx="475" cy="40" r="13"/><text class="bubt" x="475" y="44">1</text>
+  <path class="lead" d="M475,53 V62"/>
+  <circle class="bub" cx="660" cy="237" r="13"/><text class="bubt" x="660" y="241">2</text>
+  <path class="lead" d="M647,237 H624"/>
+  <circle class="bub" cx="660" cy="351" r="13"/><text class="bubt" x="660" y="355">3</text>
+  <path class="lead" d="M647,351 H624"/>
+</svg>
+<figcaption>Drawing 06-A &mdash; the BadgeDesk data topology. <b>Cyan</b> = durable and authoritative.
+<b>Brass</b> = derived, rebuildable, expendable.</figcaption>
+</figure>
+
+<div class="notes">
+  <div class="n"><b>1</b><div><b>Start relational and stay there until something forces you out.</b> PostgreSQL
+  handles JSON, full-text search, geospatial data, queues and time series adequately. &ldquo;Adequately&rdquo;
+  with one store you operate well beats &ldquo;optimally&rdquo; across four you operate badly. The burden of
+  proof is on adding a database, not on keeping one.</div></div>
+  <div class="n"><b>2</b><div><b>Redis earns its place through atomic primitives, not just speed.</b>
+  <code>SET key value NX EX 86400</code> in one network round trip is what makes the idempotency scheme on
+  <a href="apis.html">Sheet 05</a> correct under concurrency. You could do it in Postgres with a unique
+  index &mdash; and for BadgeDesk's volume you could argue you should.</div></div>
+  <div class="n"><b>3</b><div><b>Mongo is here for genuinely schemaless data.</b> Six controller models, six
+  payload shapes, changing on the vendor's schedule. Note the honest alternative: a
+  <code>jsonb</code> column in Postgres would also work and would remove a whole database from the
+  estate. Be ready to defend the decision either way &mdash; that is the actual interview question.</div></div>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="relational">Relational thinking</h2>
+<p class="sub">The schema is the most expensive thing to change and the most valuable thing to get right.
+Application code is rewritten every few years; the data outlives it.</p>
+
+<h3 id="rel-schema">The BadgeDesk schema</h3>
+<div class="code" data-lang="sql">
+<header><b>services/core/migrations/0001_initial.sql</b></header>
+<pre><code>CREATE TABLE sites (
+  id          text PRIMARY KEY,                    -- 'BLR-01' - natural key, stable
+  name        text        NOT NULL,
+  city        text        NOT NULL,
+  timezone    text        NOT NULL,
+  created_at  timestamptz NOT NULL DEFAULT now()   -- ALWAYS timestamptz, never timestamp
+);
+
+CREATE TABLE employees (
+  id          text PRIMARY KEY,                    -- 'e_10422' from the HR system
+  full_name   text        NOT NULL,
+  email       citext      NOT NULL UNIQUE,         -- citext: case-insensitive, still indexed
+  manager_id  text        REFERENCES employees(id),-- self-reference, nullable for the CEO
+  active      boolean     NOT NULL DEFAULT true,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TYPE request_status AS ENUM
+  ('pending','approved','rejected','provisioned','revoked');
+
+CREATE TABLE access_requests (
+  id            text PRIMARY KEY,                  -- 'ar_7f3a91'
+  employee_id   text NOT NULL REFERENCES employees(id) ON DELETE RESTRICT,
+  site_id       text NOT NULL REFERENCES sites(id)     ON DELETE RESTRICT,
+  status        request_status NOT NULL DEFAULT 'pending',
+  starts_on     date NOT NULL,
+  ends_on       date NOT NULL,
+  reason        text NOT NULL,
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  updated_at    timestamptz NOT NULL DEFAULT now(),
+
+  -- Constraints are the cheapest tests you will ever write. They hold even
+  -- when a migration script, an admin console or a panicking engineer with
+  -- psql open is the thing doing the writing.
+  CONSTRAINT window_is_sane  CHECK (ends_on &gt;= starts_on),
+  CONSTRAINT window_is_short CHECK (ends_on - starts_on &lt;= 365)
+);
+
+CREATE TABLE approvals (
+  id            bigserial PRIMARY KEY,
+  request_id    text NOT NULL REFERENCES access_requests(id) ON DELETE CASCADE,
+  approver_id   text NOT NULL REFERENCES employees(id),
+  decision      text NOT NULL CHECK (decision IN ('approved','rejected')),
+  note          text,
+  decided_at    timestamptz NOT NULL DEFAULT now(),
+
+  -- One decision per approver per request. This single line prevents the
+  -- double-approve race that application code alone cannot close.
+  CONSTRAINT one_decision_per_approver UNIQUE (request_id, approver_id)
+);</code></pre>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why <code>timestamptz</code>, always</span>
+  <p><code>timestamp</code> stores a wall-clock reading with no zone, so it is ambiguous the moment two
+  people in different offices look at it &mdash; and BadgeDesk spans Bengaluru, Hyderabad and London.
+  <code>timestamptz</code> stores an absolute instant (as UTC) and converts on the way in and out. It is the
+  same eight bytes. There is no scenario in this system where the ambiguous one is correct, and daylight
+  saving turns the mistake into a support ticket twice a year.</p>
+</div>
+
+<h3 id="rel-normal">Normalisation, and when to stop</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Form</th><th>Rule, in plain terms</th><th>The violation it removes</th></tr></thead>
+<tbody>
+<tr><td>1NF</td><td>One value per cell; no repeating groups</td><td>A <code>site_ids</code> column holding <code>"BLR-01,HYD-01"</code>. You now cannot index it, join on it or constrain it.</td></tr>
+<tr><td>2NF</td><td>Non-key columns depend on the <i>whole</i> key</td><td>In a table keyed on <code>(request_id, approver_id)</code>, storing <code>request_created_at</code> &mdash; it depends on half the key.</td></tr>
+<tr><td>3NF</td><td>Non-key columns depend on <i>nothing but</i> the key</td><td>Storing <code>site_city</code> on <code>access_requests</code>. It depends on <code>site_id</code>, which is not the key, so renaming a city means updating a million rows.</td></tr>
+<tr><td>BCNF and beyond</td><td>Stricter variants of the same idea</td><td>Real but rare. Knowing 3NF exists and why is enough for almost every interview.</td></tr>
+</tbody>
+</table>
+</div>
+<p><b>Normalise until it hurts, denormalise until it works.</b> Design in 3NF, measure, then denormalise
+deliberately where a specific query demands it &mdash; and write down that the copy exists and what keeps it
+in step. Denormalisation without that note is how systems start disagreeing with themselves.</p>
+
+<div class="panel panel--real">
+  <span class="ph">In production &mdash; a legitimate denormalisation</span>
+  <p>The approver dashboard shows a count of pending requests per site, on every page load, for every
+  manager. That is a <code>count(*)</code> with a filter across a growing table, run constantly. Keeping a
+  <code>pending_count</code> on <code>sites</code>, updated in the same transaction as the status change, is
+  a correct denormalisation: the source of truth is still <code>access_requests</code>, the copy is
+  maintained transactionally, and a nightly job recomputes it to catch drift. What makes it defensible is
+  the transaction and the reconciliation, not the speed.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="sql">SQL you must be fluent in</h2>
+<p class="sub">Live SQL is the most common technical exercise in a backend interview after coding. Joins,
+aggregation and window functions cover nearly all of it.</p>
+
+<h3 id="sql-joins">Joins</h3>
+<figure class="dwg">
+<svg viewBox="0 0 1200 400" role="img" aria-label="Join types compared on two small tables: inner join returns only matching rows, left join keeps all left rows with nulls for non-matches, and a left join with a null check produces an anti-join returning only left rows with no match.">
+  <text class="mm" x="30" y="34">access_requests (LEFT)</text>
+  <rect class="box" x="30" y="46" width="260" height="118" rx="3"/>
+  <text class="m" x="44" y="70">id       employee_id</text>
+  <line class="ln" x1="44" y1="78" x2="276" y2="78"/>
+  <text class="m" x="44" y="98">ar_01    e_10422</text>
+  <text class="m" x="44" y="118">ar_02    e_10891</text>
+  <text class="m" x="44" y="138">ar_03    e_99999</text>
+  <text class="mm r" x="44" y="158">e_99999 IS NOT IN employees</text>
+
+  <text class="mm" x="330" y="34">employees (RIGHT)</text>
+  <rect class="box" x="330" y="46" width="260" height="118" rx="3"/>
+  <text class="m" x="344" y="70">id       full_name</text>
+  <line class="ln" x1="344" y1="78" x2="576" y2="78"/>
+  <text class="m" x="344" y="98">e_10422  Asha Rao</text>
+  <text class="m" x="344" y="118">e_10891  Ben Iyer</text>
+  <text class="m" x="344" y="138">e_10500  Cara Shah</text>
+  <text class="mm" x="344" y="158">HAS NO REQUEST</text>
+
+  <text class="mm c" x="640" y="34">INNER JOIN &mdash; ONLY MATCHES</text>
+  <rect class="box-c" x="640" y="46" width="260" height="118" rx="3"/>
+  <text class="m" x="654" y="70">ar_01    Asha Rao</text>
+  <text class="m" x="654" y="90">ar_02    Ben Iyer</text>
+  <text class="mm c" x="654" y="118">ar_03 IS SILENTLY DROPPED.</text>
+  <text class="mm c" x="654" y="134">SO IS Cara Shah. THIS IS THE</text>
+  <text class="mm c" x="654" y="150">COMMONEST SOURCE OF &ldquo;MY</text>
+  <text class="mm c" x="654" y="166">COUNT IS TOO LOW&rdquo;.</text>
+
+  <text class="mm b" x="940" y="34">LEFT JOIN &mdash; KEEP ALL LEFT ROWS</text>
+  <rect class="box-a" x="940" y="46" width="230" height="118" rx="3"/>
+  <text class="m" x="954" y="70">ar_01    Asha Rao</text>
+  <text class="m" x="954" y="90">ar_02    Ben Iyer</text>
+  <text class="m b" x="954" y="110">ar_03    NULL</text>
+  <text class="mm b" x="954" y="138">EVERY REQUEST APPEARS,</text>
+  <text class="mm b" x="954" y="154">MATCHED OR NOT.</text>
+
+  <line class="ln dash" x1="20" y1="192" x2="1180" y2="192"/>
+
+  <text class="mm" x="30" y="220">THE ANTI-JOIN &mdash; &ldquo;WHICH REQUESTS POINT AT AN EMPLOYEE WE DO NOT HAVE?&rdquo;</text>
+  <rect class="box-c" x="30" y="234" width="560" height="120" rx="3"/>
+  <text class="m c" x="46" y="258">SELECT r.id</text>
+  <text class="m c" x="46" y="278">FROM   access_requests r</text>
+  <text class="m c" x="46" y="298">LEFT JOIN employees e ON e.id = r.employee_id</text>
+  <text class="m c" x="46" y="318">WHERE  e.id IS NULL;          -- the whole trick</text>
+  <text class="mm" x="46" y="344">RETURNS ar_03. THE NULL CHECK MUST BE IN THE WHERE CLAUSE.</text>
+
+  <rect class="box-r" x="640" y="234" width="530" height="120" rx="3"/>
+  <text class="t r" x="656" y="258">The trap that catches everyone</text>
+  <text class="m" x="656" y="282">Moving the filter from WHERE to ON changes the result:</text>
+  <text class="m" x="656" y="304">LEFT JOIN employees e ON e.id = r.employee_id AND e.active</text>
+  <text class="mm" x="656" y="326">ON FILTERS BEFORE THE JOIN, SO NON-MATCHES SURVIVE AS NULLS.</text>
+  <text class="mm" x="656" y="344">WHERE FILTERS AFTER, SO A NULL FAILS THE TEST AND THE LEFT JOIN</text>
+  <text class="mm r" x="656" y="360">QUIETLY BECOMES AN INNER JOIN. EXPECT TO BE ASKED THIS.</text>
+
+  <text class="mm" x="30" y="386">ALSO WORTH KNOWING: CROSS JOIN (EVERY COMBINATION &mdash; USUALLY AN ACCIDENT), FULL OUTER JOIN (KEEP BOTH SIDES), AND LATERAL (A SUBQUERY THAT CAN SEE THE CURRENT ROW &mdash; USE IT FOR &ldquo;TOP 3 PER GROUP&rdquo;).</text>
+</svg>
+<figcaption>Drawing 06-B &mdash; join types on real rows. <b>Red</b> = where a left join stops being a left
+join.</figcaption>
+</figure>
+
+<h3 id="sql-window">Aggregation, CTEs and window functions</h3>
+<div class="code" data-lang="sql">
+<header><b>the queries that come up in interviews</b></header>
+<pre><code>-- 1. Aggregate with a filtered count. FILTER beats CASE WHEN and reads better.
+SELECT s.id,
+       s.name,
+       count(*)                                        AS total,
+       count(*) FILTER (WHERE r.status = 'pending')     AS pending,
+       count(*) FILTER (WHERE r.status = 'provisioned') AS provisioned,
+       round(avg(r.ends_on - r.starts_on), 1)           AS avg_days
+FROM   sites s
+JOIN   access_requests r ON r.site_id = s.id
+WHERE  r.created_at &gt;= now() - interval '90 days'
+GROUP  BY s.id, s.name
+HAVING count(*) &gt; 10          -- HAVING filters GROUPS; WHERE filters ROWS
+ORDER  BY pending DESC;
+
+-- 2. Window function: rank each employee's requests without collapsing rows.
+--    This is the single most valuable SQL feature to be fluent in.
+SELECT id, employee_id, created_at,
+       row_number() OVER w                AS n,
+       lag(created_at)  OVER w            AS previous_request_at,
+       created_at - lag(created_at) OVER w AS gap
+FROM   access_requests
+WINDOW w AS (PARTITION BY employee_id ORDER BY created_at);
+
+-- 3. "Most recent request per employee" - the classic. Window + filter.
+SELECT * FROM (
+  SELECT r.*,
+         row_number() OVER (PARTITION BY employee_id
+                            ORDER BY created_at DESC) AS rn
+  FROM   access_requests r
+) ranked
+WHERE rn = 1;
+--   Postgres-specific and faster: SELECT DISTINCT ON (employee_id) *
+--   FROM access_requests ORDER BY employee_id, created_at DESC;
+
+-- 4. CTE for readability, and a recursive CTE for the management chain.
+WITH RECURSIVE chain AS (
+  SELECT id, full_name, manager_id, 1 AS depth
+  FROM   employees WHERE id = 'e_10422'
+  UNION ALL
+  SELECT e.id, e.full_name, e.manager_id, c.depth + 1
+  FROM   employees e JOIN chain c ON e.id = c.manager_id
+  WHERE  c.depth &lt; 10                    -- always bound the recursion
+)
+SELECT * FROM chain;
+
+-- 5. Running total - approvals per day and cumulative.
+SELECT date_trunc('day', decided_at)::date AS day,
+       count(*)                            AS decisions,
+       sum(count(*)) OVER (ORDER BY date_trunc('day', decided_at)) AS cumulative
+FROM   approvals
+GROUP  BY 1
+ORDER  BY 1;</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p>&ldquo;<code>WHERE</code> or <code>HAVING</code>?&rdquo; &mdash; <code>WHERE</code> filters individual
+  rows before grouping; <code>HAVING</code> filters the groups afterwards, so it can reference aggregates.
+  Put a condition in <code>WHERE</code> whenever you can, because filtering earlier means grouping less.</p>
+  <p>&ldquo;<code>GROUP BY</code> or a window function?&rdquo; &mdash; <code>GROUP BY</code> collapses many
+  rows into one. A window function computes across a set of rows while <i>keeping</i> every row. If the
+  question is &ldquo;show me each request alongside its rank&rdquo;, it must be a window.</p>
+  <p>&ldquo;What does <code>count(*)</code> do differently from <code>count(col)</code>?&rdquo; &mdash;
+  <code>count(*)</code> counts rows; <code>count(col)</code> counts rows where <code>col</code> is not null.
+  The difference is a real bug when the column is nullable.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="indexes">Indexes and query plans</h2>
+<p class="sub">Almost every &ldquo;the database is slow&rdquo; incident is a missing index, a wrong index, or
+a query written so the index cannot be used.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 420" role="img" aria-label="A B-tree index structure with a root, internal nodes and sorted leaf pages pointing at table rows, and beside it the leftmost prefix rule showing which query predicates a composite index on site id, status and created at can serve.">
+  <defs><marker id="s06c-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker></defs>
+
+  <text class="mm c" x="30" y="34">B-TREE &mdash; WHY A LOOKUP IN 10 MILLION ROWS IS 3 OR 4 PAGE READS</text>
+
+  <rect class="box-c" x="180" y="50" width="180" height="38" rx="2"/>
+  <text class="m mid" x="270" y="74">BLR-01 | HYD-01</text>
+  <text class="mm" x="376" y="74">ROOT &mdash; ALWAYS IN MEMORY</text>
+
+  <rect class="box" x="30" y="120" width="150" height="38" rx="2"/><text class="m mid" x="105" y="144">&lt; BLR-01</text>
+  <rect class="box" x="196" y="120" width="150" height="38" rx="2"/><text class="m mid" x="271" y="144">BLR-01..HYD</text>
+  <rect class="box" x="362" y="120" width="150" height="38" rx="2"/><text class="m mid" x="437" y="144">&gt;= HYD-01</text>
+  <path class="flow" d="M240,92 L120,116" marker-end="url(#s06c-ac)"/>
+  <path class="flow" d="M270,92 V116" marker-end="url(#s06c-ac)"/>
+  <path class="flow" d="M300,92 L420,116" marker-end="url(#s06c-ac)"/>
+
+  <rect class="box-a" x="30" y="190" width="150" height="44" rx="2"/><text class="mm mid" x="105" y="210">LEAF</text><text class="mm mid" x="105" y="226">ROW POINTERS</text>
+  <rect class="box-a" x="196" y="190" width="150" height="44" rx="2"/><text class="mm mid" x="271" y="210">LEAF</text><text class="mm mid" x="271" y="226">ROW POINTERS</text>
+  <rect class="box-a" x="362" y="190" width="150" height="44" rx="2"/><text class="mm mid" x="437" y="210">LEAF</text><text class="mm mid" x="437" y="226">ROW POINTERS</text>
+  <path class="flow" d="M105,162 V186" marker-end="url(#s06c-ac)"/>
+  <path class="flow" d="M271,162 V186" marker-end="url(#s06c-ac)"/>
+  <path class="flow" d="M437,162 V186" marker-end="url(#s06c-ac)"/>
+  <line class="ln dash" x1="180" y1="212" x2="196" y2="212"/>
+  <line class="ln dash" x1="346" y1="212" x2="362" y2="212"/>
+  <text class="mm" x="30" y="256">LEAVES ARE LINKED AND SORTED &mdash; WHICH IS WHY ONE INDEX SERVES BOTH</text>
+  <text class="mm" x="30" y="272">EQUALITY LOOKUPS AND RANGE SCANS, AND WHY ORDER BY ON AN INDEXED</text>
+  <text class="mm" x="30" y="288">COLUMN CAN SKIP SORTING ENTIRELY.</text>
+
+  <line class="ln dash" x1="560" y1="30" x2="560" y2="400"/>
+
+  <text class="mm c" x="600" y="34">THE LEFTMOST PREFIX RULE</text>
+  <rect class="box-c" x="600" y="50" width="570" height="40" rx="3"/>
+  <text class="m mid" x="885" y="76">CREATE INDEX ON access_requests (site_id, status, created_at)</text>
+
+  <text class="mm" x="600" y="118">QUERY PREDICATE</text>
+  <text class="mm" x="1020" y="118">USES INDEX?</text>
+  <line class="ln" x1="600" y1="126" x2="1170" y2="126"/>
+
+  <text class="m" x="600" y="150">WHERE site_id = 'BLR-01'</text>
+  <text class="t c" x="1020" y="150">YES</text>
+  <text class="m" x="600" y="176">WHERE site_id = 'BLR-01' AND status = 'pending'</text>
+  <text class="t c" x="1020" y="176">YES</text>
+  <text class="m" x="600" y="202">WHERE site_id = ? AND status = ? AND created_at &gt; ?</text>
+  <text class="t c" x="1020" y="202">YES &mdash; FULLY</text>
+  <text class="m" x="600" y="228">WHERE status = 'pending'</text>
+  <text class="t r" x="1020" y="228">NO</text>
+  <text class="m" x="600" y="254">WHERE created_at &gt; now() - interval '7 days'</text>
+  <text class="t r" x="1020" y="254">NO</text>
+  <text class="m" x="600" y="280">WHERE site_id = ? AND created_at &gt; ?</text>
+  <text class="t b" x="1020" y="280">PARTLY</text>
+
+  <text class="mm" x="600" y="312">AN INDEX IS SORTED BY ITS FIRST COLUMN, THEN THE SECOND WITHIN THAT,</text>
+  <text class="mm" x="600" y="328">AND SO ON &mdash; LIKE A PHONE BOOK BY SURNAME THEN FIRST NAME. YOU CANNOT</text>
+  <text class="mm" x="600" y="344">FIND EVERYONE CALLED &ldquo;ASHA&rdquo; WITHOUT READING THE WHOLE BOOK.</text>
+  <text class="mm b" x="600" y="372">COLUMN ORDER: EQUALITY PREDICATES FIRST, RANGE PREDICATES LAST. A RANGE</text>
+  <text class="mm b" x="600" y="388">COLUMN STOPS ANY COLUMN AFTER IT FROM NARROWING THE SCAN.</text>
+</svg>
+<figcaption>Drawing 06-C &mdash; B-tree structure and composite index ordering. <b>Brass</b> = the leaf level
+where the row pointers live.</figcaption>
+</figure>
+
+<div class="code" data-lang="sql">
+<header><b>reading a plan &mdash; the only way to know, rather than guess</b></header>
+<pre><code>EXPLAIN (ANALYZE, BUFFERS)
+SELECT * FROM access_requests
+WHERE site_id = 'BLR-01' AND status = 'pending'
+ORDER BY created_at DESC LIMIT 50;
+
+-- BEFORE the index:
+-- Limit  (cost=45231.10..45231.22 rows=50) (actual time=812.4..812.5 rows=50 loops=1)
+--   ->  Sort  (cost=45231.10..45338.6 rows=43000) (actual time=812.4..812.4 rows=50)
+--         Sort Method: top-N heapsort  Memory: 41kB
+--         ->  Seq Scan on access_requests  (actual time=0.02..765.1 rows=42891)
+--               Filter: (site_id = 'BLR-01' AND status = 'pending')
+--               Rows Removed by Filter: 9957109        &lt;-- read 10M, kept 43K
+--               Buffers: shared read=98214
+-- Execution Time: 813.9 ms
+
+CREATE INDEX CONCURRENTLY idx_requests_site_status_created
+  ON access_requests (site_id, status, created_at DESC);
+
+-- AFTER:
+-- Limit  (actual time=0.04..0.11 rows=50 loops=1)
+--   ->  Index Scan using idx_requests_site_status_created (actual time=0.03..0.09)
+--         Index Cond: (site_id = 'BLR-01' AND status = 'pending')
+--         Buffers: shared hit=54                        &lt;-- 54 pages, not 98214
+-- Execution Time: 0.14 ms
+
+-- 813 ms to 0.14 ms. Note ORDER BY created_at DESC matches the index
+-- direction, so the sort disappears entirely.</code></pre>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>What you see in the plan</th><th>What it means</th><th>Usually</th></tr></thead>
+<tbody>
+<tr><td><code>Seq Scan</code> with a big <code>Rows Removed by Filter</code></td><td>Reading the whole table to keep a few rows</td><td>Missing index. On a small table it is correct and faster than an index.</td></tr>
+<tr><td><code>Index Scan</code></td><td>Walk the index, then fetch each row from the heap</td><td>Good for selective queries</td></tr>
+<tr><td><code>Index Only Scan</code></td><td>Every column needed was in the index &mdash; the table is never touched</td><td>Best case. Achieved with <code>INCLUDE (...)</code> covering columns.</td></tr>
+<tr><td><code>Bitmap Heap Scan</code></td><td>Too many matches for individual lookups, too few for a full scan</td><td>Normal and fine in the middle ground</td></tr>
+<tr><td><code>Nested Loop</code> with a large outer</td><td>Inner side re-probed per outer row</td><td>Fine when the outer is small; disastrous when the estimate was wrong</td></tr>
+<tr><td>Estimated rows far from actual</td><td>Statistics are stale, so every choice downstream is built on a wrong number</td><td><code>ANALYZE table;</code> and check autovacuum is keeping up</td></tr>
+<tr><td><code>Sort</code> with <code>Disk</code> as the method</td><td>The sort exceeded <code>work_mem</code> and spilled to disk</td><td>Add a matching index, or raise <code>work_mem</code> for that session</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; ways to make your index unusable</span>
+  <p><b>Wrapping the column in a function:</b> <code>WHERE lower(email) = 'a@b.com'</code> cannot use an
+  index on <code>email</code> &mdash; you need an expression index on <code>lower(email)</code>, or the
+  <code>citext</code> type. <b>Leading wildcards:</b> <code>LIKE '%rao'</code> cannot use a B-tree; use a
+  trigram index. <b>Type mismatches:</b> comparing a <code>text</code> column to an integer forces a cast
+  on every row. <b>Too many indexes:</b> each one is written on every insert, update and delete &mdash; an
+  unused index is pure cost. Check <code>pg_stat_user_indexes</code> for ones with <code>idx_scan = 0</code>
+  and drop them.</p>
+  <p>And always <code>CREATE INDEX CONCURRENTLY</code> in production. The plain form takes a lock that
+  blocks every write to the table for the duration, which on a large table means an outage.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="transactions">Transactions, ACID and isolation</h2>
+<p class="sub">The part of databases that is genuinely subtle, and therefore the part interviews focus on.</p>
+
+<div class="grid g4">
+  <div class="card"><span class="cm">A</span><b class="ct">Atomicity</b><p>All of it or none of it. The approval and the audit row commit together, or neither exists.</p></div>
+  <div class="card"><span class="cm">C</span><b class="ct">Consistency</b><p>Constraints hold at commit. Your <code>CHECK</code>, <code>UNIQUE</code> and foreign keys are never violated by a committed state.</p></div>
+  <div class="card"><span class="cm">I</span><b class="ct">Isolation</b><p>Concurrent transactions do not see each other's half-finished work. How strictly is a setting &mdash; see below.</p></div>
+  <div class="card"><span class="cm">D</span><b class="ct">Durability</b><p>Once committed, it survives the machine losing power. Achieved by writing to the WAL and flushing before acknowledging.</p></div>
+</div>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 340" role="img" aria-label="Isolation levels and the anomalies each one prevents: read uncommitted allows dirty reads, read committed prevents them but allows non-repeatable and phantom reads, repeatable read prevents those two, and serializable prevents write skew as well, at the cost of serialisation failures that must be retried.">
+  <text class="mm" x="30" y="34">ISOLATION LEVEL</text>
+  <text class="mm mid" x="470" y="34">DIRTY READ</text>
+  <text class="mm mid" x="640" y="34">NON-REPEATABLE</text>
+  <text class="mm mid" x="820" y="34">PHANTOM</text>
+  <text class="mm mid" x="990" y="34">WRITE SKEW</text>
+  <text class="mm mid" x="1130" y="34">COST</text>
+  <line class="ln" x1="30" y1="44" x2="1170" y2="44"/>
+
+  <text class="m" x="30" y="76">READ UNCOMMITTED</text>
+  <text class="mm" x="30" y="92">NOT IMPLEMENTED IN POSTGRES &mdash; BEHAVES AS READ COMMITTED</text>
+  <text class="t r mid" x="470" y="76">allowed</text>
+  <text class="t r mid" x="640" y="76">allowed</text>
+  <text class="t r mid" x="820" y="76">allowed</text>
+  <text class="t r mid" x="990" y="76">allowed</text>
+  <text class="t c mid" x="1130" y="76">none</text>
+
+  <text class="m c" x="30" y="132">READ COMMITTED</text>
+  <text class="mm" x="30" y="148">THE POSTGRES DEFAULT. EACH STATEMENT SEES A FRESH SNAPSHOT.</text>
+  <text class="t c mid" x="470" y="132">safe</text>
+  <text class="t r mid" x="640" y="132">allowed</text>
+  <text class="t r mid" x="820" y="132">allowed</text>
+  <text class="t r mid" x="990" y="132">allowed</text>
+  <text class="t c mid" x="1130" y="132">low</text>
+
+  <text class="m c" x="30" y="188">REPEATABLE READ</text>
+  <text class="mm" x="30" y="204">ONE SNAPSHOT FOR THE WHOLE TRANSACTION. RE-READS RETURN THE SAME ROWS.</text>
+  <text class="t c mid" x="470" y="188">safe</text>
+  <text class="t c mid" x="640" y="188">safe</text>
+  <text class="t c mid" x="820" y="188">safe</text>
+  <text class="t r mid" x="990" y="188">allowed</text>
+  <text class="t b mid" x="1130" y="188">medium</text>
+
+  <text class="m b" x="30" y="244">SERIALIZABLE</text>
+  <text class="mm" x="30" y="260">AS IF TRANSACTIONS RAN ONE AFTER ANOTHER. MAY ABORT WITH 40001.</text>
+  <text class="t c mid" x="470" y="244">safe</text>
+  <text class="t c mid" x="640" y="244">safe</text>
+  <text class="t c mid" x="820" y="244">safe</text>
+  <text class="t c mid" x="990" y="244">safe</text>
+  <text class="t b mid" x="1130" y="244">high</text>
+
+  <line class="ln dash" x1="20" y1="278" x2="1180" y2="278"/>
+  <text class="mm" x="30" y="300">DIRTY READ &mdash; SEEING UNCOMMITTED DATA &middot; NON-REPEATABLE READ &mdash; THE SAME ROW READ TWICE GIVES DIFFERENT VALUES &middot; PHANTOM &mdash; THE SAME QUERY RETURNS NEW ROWS THE SECOND TIME</text>
+  <text class="mm b" x="30" y="322">WRITE SKEW &mdash; TWO TRANSACTIONS EACH READ, EACH DECIDE THEY MAY PROCEED, AND TOGETHER THEY BREAK A RULE NEITHER BROKE ALONE. NOTHING BELOW SERIALIZABLE STOPS IT.</text>
+</svg>
+<figcaption>Drawing 06-D &mdash; isolation levels and the anomalies they prevent. <b>Red</b> = permitted at
+that level.</figcaption>
+</figure>
+
+<div class="code" data-lang="sql">
+<header><b>write skew in BadgeDesk, and three ways to prevent it</b></header>
+<pre><code>-- RULE: a site must always retain at least one active approver.
+-- Two admins simultaneously remove the last two approvers at BLR-01.
+
+-- Transaction A                          -- Transaction B
+BEGIN;                                    BEGIN;
+SELECT count(*) FROM approvers            SELECT count(*) FROM approvers
+WHERE site_id='BLR-01' AND active;        WHERE site_id='BLR-01' AND active;
+-- returns 2, so removing one is fine     -- returns 2, so removing one is fine
+UPDATE approvers SET active=false         UPDATE approvers SET active=false
+WHERE id='ap_1';                          WHERE id='ap_2';
+COMMIT;                                   COMMIT;
+-- Both succeed at READ COMMITTED and REPEATABLE READ.
+-- BLR-01 now has zero approvers. Neither transaction broke the rule alone.
+
+-- FIX 1 - lock the rows you based the decision on:
+SELECT count(*) FROM approvers
+WHERE site_id='BLR-01' AND active FOR UPDATE;
+--   Simple and explicit. Serialises writers on that site only.
+
+-- FIX 2 - SERIALIZABLE, and handle the abort:
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+--   One transaction fails with SQLSTATE 40001. Your code MUST catch it
+--   and retry the whole transaction - that is the contract you accept.
+
+-- FIX 3 - make the constraint expressible to the database:
+--   Keep a counter column and CHECK (active_approver_count >= 1),
+--   updated in the same transaction. The engine enforces it, always.</code></pre>
+</div>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 300" role="img" aria-label="A deadlock: two transactions lock two rows in opposite order and each then waits for the lock the other holds, until the database detects the cycle and aborts one of them. The fix is to acquire locks in a consistent order.">
+  <defs><marker id="s06e-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  <marker id="s06e-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker></defs>
+
+  <text class="mm r" x="30" y="34">DEADLOCK</text>
+  <rect class="box" x="30" y="50" width="230" height="46" rx="3"/>
+  <text class="m mid" x="145" y="78">TX A</text>
+  <rect class="box" x="330" y="50" width="230" height="46" rx="3"/>
+  <text class="m mid" x="445" y="78">TX B</text>
+
+  <rect class="box-a" x="30" y="130" width="230" height="40" rx="2"/>
+  <text class="mm mid" x="145" y="155">HOLDS LOCK ON ar_01</text>
+  <rect class="box-a" x="330" y="130" width="230" height="40" rx="2"/>
+  <text class="mm mid" x="445" y="155">HOLDS LOCK ON ar_02</text>
+  <path class="flow-c" d="M145,100 V126"/>
+  <path class="flow-c" d="M445,100 V126"/>
+
+  <path class="flow-r" d="M264,150 H326" marker-end="url(#s06e-ar)"/>
+  <text class="mm r" x="266" y="142">WANTS ar_02</text>
+  <path class="flow-r" d="M326,196 H264" marker-end="url(#s06e-ar)"/>
+  <text class="mm r" x="266" y="212">WANTS ar_01</text>
+
+  <rect class="box-r" x="30" y="240" width="530" height="40" rx="3"/>
+  <text class="mm r mid" x="295" y="265">POSTGRES DETECTS THE CYCLE IN ABOUT ONE SECOND AND ABORTS ONE: ERROR 40P01 deadlock detected</text>
+
+  <line class="ln dash" x1="600" y1="30" x2="600" y2="290"/>
+
+  <text class="mm c" x="640" y="34">THE FIX &mdash; A CONSISTENT LOCK ORDER</text>
+  <rect class="box-c" x="640" y="50" width="530" height="120" rx="3"/>
+  <text class="m c" x="656" y="76">-- Both transactions sort the ids before locking:</text>
+  <text class="m c" x="656" y="100">SELECT * FROM access_requests</text>
+  <text class="m c" x="656" y="122">WHERE id = ANY($1)</text>
+  <text class="m c" x="656" y="144">ORDER BY id                 -- the whole fix</text>
+  <text class="m c" x="656" y="162">FOR UPDATE;</text>
+
+  <text class="mm" x="640" y="198">NOW BOTH TAKE ar_01 FIRST. ONE WAITS FOR THE OTHER AND THEN PROCEEDS.</text>
+  <text class="mm" x="640" y="220">NO CYCLE IS POSSIBLE, SO NO DEADLOCK IS POSSIBLE.</text>
+  <text class="mm b" x="640" y="250">ALSO: KEEP TRANSACTIONS SHORT, NEVER CALL AN EXTERNAL API INSIDE ONE,</text>
+  <text class="mm b" x="640" y="266">AND ALWAYS SET A statement_timeout. AND STILL RETRY 40001 AND 40P01 &mdash;</text>
+  <text class="mm b" x="640" y="282">DEADLOCKS ARE A NORMAL CONDITION, NOT AN EXCEPTIONAL ONE.</text>
+</svg>
+<figcaption>Drawing 06-E &mdash; deadlock and the ordering fix. <b>Red</b> = the waiting cycle.</figcaption>
+</figure>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil</span>
+  <p>Never hold a database transaction open across a network call. <code>BEGIN</code>, then a five-second
+  call to CCure, then <code>COMMIT</code> means row locks held for five seconds &mdash; and when CCure is
+  slow, connections pile up, the pool exhausts, and the whole service stops. Do the external call outside
+  the transaction, or publish an event and let a consumer do it. This is the most common cause of a
+  database-shaped outage that is not actually the database's fault.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="postgres">PostgreSQL in practice</h2>
+
+<h3 id="pg-features">Features worth knowing you have</h3>
+<div class="code" data-lang="sql">
+<header><b>the ones that come up constantly</b></header>
+<pre><code>-- UPSERT. Atomic, no read-then-write race.
+INSERT INTO sites (id, name, city, timezone)
+VALUES ('BLR-01', 'Whitefield', 'Bengaluru', 'Asia/Kolkata')
+ON CONFLICT (id) DO UPDATE
+  SET name = EXCLUDED.name, city = EXCLUDED.city;
+--   ON CONFLICT DO NOTHING is the idempotent-insert idiom.
+
+-- RETURNING - get the generated row back without a second query.
+UPDATE access_requests SET status = 'approved', updated_at = now()
+WHERE id = 'ar_7f3a91' AND status = 'pending'      -- optimistic guard
+RETURNING id, status, updated_at;
+--   Zero rows returned means someone else already decided it. Handle that
+--   instead of blindly reporting success.
+
+-- JSONB for the vendor payload we do not control.
+ALTER TABLE access_requests ADD COLUMN vendor_meta jsonb NOT NULL DEFAULT '{}';
+CREATE INDEX idx_vendor_meta ON access_requests USING gin (vendor_meta);
+SELECT * FROM access_requests
+WHERE vendor_meta @&gt; '{"controller": {"model": "CC-9000"}}';
+--   -&gt; returns jsonb, -&gt;&gt; returns text. Mixing them up is a rite of passage.
+
+-- Partial index: index only the rows anyone queries.
+CREATE INDEX idx_pending ON access_requests (site_id, created_at DESC)
+WHERE status = 'pending';
+--   Tiny, hot, always in memory. 3% of the rows, 3% of the size.
+
+-- Full-text search, without adding Elasticsearch.
+CREATE INDEX idx_reason_fts ON access_requests
+  USING gin (to_tsvector('english', reason));
+SELECT * FROM access_requests
+WHERE to_tsvector('english', reason) @@ plainto_tsquery('english', 'server room audit');
+
+-- Row-level security - the tenant filter the application cannot forget.
+ALTER TABLE access_requests ENABLE ROW LEVEL SECURITY;
+CREATE POLICY site_isolation ON access_requests
+  USING (site_id = current_setting('app.current_site', true));</code></pre>
+</div>
+
+<h3 id="pg-migrations">Migrations that do not cause an outage</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Change</th><th>Naive version</th><th>Safe version</th></tr></thead>
+<tbody>
+<tr><td>Add a column with a default</td><td>Fine on PG 11+ &mdash; the default is stored in metadata, not rewritten</td><td>Still avoid a <code>volatile</code> default, which does force a rewrite</td></tr>
+<tr><td>Add <code>NOT NULL</code></td><td><code>ALTER ... SET NOT NULL</code> scans the whole table under an exclusive lock</td><td>Add a <code>CHECK (col IS NOT NULL) NOT VALID</code>, <code>VALIDATE</code> it without a heavy lock, then set <code>NOT NULL</code></td></tr>
+<tr><td>Add an index</td><td><code>CREATE INDEX</code> blocks writes for the duration</td><td><code>CREATE INDEX CONCURRENTLY</code>, outside a transaction, and check it is <code>valid</code> afterwards</td></tr>
+<tr><td>Rename a column</td><td>Breaks every running instance of the old code instantly</td><td>Expand and contract: add the new column, dual-write, backfill, migrate readers, drop the old one in a later release</td></tr>
+<tr><td>Change a column type</td><td>Full table rewrite under an exclusive lock</td><td>New column, backfill in batches, swap, drop</td></tr>
+<tr><td>Drop a column</td><td>Old code still selecting it starts failing</td><td>Deploy code that no longer references it, wait a release, then drop</td></tr>
+<tr><td>Backfill ten million rows</td><td>One <code>UPDATE</code>, one enormous transaction, table bloat and a replication lag alert</td><td>Batches of a few thousand keyed on the primary key, committed and paused between batches</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="pg-pooling">Connection pooling</h3>
+<p>A PostgreSQL connection is an operating-system process using several megabytes. Two hundred application
+instances each holding ten idle connections will exhaust <code>max_connections</code> and the server will
+spend its time context-switching rather than answering queries.</p>
+<div class="code" data-lang="python">
+<header><b>the two layers, and what each is for</b></header>
+<pre><code># Layer 1 - in-process pool. Reuses connections within one service instance.
+engine = create_async_engine(
+    settings.database_url,
+    pool_size=10,           # steady-state connections per instance
+    max_overflow=5,         # burst headroom
+    pool_timeout=3,         # fail fast rather than queue forever behind a slow query
+    pool_recycle=1800,      # pre-empt the proxy closing idle connections
+    pool_pre_ping=True,     # cheap liveness check; avoids "server closed the connection"
+)
+
+# Layer 2 - PgBouncer in front of the database, in TRANSACTION mode.
+#   Hundreds of client connections multiplexed onto a few server ones.
+#   The catch: in transaction mode, session state does not persist between
+#   statements, so prepared statements, SET, advisory locks and LISTEN/NOTIFY
+#   break. Set prepare_threshold=0 (asyncpg) or use statement_cache_size=0.
+
+# Sizing, roughly:  pool_size x instances must stay under max_connections
+#   10 x 20 instances = 200, against max_connections = 300. Leave room for
+#   migrations, your psql session and the monitoring agent - the connection
+#   you cannot get is always the one you need during an incident.</code></pre>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; SQL and PostgreSQL</div>
+  <a class="r" href="https://urldefense.com/v3/__https://use-the-index-luke.com/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5ACw4B49$" target="_blank" rel="noopener"><span>Use The Index, Luke!<i>The best free resource on indexing anywhere. The chapters on composite indexes and on <code>ORDER BY</code> are essential.</i></span><span class="dur">book</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://pgexercises.com/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5D_-kDK7$" target="_blank" rel="noopener"><span>PostgreSQL Exercises<i>Eighty graded exercises from simple selects to window functions, with answers. Do all the joins and aggregates sections in Week 07.</i></span><span class="dur">6 h</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=postgres*explain*analyze*tutorial*query*plan*reading__;KysrKysr!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5FeVpdNd$" target="_blank" rel="noopener"><span>Reading <code>EXPLAIN ANALYZE</code><i>Watch someone read a plan out loud once and it stops being intimidating.</i></span><span class="dur">30 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=database*transaction*isolation*levels*explained*dirty*read*phantom__;KysrKysrKw!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Kx7RQuf$" target="_blank" rel="noopener"><span>Isolation levels explained<i>Guaranteed interview territory. Be able to draw Drawing 06-D from memory.</i></span><span class="dur">25 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.postgresql.org/docs/current/index.html__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Hr6jzek$" target="_blank" rel="noopener"><span>PostgreSQL documentation<i>Unusually well written for a reference manual. The chapters on MVCC and on indexes read like a textbook.</i></span><span class="dur">docs</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="mongo">MongoDB</h2>
+<p class="sub">Documents instead of rows. The model genuinely fits some data &mdash; and the design decision
+that matters is not &ldquo;SQL or NoSQL&rdquo;, it is <b>embed or reference</b>.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 350" role="img" aria-label="Embedding versus referencing in MongoDB: an access request with its approvals embedded is read in one operation but grows unbounded, whereas referencing keeps documents small at the cost of a second query or a lookup stage.">
+  <text class="mm c" x="30" y="34">EMBED &mdash; ONE DOCUMENT, ONE READ</text>
+  <rect class="box-c" x="30" y="50" width="540" height="190" rx="3"/>
+  <text class="m c" x="46" y="74">{ _id: "ar_7f3a91",</text>
+  <text class="m c" x="46" y="94">&nbsp;&nbsp;employeeId: "e_10422",</text>
+  <text class="m c" x="46" y="114">&nbsp;&nbsp;siteId: "BLR-01",</text>
+  <text class="m c" x="46" y="134">&nbsp;&nbsp;approvals: [</text>
+  <text class="m c" x="46" y="154">&nbsp;&nbsp;&nbsp;&nbsp;{ by: "e_10500", decision: "approved" },</text>
+  <text class="m c" x="46" y="174">&nbsp;&nbsp;&nbsp;&nbsp;{ by: "e_10891", decision: "approved" }</text>
+  <text class="m c" x="46" y="194">&nbsp;&nbsp;] }</text>
+  <text class="mm c" x="46" y="222">ONE ROUND TRIP. ATOMIC UPDATE OF THE WHOLE THING.</text>
+
+  <text class="mm c" x="30" y="266">EMBED WHEN: THE CHILD IS ONLY EVER READ WITH THE PARENT &middot; THE LIST</text>
+  <text class="mm c" x="30" y="282">IS BOUNDED AND SMALL &middot; THEY ARE UPDATED TOGETHER &middot; THE CHILD HAS</text>
+  <text class="mm c" x="30" y="298">NO INDEPENDENT IDENTITY.</text>
+  <text class="mm r" x="30" y="326">LIMIT: A DOCUMENT MAY NOT EXCEED 16 MB. AN UNBOUNDED ARRAY IS A TIME BOMB.</text>
+
+  <line class="ln dash" x1="600" y1="30" x2="600" y2="340"/>
+
+  <text class="mm b" x="640" y="34">REFERENCE &mdash; SEPARATE COLLECTIONS</text>
+  <rect class="box-a" x="640" y="50" width="530" height="86" rx="3"/>
+  <text class="m b" x="656" y="74">// access_requests</text>
+  <text class="m b" x="656" y="96">{ _id: "ar_7f3a91", employeeId: "e_10422",</text>
+  <text class="m b" x="656" y="118">&nbsp;&nbsp;siteId: "BLR-01" }</text>
+
+  <rect class="box-a" x="640" y="152" width="530" height="88" rx="3"/>
+  <text class="m b" x="656" y="176">// approvals</text>
+  <text class="m b" x="656" y="198">{ _id: ..., requestId: "ar_7f3a91", by: "e_10500" }</text>
+  <text class="m b" x="656" y="220">{ _id: ..., requestId: "ar_7f3a91", by: "e_10891" }</text>
+
+  <text class="mm b" x="640" y="266">REFERENCE WHEN: THE CHILD IS QUERIED ON ITS OWN &middot; THE LIST GROWS</text>
+  <text class="mm b" x="640" y="282">WITHOUT BOUND &middot; IT IS SHARED BY MANY PARENTS &middot; IT CHANGES FAR</text>
+  <text class="mm b" x="640" y="298">MORE OFTEN THAN THE PARENT.</text>
+  <text class="mm" x="640" y="326">COST: A SECOND QUERY, OR A $lookup &mdash; WHICH IS A JOIN, AND IS SLOWER THAN A REAL ONE.</text>
+</svg>
+<figcaption>Drawing 06-F &mdash; embed versus reference. <b>Cyan</b> = read together. <b>Brass</b> = queried
+independently.</figcaption>
+</figure>
+
+<div class="code" data-lang="javascript">
+<header><b>the access_events collection, and an aggregation pipeline</b></header>
+<pre><code>// The document we actually store: whatever the controller sent, verbatim,
+// wrapped in a few fields WE control and can index.
+{
+  _id: ObjectId("..."),
+  siteId: "BLR-01",
+  employeeId: "e_10422",
+  eventType: "door.granted",
+  occurredAt: ISODate("2026-08-27T09:14:02.331Z"),
+  controller: { model: "CC-9000", firmware: "4.2.1" },
+  raw: { /* vendor payload, shape varies, never queried by us */ }
+}
+
+// Indexes: same rules as PostgreSQL, same leftmost-prefix behaviour.
+db.access_events.createIndex({ siteId: 1, occurredAt: -1 })
+db.access_events.createIndex({ employeeId: 1, occurredAt: -1 })
+db.access_events.createIndex({ occurredAt: 1 }, { expireAfterSeconds: 60*60*24*400 })
+//   A TTL index: events self-delete after ~13 months, matching the retention
+//   policy. No cron job, no cleanup script that everyone forgets to monitor.
+
+// Aggregation pipeline: denials per site per day, last 30 days.
+db.access_events.aggregate([
+  { $match: {                                    // ALWAYS first - it uses the index
+      eventType: "door.denied",
+      occurredAt: { $gte: new Date(Date.now() - 30*24*3600*1000) } } },
+  { $group: {
+      _id: { site: "$siteId",
+             day:  { $dateToString: { format: "%Y-%m-%d", date: "$occurredAt" } } },
+      denials:   { $sum: 1 },
+      employees: { $addToSet: "$employeeId" } } },
+  { $project: {
+      _id: 0, site: "$_id.site", day: "$_id.day",
+      denials: 1, distinctEmployees: { $size: "$employees" } } },
+  { $sort: { denials: -1 } },
+  { $limit: 20 },
+])
+
+// Explain works here too, and you should use it:
+db.access_events.find({ siteId: "BLR-01" }).explain("executionStats")
+//   Look for stage: "IXSCAN". "COLLSCAN" means no index was used.</code></pre>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">The honest position on MongoDB</span>
+  <p>Mongo has had multi-document ACID transactions since 4.0, so &ldquo;NoSQL has no transactions&rdquo; is
+  out of date &mdash; but they carry real cost and are not the idiomatic path, and if you find yourself
+  needing them everywhere, the data was relational and you chose wrong. Its genuine strengths are a flexible
+  schema for data whose shape you do not control, straightforward horizontal sharding, and a document model
+  that maps neatly onto objects. Its genuine weakness is that it makes joins and cross-entity invariants
+  awkward, which is most business software. For BadgeDesk it holds exactly one collection, and that is the
+  right amount.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; MongoDB</div>
+  <a class="r" href="https://urldefense.com/v3/__https://learn.mongodb.com/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5G4ppcEw$" target="_blank" rel="noopener"><span>MongoDB University<i>Free official courses. &ldquo;Data Modeling&rdquo; and &ldquo;Aggregation&rdquo; are the two that matter.</i></span><span class="dur">course</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=mongodb*schema*design*embed*vs*reference*patterns__;KysrKysr!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Ce1YIIH$" target="_blank" rel="noopener"><span>Embed vs reference &mdash; schema design patterns<i>The actual skill in Mongo. Look for the six-rules-of-thumb series.</i></span><span class="dur">30 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.mongodb.com/docs/manual/core/aggregation-pipeline/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5LToAW2O$" target="_blank" rel="noopener"><span>Aggregation pipeline reference<i>Keep it open while writing your first pipelines; the stage names are not guessable.</i></span><span class="dur">docs</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="redis">Redis</h2>
+<p class="sub">An in-memory data structure server. Thinking of it as &ldquo;a cache&rdquo; undersells it and
+leads to the two classic mistakes: caching things that should not be cached, and never invalidating them.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Structure</th><th>Commands</th><th>BadgeDesk use</th></tr></thead>
+<tbody>
+<tr><td>String</td><td><code>SET</code> <code>GET</code> <code>INCR</code> <code>SETNX</code></td><td>Idempotency keys, cached JSON, counters</td></tr>
+<tr><td>Hash</td><td><code>HSET</code> <code>HGETALL</code> <code>HINCRBY</code></td><td>A session object, updated field by field without rewriting the whole thing</td></tr>
+<tr><td>List</td><td><code>LPUSH</code> <code>BRPOP</code></td><td>A simple job queue. Adequate; Kafka is better when durability matters.</td></tr>
+<tr><td>Set</td><td><code>SADD</code> <code>SISMEMBER</code> <code>SINTER</code></td><td>Which sites an employee may enter &mdash; membership tests in constant time</td></tr>
+<tr><td>Sorted set</td><td><code>ZADD</code> <code>ZRANGEBYSCORE</code> <code>ZREMRANGEBYSCORE</code></td><td>Sliding-window rate limiting, scored by timestamp; leaderboards; delayed jobs</td></tr>
+<tr><td>Stream</td><td><code>XADD</code> <code>XREADGROUP</code></td><td>Consumer groups with acknowledgement &mdash; a lightweight Kafka when you already run Redis</td></tr>
+<tr><td>HyperLogLog</td><td><code>PFADD</code> <code>PFCOUNT</code></td><td>Approximate distinct badge scans per site in 12 KB regardless of volume</td></tr>
+</tbody>
+</table>
+</div>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 400" role="img" aria-label="The cache-aside pattern with a cache hit and a cache miss, the invalidation path on write, and the cache stampede problem where many concurrent misses hit the database at once, solved by a short lock so only one request rebuilds the entry.">
+  <defs><marker id="s06g-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  <marker id="s06g-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+  <marker id="s06g-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker></defs>
+
+  <text class="mm c" x="30" y="34">CACHE-ASIDE &mdash; THE DEFAULT PATTERN</text>
+  <rect class="box" x="30" y="50" width="150" height="50" rx="3"/><text class="m mid" x="105" y="80">service</text>
+  <rect class="box-a" x="270" y="50" width="150" height="50" rx="3"/><text class="m b mid" x="345" y="80">Redis</text>
+  <rect class="box-c" x="510" y="50" width="170" height="50" rx="3"/><text class="m mid" x="595" y="80">Postgres</text>
+
+  <path class="flow-b" d="M184,66 H266" marker-end="url(#s06g-ab)"/>
+  <text class="mm b" x="190" y="60">1 GET site:BLR-01</text>
+  <path class="flow" d="M266,92 H184" marker-end="url(#s06g-ac)"/>
+  <text class="mm c" x="190" y="112">2a HIT &mdash; RETURN. ~0.2 ms, DATABASE NEVER TOUCHED.</text>
+
+  <path class="flow" d="M424,66 H506" marker-end="url(#s06g-ac)"/>
+  <text class="mm" x="430" y="60">2b MISS</text>
+  <path class="flow" d="M506,92 H424" marker-end="url(#s06g-ac)"/>
+  <text class="mm" x="430" y="112">3 QUERY, THEN SETEX site:BLR-01 300</text>
+
+  <line class="ln dash" x1="20" y1="132" x2="1180" y2="132"/>
+
+  <text class="mm b" x="30" y="158">INVALIDATION &mdash; ON WRITE, DELETE THE KEY. DO NOT UPDATE IT.</text>
+  <rect class="box-c" x="30" y="172" width="640" height="86" rx="3"/>
+  <text class="m c" x="46" y="196">async with db.transaction():</text>
+  <text class="m c" x="46" y="216">&nbsp;&nbsp;&nbsp;&nbsp;await update_site(site_id, payload)</text>
+  <text class="m c" x="46" y="236">await redis.delete(f"site:{site_id}")   # AFTER the commit, and DELETE</text>
+  <text class="mm" x="46" y="252">WRITING THE NEW VALUE INSTEAD RACES WITH A CONCURRENT REBUILD AND CAN LEAVE STALE DATA CACHED FOREVER.</text>
+
+  <text class="mm r" x="700" y="158">STAMPEDE &mdash; THE FAILURE MODE NOBODY PLANS FOR</text>
+  <rect class="box-r" x="700" y="172" width="470" height="86" rx="3"/>
+  <text class="m" x="716" y="196">A popular key expires. 500 concurrent requests all miss,</text>
+  <text class="m" x="716" y="216">all query Postgres for the same row, all write it back.</text>
+  <text class="m r" x="716" y="236">The cache that exists to protect the database DDoSes it.</text>
+
+  <text class="mm c" x="700" y="284">FIXES: A SHORT LOCK (SET lock:key NX EX 5) SO ONE REQUEST REBUILDS AND</text>
+  <text class="mm c" x="700" y="300">THE REST BRIEFLY SERVE STALE &middot; JITTER THE TTL SO KEYS DO NOT EXPIRE</text>
+  <text class="mm c" x="700" y="316">TOGETHER &middot; REFRESH AHEAD OF EXPIRY IN THE BACKGROUND.</text>
+
+  <text class="mm" x="30" y="284">NEVER CACHE: AUTHORISATION DECISIONS &middot; ANYTHING WHOSE STALENESS</text>
+  <text class="mm" x="30" y="300">IS A SECURITY PROBLEM &middot; DATA YOU CANNOT REBUILD.</text>
+  <text class="mm" x="30" y="316">ALWAYS SET A TTL. A KEY WITH NO EXPIRY IS A MEMORY LEAK WITH A NAME.</text>
+
+  <line class="ln dash" x1="20" y1="336" x2="1180" y2="336"/>
+  <text class="mm r" x="30" y="360">REDLOCK CAVEAT: A REDIS LOCK IS AN OPTIMISATION, NOT A CORRECTNESS GUARANTEE. IT CAN BE HELD BY TWO CLIENTS DURING A FAILOVER OR A LONG GARBAGE-COLLECTION PAUSE.</text>
+  <text class="mm r" x="30" y="380">IF DOUBLE EXECUTION WOULD BE UNACCEPTABLE &mdash; PROVISIONING A BADGE TWICE &mdash; ENFORCE IT WITH A UNIQUE CONSTRAINT IN POSTGRES AS WELL. THE LOCK REDUCES CONTENTION; THE CONSTRAINT MAKES IT CORRECT.</text>
+</svg>
+<figcaption>Drawing 06-G &mdash; cache-aside, invalidation and the stampede. <b>Red</b> = the failure modes.</figcaption>
+</figure>
+
+<div class="code" data-lang="python">
+<header><b>services/core/app/cache.py &mdash; cache-aside with stampede protection</b></header>
+<pre><code>import json, random
+
+async def get_site(site_id: str, redis, db) -&gt; dict:
+    key = f"site:{site_id}"
+
+    if cached := await redis.get(key):
+        return json.loads(cached)
+
+    # Only one caller rebuilds. The rest wait briefly and re-read.
+    lock = f"lock:{key}"
+    if await redis.set(lock, "1", nx=True, ex=5):
+        try:
+            site = await db.fetch_site(site_id)
+            # Jittered TTL: 300 to 360 seconds, so a batch of keys created
+            # together does not expire together.
+            await redis.set(key, json.dumps(site), ex=300 + random.randint(0, 60))
+            return site
+        finally:
+            await redis.delete(lock)
+
+    await asyncio.sleep(0.05)
+    if cached := await redis.get(key):
+        return json.loads(cached)
+    return await db.fetch_site(site_id)      # last resort: never fail on cache trouble</code></pre>
+</div>
+
+<div class="code" data-lang="python">
+<header><b>sliding-window rate limiting with a sorted set</b></header>
+<pre><code>async def allow(redis, api_key: str, limit: int = 100, window: int = 60) -&gt; bool:
+    key, now = f"rl:{api_key}", time.time()
+    pipe = redis.pipeline()                  # one round trip, executed atomically
+    pipe.zremrangebyscore(key, 0, now - window)   # drop entries outside the window
+    pipe.zadd(key, {f"{now}:{uuid4()}": now})     # record this request
+    pipe.zcard(key)                               # how many in the window
+    pipe.expire(key, window)                      # so idle keys disappear
+    _, _, count, _ = await pipe.execute()
+    return count &lt;= limit
+# A fixed-window counter is simpler but allows 2x the limit across a boundary:
+# 100 requests at 11:59:59 and 100 more at 12:00:00 both "pass".</code></pre>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; Redis and caching</div>
+  <a class="r" href="https://urldefense.com/v3/__https://redis.io/docs/latest/develop/data-types/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5AJTME8h$" target="_blank" rel="noopener"><span>Redis data types<i>Short pages per structure with the commands. Read all seven; knowing sorted sets exist changes how you solve problems.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=caching*strategies*cache*aside*write*through*invalidation*explained__;KysrKysrKw!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5CHRroBr$" target="_blank" rel="noopener"><span>Caching strategies compared<i>Cache-aside, read-through, write-through, write-behind, and when each is appropriate.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5AVTURS7$" target="_blank" rel="noopener"><span>Kleppmann &mdash; How to do distributed locking<i>The definitive critique of Redlock. Cite this and you will sound like someone who has thought about it.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=rate*limiting*algorithms*token*bucket*sliding*window*redis__;KysrKysrKw!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5L1e99T_$" target="_blank" rel="noopener"><span>Rate limiting algorithms<i>Token bucket, leaky bucket, fixed and sliding window. Common system design follow-up.</i></span><span class="dur">18 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="compare">Choosing a store</h2>
+<div class="tw">
+<table>
+<thead><tr><th>Dimension</th><th>PostgreSQL</th><th>MongoDB</th><th>Redis</th></tr></thead>
+<tbody>
+<tr><td>Data model</td><td>Relations with a fixed schema</td><td>Documents, flexible schema</td><td>Key to data structure</td></tr>
+<tr><td>Durability</td><td>WAL, synchronous commit, point-in-time recovery</td><td>Journal plus replica-set write concern</td><td>Optional &mdash; AOF or RDB snapshots; treat as volatile</td></tr>
+<tr><td>Transactions</td><td>Full ACID, multi-table, several isolation levels</td><td>Multi-document since 4.0, but costly and non-idiomatic</td><td>Single-command atomicity, <code>MULTI</code>, Lua scripts</td></tr>
+<tr><td>Joins</td><td>Native and optimised</td><td><code>$lookup</code> &mdash; works, slower, awkward</td><td>None. Do it in the application.</td></tr>
+<tr><td>Enforced constraints</td><td>Foreign keys, unique, check, exclusion</td><td>JSON Schema validation, opt-in</td><td>None</td></tr>
+<tr><td>Scaling reads</td><td>Read replicas</td><td>Replica set secondaries</td><td>Replicas, plus Cluster</td></tr>
+<tr><td>Scaling writes</td><td>Vertical, then partitioning or Citus &mdash; genuine work</td><td>Sharding is built in and well trodden</td><td>Cluster with hash slots</td></tr>
+<tr><td>Query flexibility</td><td>Very high &mdash; arbitrary SQL against any shape</td><td>Good, if the access pattern matches the document design</td><td>Only what you designed the key for</td></tr>
+<tr><td>Latency, typical point read</td><td>1&ndash;5 ms</td><td>1&ndash;5 ms</td><td>0.1&ndash;0.5 ms</td></tr>
+<tr><td>Operational burden</td><td>Vacuum, bloat, connection limits, plan regressions</td><td>Chunk balancing, index memory, shard key you cannot change</td><td>Memory ceiling, eviction policy, failover behaviour</td></tr>
+<tr><td>Reach for it when</td><td>Almost always. This is the default.</td><td>Shape genuinely varies and you never need cross-entity invariants</td><td>Derived data, coordination, sub-millisecond reads</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p>&ldquo;SQL or NoSQL for this?&rdquo; is a trap when answered as a preference. Answer with the access
+  patterns: what are the reads, what are the writes, what invariants must hold, and what is the scale? For
+  BadgeDesk, requests and approvals must never disagree and are always queried relationally &rarr;
+  PostgreSQL. Door events have no cross-entity invariants, arrive in six shapes and are queried by
+  aggregation &rarr; a document store or a <code>jsonb</code> column. Then say what would change your mind:
+  at a hundred times the event volume, the aggregation pipeline stops being adequate and this becomes a
+  column store such as ClickHouse.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="connect">How the subtopics connect</h2>
+<p class="sub">One approval, touching all three stores, with the guarantee each one provides.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 400" role="img" aria-label="An approval traced through all three stores: Redis claims the idempotency key, a PostgreSQL transaction guards on the current status and inserts the approval row and the outbox event atomically, the cache entry is deleted after commit, a relay publishes the outbox event to Kafka, and the resulting door event is appended to MongoDB.">
+  <defs><marker id="s06h-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  <marker id="s06h-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker></defs>
+
+  <rect class="box-a" x="30" y="66" width="200" height="60" rx="3"/>
+  <text class="t b mid" x="130" y="90">1 &middot; Redis</text>
+  <text class="mm mid" x="130" y="108">SET idem:&hellip; NX EX</text>
+
+  <rect class="box-c" x="280" y="66" width="330" height="60" rx="3"/>
+  <text class="t mid" x="445" y="90">2 &middot; Postgres &mdash; ONE TRANSACTION</text>
+  <text class="mm mid" x="445" y="108">UPDATE &hellip; WHERE status='pending' RETURNING</text>
+
+  <rect class="box-c" x="660" y="66" width="240" height="60" rx="3"/>
+  <text class="t mid" x="780" y="90">3 &middot; approvals</text>
+  <text class="mm mid" x="780" y="108">UNIQUE (request_id, approver_id)</text>
+
+  <rect class="box-c" x="950" y="66" width="220" height="60" rx="3"/>
+  <text class="t mid" x="1060" y="90">4 &middot; outbox</text>
+  <text class="mm mid" x="1060" y="108">SAME TRANSACTION</text>
+
+  <rect class="box-a" x="30" y="180" width="200" height="60" rx="3"/>
+  <text class="t b mid" x="130" y="204">5 &middot; Redis</text>
+  <text class="mm mid" x="130" y="222">DEL site:BLR-01</text>
+
+  <rect class="box-a" x="280" y="180" width="330" height="60" rx="3"/>
+  <text class="t b mid" x="445" y="204">6 &middot; Outbox relay &rarr; Kafka</text>
+  <text class="mm mid" x="445" y="222">access.approved</text>
+
+  <rect class="box-c" x="660" y="180" width="510" height="60" rx="3"/>
+  <text class="t mid" x="915" y="204">7 &middot; MongoDB &mdash; access_events</text>
+  <text class="mm mid" x="915" y="222">DOOR CONTROLLER READS APPENDED, TTL INDEX EXPIRES THEM AT 13 MONTHS</text>
+
+  <path class="flow-b" d="M234,96 H276" marker-end="url(#s06h-ab)"/>
+  <path class="flow" d="M614,96 H656" marker-end="url(#s06h-ac)"/>
+  <path class="flow" d="M904,96 H946" marker-end="url(#s06h-ac)"/>
+  <path class="flow-b" d="M1060,130 V156 H130 V176" marker-end="url(#s06h-ab)"/>
+  <path class="flow-b" d="M234,210 H276" marker-end="url(#s06h-ab)"/>
+  <path class="flow" d="M614,210 H656" marker-end="url(#s06h-ac)"/>
+
+  <line class="ln dash" x1="20" y1="266" x2="1180" y2="266"/>
+  <text class="mm" x="30" y="290">WHY EACH GUARANTEE IS LOAD-BEARING:</text>
+  <text class="mm" x="30" y="312">1 REDIS SET NX IS ATOMIC, SO A DOUBLE-CLICK CANNOT CREATE TWO APPROVALS &middot; 2 THE WHERE status='pending' GUARD PLUS RETURNING MEANS ZERO ROWS TELLS US SOMEONE ELSE DECIDED FIRST</text>
+  <text class="mm" x="30" y="334">3 THE UNIQUE CONSTRAINT IS THE LAST LINE OF DEFENCE, ENFORCED BY THE ENGINE EVEN IF EVERY APPLICATION CHECK IS BYPASSED &middot; 4 THE OUTBOX ROW COMMITS WITH THE APPROVAL, SO WE</text>
+  <text class="mm" x="30" y="356">CANNOT APPROVE WITHOUT PUBLISHING OR PUBLISH WITHOUT APPROVING &middot; 5 INVALIDATION HAPPENS AFTER COMMIT, NEVER BEFORE, OR A CONCURRENT READ REPOPULATES THE STALE VALUE</text>
+  <text class="mm b" x="30" y="384">THE OUTBOX PATTERN AT STEP 4 IS THE ANSWER TO &ldquo;HOW DO YOU WRITE TO A DATABASE AND A QUEUE ATOMICALLY?&rdquo; &mdash; YOU DO NOT. YOU WRITE TO ONE, AND RELAY. SEE <a href="messaging.html">SHEET 11</a>.</text>
+</svg>
+<figcaption>Drawing 06-H &mdash; one approval across three stores. <b>Cyan</b> = durable and transactional.
+<b>Brass</b> = derived or asynchronous.</figcaption>
+</figure>
+
+<!-- ===================================================================== -->
+<h2 id="drill">Drill book</h2>
+<p class="sub">Databases carry more interview weight than anything else on this set. Answer out loud.</p>
+
+<div class="drill">
+  <div class="dh">Databases</div>
+  <details><summary>Explain ACID with a concrete example.</summary>
+    <div class="ans"><p>Approving a request updates <code>access_requests</code>, inserts into
+    <code>approvals</code> and inserts an outbox row. <b>Atomicity</b>: all three or none &mdash; never an
+    approval row with the request still pending. <b>Consistency</b>: the unique constraint and the check on
+    the date window hold at commit. <b>Isolation</b>: a concurrent approver does not see my half-finished
+    work. <b>Durability</b>: once committed, a power cut cannot undo it, because the write-ahead log was
+    flushed before the commit was acknowledged.</p></div></details>
+  <details><summary>What is an index, and what does it cost?</summary>
+    <div class="ans"><p>A separate sorted structure &mdash; usually a B-tree &mdash; mapping column values to
+    row locations, so a lookup is three or four page reads instead of scanning the table. The cost is space,
+    plus write amplification: every insert, update and delete must maintain every affected index. That is
+    why an unused index is worse than no index, and why you check
+    <code>pg_stat_user_indexes</code> for ones with zero scans.</p></div></details>
+  <details><summary>You have an index on <code>(site_id, status, created_at)</code>. Which queries use it?</summary>
+    <div class="ans"><p>Anything filtering on a leftmost prefix: <code>site_id</code> alone;
+    <code>site_id</code> and <code>status</code>; all three. A query on <code>status</code> alone cannot use
+    it, because the index is sorted by <code>site_id</code> first &mdash; like looking for everyone with a
+    given first name in a phone book ordered by surname. Order the columns with equality predicates first
+    and range predicates last, since a range stops later columns from narrowing the scan.</p></div></details>
+  <details><summary>The same query is fast in staging and slow in production. Why?</summary>
+    <div class="ans"><p>Most often data volume and distribution: the planner chose a sequential scan because
+    staging has ten thousand rows and production has ten million, or statistics are stale so the estimates
+    are wrong. Run <code>EXPLAIN (ANALYZE, BUFFERS)</code> on both and compare estimated against actual
+    rows. Other candidates: a missing index that was created by hand in staging, parameter sniffing on a
+    prepared statement, lock contention, or the working set no longer fitting in the buffer cache.</p></div></details>
+  <details><summary>What are the isolation levels and what does each prevent?</summary>
+    <div class="ans"><p>Read Uncommitted allows dirty reads &mdash; and PostgreSQL does not implement it,
+    treating it as Read Committed. Read Committed, the Postgres default, prevents dirty reads; each
+    statement sees a fresh snapshot, so non-repeatable and phantom reads remain possible. Repeatable Read
+    takes one snapshot for the whole transaction, preventing both. Serializable additionally prevents write
+    skew by aborting transactions that could not have occurred in any serial order &mdash; which means your
+    code must catch SQLSTATE 40001 and retry.</p></div></details>
+  <details><summary>What is a deadlock and how do you avoid it?</summary>
+    <div class="ans"><p>Two transactions each hold a lock the other needs, so neither can proceed;
+    PostgreSQL detects the cycle after about a second and aborts one with 40P01. The main prevention is
+    acquiring locks in a consistent order &mdash; sort the ids before locking &mdash; plus short
+    transactions, no external calls while holding locks, and a <code>statement_timeout</code>. You still
+    retry, because deadlocks are a normal condition rather than a bug.</p></div></details>
+  <details><summary>How do you add a <code>NOT NULL</code> column to a table with fifty million rows, with no downtime?</summary>
+    <div class="ans"><p>Add it nullable with a default &mdash; on PostgreSQL 11 and later that is metadata
+    only and instant. Backfill in batches of a few thousand keyed on the primary key, committing between
+    batches so you never hold a long transaction or bloat the table. Add a <code>CHECK (col IS NOT NULL) NOT
+    VALID</code>, then <code>VALIDATE CONSTRAINT</code>, which takes only a share lock. Finally set
+    <code>NOT NULL</code>, which can now use the validated constraint instead of rescanning.</p></div></details>
+  <details><summary>How would you cache the site directory, and how do you invalidate it?</summary>
+    <div class="ans"><p>Cache-aside in Redis keyed <code>site:{id}</code>, TTL around five minutes with
+    jitter so keys do not expire in lockstep. On write, commit to Postgres first and then
+    <code>DEL</code> the key &mdash; delete rather than update, because writing a new value races with a
+    concurrent rebuild and can leave a stale entry with a fresh TTL. Guard the rebuild with a short lock so
+    a popular key expiring does not stampede the database.</p></div></details>
+  <details><summary>Why can you not write to a database and a message queue atomically?</summary>
+    <div class="ans"><p>They are separate systems with separate commit protocols, so any ordering leaves a
+    window: commit first and the process can die before publishing; publish first and the transaction can
+    roll back after the event is out. Two-phase commit solves it in theory and is operationally miserable.
+    The practical answer is the transactional outbox &mdash; insert the event into an outbox table inside
+    the same transaction, then have a relay read that table and publish, marking rows as sent. Delivery
+    becomes at-least-once, so consumers must be idempotent.</p></div></details>
+  <details><summary>When would you actually reach for MongoDB over PostgreSQL?</summary>
+    <div class="ans"><p>When the shape genuinely varies and is not under your control &mdash; six door
+    controller vendors emitting six payloads that change with firmware releases &mdash; and when there are
+    no invariants spanning entities, so you never need a transaction across documents. Also when you know
+    you will shard on a clear key. I would say honestly that a <code>jsonb</code> column in Postgres covers
+    the same case at BadgeDesk's scale and removes a database from the estate; the argument for Mongo gets
+    stronger with volume and with a team already operating it.</p></div></details>
+  <details><summary>What does <code>N+1</code> look like at the database layer and how do you find it?</summary>
+    <div class="ans"><p>One query for a list, then one more per row for a related entity &mdash; typically an
+    ORM lazily loading a relationship inside a loop. You find it by logging query counts per request and
+    alerting when the count scales with result size, or with <code>pg_stat_statements</code> showing an
+    enormous call count for a trivial query. Fix it with a join, an eager-loading hint such as
+    <code>selectinload</code>, or a batched <code>WHERE id IN (&hellip;)</code> &mdash; the same fix as the
+    GraphQL DataLoader on <a href="apis.html">Sheet 05</a>.</p></div></details>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="signoff">Sign-off</h2>
+<p class="sub">Tick only what you have built yourself and can explain with the sheet closed.</p>
+
+<div class="signoff">
+  <div class="sh"><span>Week 07</span><span>Sheet 06</span></div>
+  <label><input type="checkbox"><span>Wrote the BadgeDesk schema from scratch with foreign keys, check constraints and a unique constraint that prevents double approval.</span></label>
+  <label><input type="checkbox"><span>Can explain 1NF, 2NF and 3NF with a BadgeDesk example of each violation.</span></label>
+  <label><input type="checkbox"><span>Wrote inner, left and anti-joins, and demonstrated how moving a filter from <code>WHERE</code> to <code>ON</code> changes the result.</span></label>
+  <label><input type="checkbox"><span>Solved &ldquo;most recent request per employee&rdquo; with a window function and with <code>DISTINCT ON</code>.</span></label>
+  <label><input type="checkbox"><span>Wrote a recursive CTE for the management chain.</span></label>
+  <label><input type="checkbox"><span>Took a query from a sequential scan to an index scan and recorded both <code>EXPLAIN ANALYZE</code> outputs.</span></label>
+  <label><input type="checkbox"><span>Demonstrated the leftmost prefix rule by showing a query that cannot use the composite index.</span></label>
+  <label><input type="checkbox"><span>Reproduced a deadlock with two <code>psql</code> sessions, then fixed it with consistent lock ordering.</span></label>
+  <label><input type="checkbox"><span>Reproduced write skew and prevented it with <code>SELECT ... FOR UPDATE</code>.</span></label>
+  <label><input type="checkbox"><span>Backfilled a column in batches on a table of at least a million rows without a long transaction.</span></label>
+  <label><input type="checkbox"><span>Implemented cache-aside with jittered TTL and stampede protection, and measured the hit rate.</span></label>
+  <label><input type="checkbox"><span>Built sliding-window rate limiting with a Redis sorted set and explained why a fixed window allows double the limit at a boundary.</span></label>
+  <label><input type="checkbox"><span>Wrote a MongoDB aggregation pipeline with <code>$match</code> first, and confirmed <code>IXSCAN</code> in the explain output.</span></label>
+  <label><input type="checkbox"><span>Can justify each of the three stores in one sentence, and say what would make me drop one.</span></label>
+</div>
+
+</div><!-- /sheetbody -->
+</main>
+
+<aside class="toc" aria-label="Contents"></aside>
+</div>
+
+<script src="assets/js/nav-data.js"></script>
+<script src="assets/js/sheet.js"></script>
+</body>
+</html>

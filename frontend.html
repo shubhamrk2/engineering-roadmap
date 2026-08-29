@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheet 03 &mdash; Frontend &mdash; BadgeDesk Roadmap</title>
+<link rel="stylesheet" href="assets/css/sheet.css">
+</head>
+<body data-sheet="03">
+<a class="skip" href="#main">Skip to sheet</a>
+<div class="wrap">
+<nav class="rail" aria-label="Sheet index"></nav>
+
+<main id="main">
+
+<header class="sheethead">
+  <div>
+    <div class="no">Sheet 03 &middot; Build the product &middot; Weeks 03&ndash;04</div>
+    <h1>Front&shy;end<span>.</span></h1>
+    <p class="lede">HTML, CSS, Tailwind, React and Next.js &mdash; assembled into the BadgeDesk
+    <code>web</code> service. The idea that holds all five together: <b>the browser is a rendering pipeline,
+    and every framework on this sheet exists to control when and where that pipeline runs.</b> Learn the
+    pipeline first and React stops being magic.</p>
+  </div>
+  <div class="specs">
+    <div><span>Weeks</span><span>03 &ndash; 04</span></div>
+    <div><span>Hours</span><span>32 &ndash; 36</span></div>
+    <div><span>Must know</span><span>CSS, React</span></div>
+    <div><span>Nice to have</span><span>Container queries</span></div>
+    <div><span>Ships</span><span>BadgeDesk web</span></div>
+  </div>
+</header>
+
+<div class="sheetbody">
+
+<!-- ===================================================================== -->
+<h2 id="pipeline">What the browser actually does</h2>
+<p class="sub">Six stages between the first byte and a pixel the employee can click. Every performance
+problem you will ever debug is one of these stages being blocked, repeated, or done at the wrong time.</p>
+
+<figure class="dwg dwg--hero">
+<svg viewBox="0 0 1200 510" role="img" aria-label="The browser critical rendering path: HTML parsed into the DOM and CSS parsed into the CSSOM, combined into a render tree, then layout, paint and composite. A blocking script stalls DOM construction and a web font stalls paint. Below, the React hydration sequence from server HTML to interactive.">
+  <defs>
+    <marker id="s03-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s03-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s03-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <text class="mm" x="30" y="40">THE CRITICAL RENDERING PATH &mdash; NOTHING IS ON SCREEN UNTIL ALL SIX STAGES FINISH</text>
+
+  <rect class="box" x="30" y="56" width="160" height="52" rx="3"/>
+  <text class="t mid" x="110" y="79">index.html</text>
+  <text class="mm mid" x="110" y="95">BYTES FROM THE SERVER</text>
+
+  <rect class="box-c" x="232" y="56" width="170" height="52" rx="3"/>
+  <text class="t mid" x="317" y="79">DOM</text>
+  <text class="mm mid" x="317" y="95">TOKENISE &rarr; TREE</text>
+
+  <rect class="box" x="30" y="146" width="160" height="52" rx="3"/>
+  <text class="t mid" x="110" y="169">styles.css</text>
+  <text class="mm mid" x="110" y="185">RENDER-BLOCKING</text>
+
+  <rect class="box-c" x="232" y="146" width="170" height="52" rx="3"/>
+  <text class="t mid" x="317" y="169">CSSOM</text>
+  <text class="mm mid" x="317" y="185">CASCADE RESOLVED</text>
+
+  <rect class="box-a" x="452" y="101" width="160" height="52" rx="3"/>
+  <text class="t b mid" x="532" y="124">Render tree</text>
+  <text class="mm mid" x="532" y="140">VISIBLE NODES ONLY</text>
+
+  <rect class="box" x="662" y="101" width="140" height="52" rx="3"/>
+  <text class="t mid" x="732" y="124">Layout</text>
+  <text class="mm mid" x="732" y="140">WHERE + HOW BIG</text>
+
+  <rect class="box" x="842" y="101" width="140" height="52" rx="3"/>
+  <text class="t mid" x="912" y="124">Paint</text>
+  <text class="mm mid" x="912" y="140">FILL IN PIXELS</text>
+
+  <rect class="box" x="1010" y="101" width="160" height="52" rx="3"/>
+  <text class="t mid" x="1090" y="124">Composite</text>
+  <text class="mm mid" x="1090" y="140">LAYERS TO SCREEN</text>
+
+  <path class="flow" d="M194,82 H226" marker-end="url(#s03-ac)"/>
+  <path class="flow" d="M194,172 H226" marker-end="url(#s03-ac)"/>
+  <path class="flow" d="M406,82 H428 V127 H446" marker-end="url(#s03-ac)"/>
+  <path class="flow" d="M406,172 H428 V127 H446" marker-end="url(#s03-ac)"/>
+  <path class="flow" d="M616,127 H656" marker-end="url(#s03-ac)"/>
+  <path class="flow" d="M806,127 H836" marker-end="url(#s03-ac)"/>
+  <path class="flow" d="M986,127 H1004" marker-end="url(#s03-ac)"/>
+
+  <text class="mm" x="452" y="176">DISPLAY:NONE NODES NEVER REACH HERE.</text>
+  <text class="mm" x="452" y="192">VISIBILITY:HIDDEN NODES DO &mdash; THEY STILL TAKE SPACE.</text>
+
+  <rect class="box-r" x="232" y="252" width="170" height="50" rx="3"/>
+  <text class="t r mid" x="317" y="274">&lt;script src&gt;</text>
+  <text class="mm mid" x="317" y="290">NO DEFER, NO ASYNC</text>
+  <path class="flow-r dash" d="M317,248 V116" marker-end="url(#s03-ar)"/>
+  <text class="mm r" x="150" y="322">STOPS DOM CONSTRUCTION DEAD</text>
+  <text class="mm r" x="150" y="338">UNTIL IT DOWNLOADS AND RUNS</text>
+
+  <rect class="box-r" x="842" y="252" width="140" height="50" rx="3"/>
+  <text class="t r mid" x="912" y="274">Web font</text>
+  <text class="mm mid" x="912" y="290">400 KB, LATE</text>
+  <path class="flow-r dash" d="M912,248 V161" marker-end="url(#s03-ar)"/>
+  <text class="mm r" x="1000" y="278">TEXT INVISIBLE OR SWAPPING</text>
+  <text class="mm r" x="1000" y="294">USE font-display: swap</text>
+
+  <line class="ln dash" x1="20" y1="368" x2="1180" y2="368"/>
+  <text class="mm b" x="30" y="396">WHERE REACT SITS &mdash; NEXT.JS SERVER-RENDERS, THEN THE BROWSER HYDRATES</text>
+
+  <rect class="box-c" x="30" y="412" width="220" height="52" rx="3"/>
+  <text class="t mid" x="140" y="435">Server HTML</text>
+  <text class="mm mid" x="140" y="451">VISIBLE, NOT CLICKABLE</text>
+
+  <rect class="box-a" x="292" y="412" width="220" height="52" rx="3"/>
+  <text class="t b mid" x="402" y="435">Hydrate</text>
+  <text class="mm mid" x="402" y="451">ATTACH EVENT LISTENERS</text>
+
+  <rect class="box" x="554" y="412" width="220" height="52" rx="3"/>
+  <text class="t mid" x="664" y="435">Interactive</text>
+  <text class="mm mid" x="664" y="451">APPROVE BUTTON WORKS</text>
+
+  <path class="flow-b" d="M254,438 H286" marker-end="url(#s03-ab)"/>
+  <path class="flow-b" d="M516,438 H548" marker-end="url(#s03-ab)"/>
+  <text class="mm r" x="810" y="432">THE GAP BETWEEN BOX ONE AND BOX THREE IS THE</text>
+  <text class="mm r" x="810" y="448">&ldquo;UNCANNY VALLEY&rdquo;: THE PAGE LOOKS READY AND</text>
+  <text class="mm r" x="810" y="464">SWALLOWS EVERY CLICK. MINIMISE IT.</text>
+
+  <circle class="bub" cx="110" cy="30" r="13"/><text class="bubt" x="110" y="34">1</text>
+  <path class="lead" d="M110,43 V52"/>
+  <circle class="bub" cx="532" cy="66" r="13"/><text class="bubt" x="532" y="70">2</text>
+  <path class="lead" d="M532,79 V97"/>
+  <circle class="bub" cx="732" cy="66" r="13"/><text class="bubt" x="732" y="70">3</text>
+  <path class="lead" d="M732,79 V97"/>
+  <circle class="bub" cx="1090" cy="66" r="13"/><text class="bubt" x="1090" y="70">4</text>
+  <path class="lead" d="M1090,79 V97"/>
+  <circle class="bub" cx="106" cy="277" r="13"/><text class="bubt" x="106" y="281">5</text>
+  <path class="lead" d="M119,277 H228"/>
+  <circle class="bub" cx="402" cy="490" r="13"/><text class="bubt" x="402" y="494">6</text>
+  <path class="lead" d="M402,477 V468"/>
+</svg>
+<figcaption>Drawing 03-A &mdash; the critical rendering path. <b>Cyan</b> = the main path.
+<b>Red</b> = what blocks it. <b>Brass</b> = where React costs you time.</figcaption>
+</figure>
+
+<div class="notes">
+  <div class="n"><b>1</b><div><b>HTML arrives first and streams.</b> The parser builds the DOM incrementally as
+  bytes arrive, which is why a server-rendered page can show content before the whole response has
+  downloaded. It is also why the order of tags in <code>&lt;head&gt;</code> matters so much.</div></div>
+  <div class="n"><b>2</b><div><b>The render tree is DOM &times; CSSOM, minus the invisible.</b> CSS is
+  render-blocking by design: the browser refuses to paint until it knows the styles, because painting
+  unstyled content and then restyling looks worse than waiting. This is why a huge stylesheet delays
+  everything.</div></div>
+  <div class="n"><b>3</b><div><b>Layout is the expensive one.</b> It computes the geometry of every box.
+  Changing a property that affects geometry &mdash; <code>width</code>, <code>top</code>,
+  <code>font-size</code> &mdash; forces a re-layout of a whole subtree. Changing <code>transform</code> or
+  <code>opacity</code> does not, which is why animations should use those two and almost nothing else.</div></div>
+  <div class="n"><b>4</b><div><b>Composite happens on the GPU.</b> Layers are moved and blended without
+  touching layout or paint. A 60&nbsp;fps animation is one that only ever reaches this stage.</div></div>
+  <div class="n"><b>5</b><div><b>A plain <code>&lt;script src&gt;</code> in the head is a parser stop sign.</b>
+  The browser must assume the script might call <code>document.write</code>, so it halts DOM construction.
+  <code>defer</code> keeps document order and runs after parsing; <code>async</code> runs the moment it
+  lands, in any order. Use <code>defer</code> unless the script is genuinely independent.</div></div>
+  <div class="n"><b>6</b><div><b>Hydration is React re-doing on the client what the server already did.</b>
+  It walks the server HTML, builds the component tree in memory and attaches listeners. Until it finishes,
+  the page is a photograph. Server components (later on this sheet) exist largely to shrink this
+  step.</div></div>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why this is the first section</span>
+  <p>Interviewers rarely ask &ldquo;explain the critical rendering path&rdquo;. They ask &ldquo;this page
+  feels slow, how would you investigate?&rdquo; The only way to answer that well is to know which of the six
+  stages you are talking about. Open DevTools &rarr; Performance on any site and find these stages in the
+  flame chart before you move on.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="html">HTML that means something</h2>
+<p class="sub">The BadgeDesk request form is the highest-risk markup in the product: it is where an employee
+enters dates that determine physical building access. It has to be correct, keyboard-usable and
+screen-reader-usable, and none of that comes from a <code>&lt;div&gt;</code>.</p>
+
+<h3 id="html-semantic">Semantic elements are behaviour, not decoration</h3>
+<p>Every semantic element ships with keyboard handling, focus behaviour, an accessibility role and browser
+defaults. When you rebuild one out of <code>&lt;div&gt;</code>s you inherit the obligation to reimplement all
+four, and you will forget at least two.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Instead of</th><th>Use</th><th>What you get for free</th></tr></thead>
+<tbody>
+<tr><td><code>&lt;div onclick&gt;</code></td><td><code>&lt;button&gt;</code></td><td>Tab focus, Enter and Space activation, <code>disabled</code>, the button role</td></tr>
+<tr><td><code>&lt;div class="link"&gt;</code></td><td><code>&lt;a href&gt;</code></td><td>Middle-click, open in new tab, browser history, the link role</td></tr>
+<tr><td><code>&lt;div class="title"&gt;</code></td><td><code>&lt;h1&gt;&hellip;&lt;h6&gt;</code></td><td>A document outline screen readers can jump through</td></tr>
+<tr><td><code>&lt;div class="row"&gt;</code></td><td><code>&lt;table&gt;</code></td><td>Row and column association announced when navigating cells</td></tr>
+<tr><td><code>&lt;div class="modal"&gt;</code></td><td><code>&lt;dialog&gt;</code></td><td>Focus trapping, <kbd>Esc</kbd> to close, the top layer, backdrop</td></tr>
+<tr><td><code>&lt;span&gt;</code> + JS toggle</td><td><code>&lt;details&gt;&lt;summary&gt;</code></td><td>Open and close with no JavaScript at all</td></tr>
+<tr><td><code>&lt;div class="nav"&gt;</code></td><td><code>&lt;nav&gt;</code>, <code>&lt;main&gt;</code>, <code>&lt;aside&gt;</code></td><td>Landmark navigation &mdash; jump straight to main content</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="html-forms">The BadgeDesk request form</h3>
+<p>Native form features do a surprising amount of work. Use them, then layer React on top &mdash; not
+instead.</p>
+
+<div class="code" data-lang="html">
+<header><b>web/app/requests/new/page.tsx &mdash; the markup underneath</b></header>
+<pre><code>&lt;form method="post" action="/api/access-requests" novalidate={false}&gt;
+  &lt;fieldset&gt;
+    &lt;legend&gt;Where and when&lt;/legend&gt;
+
+    &lt;!-- Association by id/for. Clicking the label focuses the control,
+         and a screen reader announces the label with the field. --&gt;
+    &lt;label for="site"&gt;Site&lt;/label&gt;
+    &lt;select id="site" name="site_id" required&gt;
+      &lt;option value=""&gt;Choose a site&lt;/option&gt;
+      &lt;option value="BLR-01"&gt;BLR-01 &amp;mdash; Bengaluru, Whitefield&lt;/option&gt;
+      &lt;option value="HYD-01"&gt;HYD-01 &amp;mdash; Hyderabad, Gachibowli&lt;/option&gt;
+    &lt;/select&gt;
+
+    &lt;label for="starts"&gt;Access starts&lt;/label&gt;
+    &lt;input id="starts" name="starts_on" type="date" required
+           min="2026-08-28" aria-describedby="starts-help"&gt;
+    &lt;p id="starts-help"&gt;Requests cannot start in the past.&lt;/p&gt;
+
+    &lt;label for="ends"&gt;Access ends&lt;/label&gt;
+    &lt;input id="ends" name="ends_on" type="date" required&gt;
+
+    &lt;label for="reason"&gt;Reason&lt;/label&gt;
+    &lt;textarea id="reason" name="reason" required
+              minlength="20" maxlength="500"&gt;&lt;/textarea&gt;
+  &lt;/fieldset&gt;
+
+  &lt;!-- type matters: submit posts, button does nothing by default.
+       A &lt;button&gt; with no type inside a form defaults to submit,
+       which is the source of a thousand accidental submissions. --&gt;
+  &lt;button type="submit"&gt;Send for approval&lt;/button&gt;
+  &lt;button type="button" onclick={saveDraft}&gt;Save draft&lt;/button&gt;
+
+  &lt;!-- Announced by screen readers the moment its content changes,
+       without moving focus away from where the user is. --&gt;
+  &lt;p role="status" aria-live="polite"&gt;{statusMessage}&lt;/p&gt;
+&lt;/form&gt;</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil</span>
+  <p>Client-side validation is a convenience, never a control. <code>required</code>, <code>min</code> and
+  <code>maxlength</code> improve the experience for honest users and stop nobody else &mdash; anyone can
+  <code>curl</code> your endpoint. Every rule in this form is duplicated in Pydantic on the server, and the
+  server is the one that counts. If an interviewer hears you describe validation without saying &ldquo;and
+  again on the server&rdquo;, that is a mark against you.</p>
+</div>
+
+<h3 id="html-a11y">Accessibility, the four things that actually matter</h3>
+<figure class="dwg">
+<svg viewBox="0 0 1200 290" role="img" aria-label="The DOM tree beside the accessibility tree, showing that a div with a click handler exposes no role or name, while a button element exposes role button with its label.">
+  <defs><marker id="s03b-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  <marker id="s03b-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker></defs>
+
+  <text class="mm" x="30" y="30">WHAT YOU WROTE (DOM)</text>
+  <text class="mm b" x="620" y="30">WHAT ASSISTIVE TECHNOLOGY RECEIVES (ACCESSIBILITY TREE)</text>
+
+  <rect class="box-r" x="30" y="46" width="520" height="70" rx="3"/>
+  <text class="m r" x="46" y="70">&lt;div class="btn" onclick={approve}&gt;Approve&lt;/div&gt;</text>
+  <text class="mm" x="46" y="94">LOOKS LIKE A BUTTON. IS NOT A BUTTON.</text>
+
+  <rect class="box-r" x="620" y="46" width="550" height="70" rx="3"/>
+  <text class="t r" x="636" y="70">role: generic &middot; name: none &middot; focusable: no</text>
+  <text class="mm r" x="636" y="94">NOT IN THE TAB ORDER &middot; ENTER DOES NOTHING &middot; NEVER ANNOUNCED AS ACTIONABLE</text>
+  <path class="flow-r" d="M554,81 H614" marker-end="url(#s03b-ar)"/>
+
+  <rect class="box-c" x="30" y="150" width="520" height="70" rx="3"/>
+  <text class="m c" x="46" y="174">&lt;button type="button" onClick={approve}&gt;Approve&lt;/button&gt;</text>
+  <text class="mm" x="46" y="198">SAME PIXELS AFTER STYLING. COMPLETELY DIFFERENT CONTRACT.</text>
+
+  <rect class="box-c" x="620" y="150" width="550" height="70" rx="3"/>
+  <text class="t c" x="636" y="174">role: button &middot; name: &ldquo;Approve&rdquo; &middot; focusable: yes</text>
+  <text class="mm c" x="636" y="198">TAB REACHES IT &middot; ENTER AND SPACE FIRE IT &middot; ANNOUNCED AS &ldquo;APPROVE, BUTTON&rdquo;</text>
+  <path class="flow" d="M554,185 H614" marker-end="url(#s03b-ac)"/>
+
+  <text class="mm" x="30" y="256">THE FOUR CHECKS THAT CATCH MOST ISSUES: 1 TAB THROUGH THE WHOLE PAGE WITH NO MOUSE &middot; 2 EVERY IMAGE AND ICON BUTTON HAS A NAME</text>
+  <text class="mm" x="30" y="272">3 CONTRAST AT LEAST 4.5:1 FOR BODY TEXT &middot; 4 STATE CHANGES ANNOUNCED WITH aria-live INSTEAD OF SILENTLY REPLACING CONTENT</text>
+</svg>
+<figcaption>Drawing 03-B &mdash; the accessibility tree is the real API. <b>Red</b> = invisible to a screen reader.</figcaption>
+</figure>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; HTML and accessibility</div>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=Kevin*Powell*semantic*html*why*it*matters__;KysrKysr!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5OI4Bjr-$" target="_blank" rel="noopener"><span>Kevin Powell &mdash; semantic HTML<i>Short and concrete on why the element you choose changes behaviour, not just meaning.</i></span><span class="dur">15 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=web*dev*simplified*html*forms*accessibility*labels__;KysrKysr!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5GedX6HJ$" target="_blank" rel="noopener"><span>Web Dev Simplified &mdash; forms and labels<i>Covers label association, fieldsets and native validation properly.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://developer.mozilla.org/en-US/docs/Learn/Accessibility__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5M1NLSOW$" target="_blank" rel="noopener"><span>MDN &mdash; Accessibility learning path<i>The reference. Read the HTML and WAI-ARIA basics pages at minimum.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.w3.org/WAI/ARIA/apg/patterns/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5AM5lBkk$" target="_blank" rel="noopener"><span>ARIA Authoring Practices &mdash; patterns<i>When you must build a combobox or dialog by hand, this is the specification of how it should behave.</i></span><span class="dur">docs</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="css">CSS</h2>
+<p class="sub">Four ideas carry ninety per cent of real CSS work: the box model, the cascade, flexbox and
+grid. Everything else is vocabulary you can look up.</p>
+
+<h3 id="css-box">The box model</h3>
+<figure class="dwg">
+<svg viewBox="0 0 1200 330" role="img" aria-label="The CSS box model showing content, padding, border and margin as nested rectangles, with a comparison of content-box and border-box sizing and a note on margin collapse.">
+  <rect class="box" x="30" y="50" width="440" height="230" rx="3"/>
+  <text class="mm g" x="44" y="70">MARGIN &mdash; SPACE OUTSIDE, TRANSPARENT, COLLAPSES</text>
+  <rect class="box-a" x="70" y="82" width="360" height="170" rx="2"/>
+  <text class="mm b" x="84" y="102">BORDER &mdash; DRAWN, COUNTS TOWARDS SIZE</text>
+  <rect class="box-c" x="110" y="114" width="280" height="110" rx="2"/>
+  <text class="mm c" x="124" y="134">PADDING &mdash; INSIDE, TAKES BACKGROUND COLOUR</text>
+  <rect class="box" x="150" y="146" width="200" height="52" rx="2"/>
+  <text class="t mid" x="250" y="170">content</text>
+  <text class="mm mid" x="250" y="186">width &times; height</text>
+
+  <rect class="box" x="520" y="50" width="310" height="120" rx="3"/>
+  <text class="t" x="536" y="74">box-sizing: content-box</text>
+  <text class="mm" x="536" y="94">THE CSS DEFAULT, AND ALMOST NEVER WHAT YOU WANT</text>
+  <text class="m" x="536" y="118">width: 200px + padding 20 + border 2</text>
+  <text class="t r" x="536" y="142">actual width = 244px</text>
+  <text class="mm r" x="536" y="160">YOUR THREE-COLUMN LAYOUT NOW WRAPS</text>
+
+  <rect class="box-a" x="520" y="186" width="310" height="120" rx="3"/>
+  <text class="t b" x="536" y="210">box-sizing: border-box</text>
+  <text class="mm" x="536" y="230">SET THIS GLOBALLY, ONCE, IN EVERY PROJECT</text>
+  <text class="m" x="536" y="254">width: 200px, padding and border inside</text>
+  <text class="t c" x="536" y="278">actual width = 200px</text>
+  <text class="mm c" x="536" y="296">THE NUMBER YOU TYPED IS THE NUMBER YOU GET</text>
+
+  <rect class="box-r" x="870" y="50" width="300" height="256" rx="3"/>
+  <text class="t r" x="886" y="74">Margin collapse</text>
+  <text class="m" x="886" y="100">Two vertical margins that touch do</text>
+  <text class="m" x="886" y="120">not add up &mdash; the larger one wins.</text>
+  <text class="m" x="886" y="146">margin-bottom: 20px</text>
+  <text class="m" x="886" y="166">margin-top:&nbsp;&nbsp;&nbsp;&nbsp;30px</text>
+  <text class="t b" x="886" y="192">gap between them = 30px</text>
+  <text class="m" x="886" y="220">Only vertical, only adjacent, and</text>
+  <text class="m" x="886" y="240">it stops at a flex or grid container.</text>
+  <text class="mm r" x="886" y="270">THIS IS WHY YOUR SPACING IS &ldquo;WRONG&rdquo;</text>
+  <text class="mm r" x="886" y="286">AND WHY gap IN FLEX/GRID IS BETTER</text>
+</svg>
+<figcaption>Drawing 03-C &mdash; the box model. <b>Brass</b> = the setting you should always turn on.</figcaption>
+</figure>
+
+<div class="code" data-lang="css">
+<header><b>web/app/globals.css &mdash; the four lines every project starts with</b></header>
+<pre><code>*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; }
+img, svg, video { display: block; max-width: 100%; }
+input, button, select, textarea { font: inherit; }   /* forms do NOT inherit by default */</code></pre>
+</div>
+
+<h3 id="css-cascade">The cascade, specificity and inheritance</h3>
+<p>When two rules target the same element, the winner is decided in this order: importance, then origin,
+then specificity, then document order. Specificity is a three-part score, compared left to right.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 300" role="img" aria-label="Specificity scoring of five CSS selectors as ID, class and element counts, showing that a single ID beats any number of classes, and that inline styles and important sit outside the scale.">
+  <line class="ln" x1="30" y1="66" x2="1170" y2="66"/>
+  <text class="mm" x="30" y="42">SELECTOR</text>
+  <text class="mm mid" x="700" y="42">IDs</text>
+  <text class="mm mid" x="790" y="42">CLASSES</text>
+  <text class="mm mid" x="880" y="42">ELEMENTS</text>
+  <text class="mm b" x="950" y="42">SCORE</text>
+
+  <text class="m" x="30" y="96">a</text>
+  <text class="m mid" x="700" y="96">0</text><text class="m mid" x="790" y="96">0</text><text class="m mid" x="880" y="96">1</text>
+  <text class="t" x="950" y="96">0-0-1</text>
+
+  <text class="m" x="30" y="128">.request-card</text>
+  <text class="m mid" x="700" y="128">0</text><text class="m mid" x="790" y="128">1</text><text class="m mid" x="880" y="128">0</text>
+  <text class="t" x="950" y="128">0-1-0</text>
+
+  <text class="m" x="30" y="160">.request-card a.link:hover</text>
+  <text class="m mid" x="700" y="160">0</text><text class="m mid" x="790" y="160">3</text><text class="m mid" x="880" y="160">1</text>
+  <text class="t" x="950" y="160">0-3-1</text>
+
+  <text class="m c" x="30" y="192">#approve-button</text>
+  <text class="m mid" x="700" y="192">1</text><text class="m mid" x="790" y="192">0</text><text class="m mid" x="880" y="192">0</text>
+  <text class="t c" x="950" y="192">1-0-0</text>
+  <text class="mm c" x="1050" y="192">BEATS ALL THREE ABOVE</text>
+
+  <text class="m r" x="30" y="224">style="color: red"</text>
+  <text class="m mid r" x="790" y="224">&mdash;</text>
+  <text class="t r" x="950" y="224">inline</text>
+  <text class="mm r" x="1050" y="224">BEATS EVERY SELECTOR</text>
+
+  <text class="m r" x="30" y="256">color: red !important</text>
+  <text class="m mid r" x="790" y="256">&mdash;</text>
+  <text class="t r" x="950" y="256">!important</text>
+  <text class="mm r" x="1050" y="256">BEATS EVEN INLINE. LAST RESORT.</text>
+
+  <line class="ln dash" x1="30" y1="272" x2="1170" y2="272"/>
+  <text class="mm" x="30" y="292">COMPARED COLUMN BY COLUMN, LEFT FIRST. ONE ID BEATS ANY NUMBER OF CLASSES &mdash; 1-0-0 WINS AGAINST 0-99-0. THIS IS WHY IDS IN STYLESHEETS AGE BADLY.</text>
+</svg>
+<figcaption>Drawing 03-D &mdash; specificity scoring. <b>Red</b> = escape hatches that make the next change harder.</figcaption>
+</figure>
+
+<h3 id="css-flex">Flexbox and grid</h3>
+<p>The decision is one question: <b>are you laying out along one axis or two?</b> A toolbar, a row of chips,
+a card's header &mdash; one axis, use flex. A page skeleton, a data table layout, a gallery &mdash; two
+axes, use grid.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 340" role="img" aria-label="Flexbox shown as a single main axis with justify-content along it and align-items across it, beside CSS grid shown as explicit rows and columns with items placed in cells.">
+  <defs><marker id="s03c-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker></defs>
+
+  <text class="mm c" x="30" y="30">FLEX &mdash; ONE AXIS. CONTENT DECIDES THE SIZES.</text>
+  <rect class="zone" x="30" y="44" width="540" height="130" rx="3"/>
+  <rect class="box-c" x="52" y="76" width="110" height="46" rx="2"/><text class="m mid" x="107" y="104">Pending</text>
+  <rect class="box-c" x="176" y="76" width="110" height="46" rx="2"/><text class="m mid" x="231" y="104">Approved</text>
+  <rect class="box-c" x="300" y="76" width="110" height="46" rx="2"/><text class="m mid" x="355" y="104">Rejected</text>
+  <path class="flow-b" d="M52,158 H548" marker-end="url(#s03c-ab)"/>
+  <text class="mm b" x="52" y="152">MAIN AXIS &mdash; justify-content</text>
+  <path class="flow-b" d="M582,60 V166" marker-end="url(#s03c-ab)"/>
+  <text class="mm b" x="592" y="112">CROSS AXIS</text>
+  <text class="mm b" x="592" y="128">align-items</text>
+
+  <text class="mm" x="30" y="206">flex-grow: how much of the LEFTOVER space this item takes &middot; flex-shrink: how much it gives up when there is not enough</text>
+  <text class="mm" x="30" y="226">flex-basis: the size before growing or shrinking &middot; the shorthand flex: 1 means 1 1 0% &mdash; equal columns regardless of content</text>
+  <text class="mm" x="30" y="246">gap replaces margin hacks entirely. Use it.</text>
+
+  <text class="mm c" x="680" y="30">GRID &mdash; TWO AXES. THE CONTAINER DECIDES THE SIZES.</text>
+  <rect class="zone" x="680" y="44" width="490" height="202" rx="3"/>
+  <rect class="box-a" x="700" y="64" width="450" height="40" rx="2"/><text class="m mid" x="925" y="89">header</text>
+  <rect class="box-c" x="700" y="112" width="130" height="80" rx="2"/><text class="m mid" x="765" y="157">rail</text>
+  <rect class="box-c" x="842" y="112" width="180" height="80" rx="2"/><text class="m mid" x="932" y="157">main</text>
+  <rect class="box-c" x="1034" y="112" width="116" height="80" rx="2"/><text class="m mid" x="1092" y="157">toc</text>
+  <rect class="box" x="700" y="200" width="450" height="34" rx="2"/><text class="m mid" x="925" y="222">footer</text>
+  <text class="mm" x="680" y="272">grid-template-columns: 286px minmax(0, 1fr) 250px</text>
+  <text class="mm" x="680" y="292">minmax(0, 1fr) rather than 1fr stops a long code block from blowing the column out &mdash; the exact bug this site had</text>
+  <text class="mm" x="680" y="312">repeat(auto-fit, minmax(240px, 1fr)) gives you a responsive card grid with no media queries at all</text>
+</svg>
+<figcaption>Drawing 03-E &mdash; flex versus grid. <b>Brass</b> = the axes you control.</figcaption>
+</figure>
+
+<div class="code" data-lang="css">
+<header><b>web/app/requests/list.css &mdash; the BadgeDesk request list</b></header>
+<pre><code>.request-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.request-card {
+  display: flex;              /* one axis: stack the card's rows */
+  flex-direction: column;
+  gap: .5rem;
+  padding: 1rem;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+}
+
+.request-card__meta {
+  display: flex;              /* one axis: site on the left, status on the right */
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;           /* pin to the bottom of a variable-height card */
+}
+
+/* Mobile first: write the small layout, then add complexity upwards. */
+@media (min-width: 60rem) {
+  .request-list { gap: 1.5rem; }
+}
+
+/* Container queries: style by the SPACE THE COMPONENT HAS, not the viewport.
+   The same card in a narrow rail and a wide main column, styled correctly. */
+.request-list { container-type: inline-size; }
+@container (min-width: 30rem) {
+  .request-card { flex-direction: row; align-items: center; }
+}</code></pre>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; CSS</div>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@KevinPowell__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Px58P_t$" target="_blank" rel="noopener"><span>Kevin Powell<i>The best CSS teacher on YouTube, by a distance. His flexbox and grid series are the primary source for this section.</i></span><span class="dur">series</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://css-tricks.com/snippets/css/a-guide-to-flexbox/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Fm7ULOS$" target="_blank" rel="noopener"><span>CSS-Tricks &mdash; A Complete Guide to Flexbox<i>The one page everyone keeps open. Same site has the equivalent grid guide.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://cssgridgarden.com/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5KFvuRw0$" target="_blank" rel="noopener"><span>Grid Garden and Flexbox Froggy<i>Twenty minutes of games that teach the properties better than an hour of video.</i></span><span class="dur">40 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=kevin*powell*css*container*queries*tutorial__;KysrKys!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5KlzYZYm$" target="_blank" rel="noopener"><span>Container queries<i>The newest genuinely important layout feature. Worth knowing before an interview in 2026.</i></span><span class="dur">15 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="tailwind">Tailwind</h2>
+<p class="sub">Utility classes in the markup instead of rule sets in a stylesheet. It is a genuine
+trade-off, not an upgrade &mdash; know both sides before you defend it in an interview.</p>
+
+<div class="vs">
+  <div>
+    <div class="vh">Plain CSS with BEM</div>
+    <div class="code" data-lang="html"><header><b>markup</b></header><pre><code>&lt;article class="request-card"&gt;
+  &lt;h3 class="request-card__title"&gt;BLR-01&lt;/h3&gt;
+  &lt;span class="request-card__status
+               request-card__status--pending"&gt;
+    pending
+  &lt;/span&gt;
+&lt;/article&gt;</code></pre></div>
+    <div class="code" data-lang="css"><header><b>plus a separate stylesheet</b></header><pre><code>.request-card {
+  display: flex; flex-direction: column;
+  gap: .5rem; padding: 1rem;
+  border: 1px solid #24354a; border-radius: 4px;
+}
+.request-card__title { font-size: 1rem; font-weight: 600; }
+.request-card__status--pending { color: #e8b33c; }</code></pre></div>
+    <div class="vb"><p><b>Cost:</b> two files to keep in sync, and naming things. <b>Benefit:</b> the markup
+    stays readable and the styles are reusable and greppable.</p></div>
+  </div>
+  <div>
+    <div class="vh">Tailwind</div>
+    <div class="code" data-lang="html"><header><b>markup, and that is the whole thing</b></header><pre><code>&lt;article class="flex flex-col gap-2 p-4
+                border border-slate-700 rounded"&gt;
+  &lt;h3 class="text-base font-semibold"&gt;BLR-01&lt;/h3&gt;
+  &lt;span class="text-amber-400"&gt;pending&lt;/span&gt;
+&lt;/article&gt;
+
+&lt;!-- variants compose in place --&gt;
+&lt;button class="bg-amber-500 hover:bg-amber-400
+               focus-visible:outline focus-visible:outline-2
+               md:px-6 disabled:opacity-50"&gt;
+  Approve
+&lt;/button&gt;</code></pre></div>
+    <div class="vb"><p><b>Cost:</b> dense markup and a build step. <b>Benefit:</b> no naming, no dead CSS, no
+    fear that editing a rule breaks a page you have never opened.</p></div>
+  </div>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Dimension</th><th>Plain CSS / BEM</th><th>CSS Modules</th><th>CSS-in-JS</th><th>Tailwind</th></tr></thead>
+<tbody>
+<tr><td>Scoping</td><td>Manual, by convention</td><td>Automatic per file</td><td>Automatic per component</td><td>Not needed &mdash; utilities are global by design</td></tr>
+<tr><td>Shipped bytes</td><td>Grows with the codebase</td><td>Grows, but tree-shaken per route</td><td>Runtime cost as well as bytes</td><td>Flat &mdash; unused classes are stripped at build</td></tr>
+<tr><td>Refactor safety</td><td>Poor &mdash; who else uses this class?</td><td>Good</td><td>Good</td><td>Excellent &mdash; deleting the element deletes the styles</td></tr>
+<tr><td>Readability of markup</td><td>Clean</td><td>Clean</td><td>Clean</td><td>Noisy, especially with variants</td></tr>
+<tr><td>Learning curve</td><td>CSS itself</td><td>CSS plus a build convention</td><td>CSS plus a library API</td><td>CSS plus a large vocabulary of names</td></tr>
+<tr><td>Design consistency</td><td>Depends on discipline</td><td>Depends on discipline</td><td>Depends on discipline</td><td>Enforced by the scale in the config</td></tr>
+<tr><td>Suits</td><td>Small sites, this document</td><td>Medium apps</td><td>Component libraries</td><td>Product teams shipping fast</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><b>Pick Tailwind for BadgeDesk web.</b> It is a product UI built quickly by a small number of people,
+where consistency of spacing and colour matters more than elegant stylesheets, and where deleting a
+component should delete its styles. Pick plain CSS when you are writing something long-lived and
+document-shaped &mdash; which is exactly why this study site is hand-written CSS.</p>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; <code>@apply</code></span>
+  <p>The moment Tailwind feels repetitive, the tempting fix is <code>@apply</code> to bundle utilities into a
+  class. That reinvents the stylesheet you were trying to avoid, and you now have both problems. The correct
+  fix is to extract a <b>component</b> &mdash; a React <code>&lt;RequestCard&gt;</code> &mdash; so the classes
+  appear once because the markup appears once. Reserve <code>@apply</code> for genuinely global primitives
+  such as a base button in a design system.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; Tailwind</div>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=Fireship*tailwind*in*100*seconds__;KysrKw!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5CJF2I-Y$" target="_blank" rel="noopener"><span>Fireship &mdash; Tailwind in 100 Seconds<i>Decide in two minutes whether the trade-off appeals to you.</i></span><span class="dur">2 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://tailwindcss.com/docs/utility-first__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5K9eEzqo$" target="_blank" rel="noopener"><span>Tailwind docs &mdash; Utility-First Fundamentals<i>The official argument for the approach, and honest about the objections. Read this before forming an opinion.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=Kevin*Powell*tailwind*opinion*css*developer__;KysrKys!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5AhJrZSn$" target="_blank" rel="noopener"><span>Kevin Powell &mdash; a CSS expert's take on Tailwind<i>The balanced critique. Useful for answering &ldquo;what do you not like about it?&rdquo;</i></span><span class="dur">20 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="react">React</h2>
+<p class="sub">One sentence to hold on to: <b>your component is a function that turns state into a
+description of UI, and React's job is to make the screen match that description.</b> Everything else is
+detail.</p>
+
+<h3 id="react-render">Render and commit</h3>
+<figure class="dwg">
+<svg viewBox="0 0 1200 300" role="img" aria-label="The React render and commit phases: a state update triggers a render that calls components and builds a new element tree, React diffs it against the previous tree, then commits only the differences to the DOM, after which effects run.">
+  <defs><marker id="s03d-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  <marker id="s03d-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker></defs>
+
+  <rect class="box-a" x="30" y="70" width="170" height="58" rx="3"/>
+  <text class="t b mid" x="115" y="94">setStatus()</text>
+  <text class="mm mid" x="115" y="110">STATE CHANGES</text>
+
+  <rect class="box-c" x="242" y="70" width="200" height="58" rx="3"/>
+  <text class="t mid" x="342" y="94">Render phase</text>
+  <text class="mm mid" x="342" y="110">CALL THE FUNCTION AGAIN</text>
+
+  <rect class="box-c" x="484" y="70" width="200" height="58" rx="3"/>
+  <text class="t mid" x="584" y="94">Diff</text>
+  <text class="mm mid" x="584" y="110">NEW TREE VS OLD TREE</text>
+
+  <rect class="box-a" x="726" y="70" width="200" height="58" rx="3"/>
+  <text class="t b mid" x="826" y="94">Commit phase</text>
+  <text class="mm mid" x="826" y="110">TOUCH THE REAL DOM</text>
+
+  <rect class="box" x="968" y="70" width="202" height="58" rx="3"/>
+  <text class="t mid" x="1069" y="94">Effects run</text>
+  <text class="mm mid" x="1069" y="110">AFTER PAINT</text>
+
+  <path class="flow" d="M204,99 H236" marker-end="url(#s03d-ac)"/>
+  <path class="flow" d="M446,99 H478" marker-end="url(#s03d-ac)"/>
+  <path class="flow" d="M688,99 H720" marker-end="url(#s03d-ac)"/>
+  <path class="flow" d="M930,99 H962" marker-end="url(#s03d-ac)"/>
+
+  <text class="mm" x="242" y="154">&ldquo;RE-RENDER&rdquo; MEANS REACT CALLED YOUR</text>
+  <text class="mm" x="242" y="170">FUNCTION AGAIN. IT DOES NOT MEAN THE</text>
+  <text class="mm" x="242" y="186">BROWSER REPAINTED ANYTHING. A RENDER</text>
+  <text class="mm" x="242" y="202">THAT PRODUCES AN IDENTICAL TREE COSTS</text>
+  <text class="mm" x="242" y="218">CPU BUT TOUCHES ZERO DOM NODES.</text>
+
+  <text class="mm b" x="726" y="154">ONLY THE DIFFERENCES ARE APPLIED.</text>
+  <text class="mm b" x="726" y="170">THIS IS THE WHOLE POINT OF THE</text>
+  <text class="mm b" x="726" y="186">VIRTUAL DOM &mdash; NOT THAT IT IS FAST,</text>
+  <text class="mm b" x="726" y="202">BUT THAT IT LETS YOU WRITE CODE AS IF</text>
+  <text class="mm b" x="726" y="218">YOU REBUILT EVERYTHING EVERY TIME.</text>
+
+  <rect class="box-r" x="30" y="244" width="1140" height="40" rx="3"/>
+  <text class="m r" x="46" y="269">Interview answer: &ldquo;Is the virtual DOM faster than direct DOM manipulation?&rdquo; &mdash; No. Hand-written, perfectly targeted DOM updates are faster. The virtual DOM buys you a programming model where you never have to write them.</text>
+</svg>
+<figcaption>Drawing 03-F &mdash; render versus commit. <b>Brass</b> = the two moments that cost something.</figcaption>
+</figure>
+
+<h3 id="react-state">State, and why updates look asynchronous</h3>
+<div class="code" data-lang="tsx">
+<header><b>web/components/ApprovalPanel.tsx</b></header>
+<pre><code>function ApprovalPanel({ request }: { request: AccessRequest }) {
+  const [status, setStatus] = useState(request.status);
+  const [count, setCount] = useState(0);
+
+  function handleApprove() {
+    setStatus('approved');
+    console.log(status);        // still 'pending' - `status` is this render's value
+
+    // Both of these read the SAME stale count, so it only goes up by one.
+    setCount(count + 1);
+    setCount(count + 1);        // count is 1, not 2
+
+    // The updater form reads the latest queued value. This gives 2.
+    setCount(c =&gt; c + 1);
+    setCount(c =&gt; c + 1);
+  }
+
+  // State is a snapshot. Each render has its own `status` and `count`
+  // constants that never change. React re-runs the function to give
+  // you new ones. Nothing is mutated in place.
+  return (
+    &lt;button onClick={handleApprove} disabled={status !== 'pending'}&gt;
+      {status === 'pending' ? 'Approve' : `Already ${status}`}
+    &lt;/button&gt;
+  );
+}</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p>&ldquo;Why does <code>setCount(count + 1)</code> twice only increment once?&rdquo; Because
+  <code>count</code> is a constant captured by this render, and both calls compute from the same value.
+  React batches the updates and the last one wins. The updater form <code>setCount(c =&gt; c + 1)</code>
+  queues a function that receives the latest pending value, so the two compose. Follow-up they will ask:
+  &ldquo;when would you reach for the updater form by default?&rdquo; &mdash; whenever the next state derives
+  from the previous one.</p>
+</div>
+
+<h3 id="react-keys">Lists and the key rule</h3>
+<figure class="dwg">
+<svg viewBox="0 0 1200 320" role="img" aria-label="Reconciliation of a list when a new item is inserted at the top. With array indexes as keys React reuses the wrong DOM nodes and component state moves to the wrong row. With stable ids as keys React inserts one node and leaves the others untouched.">
+  <defs><marker id="s03e-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  <marker id="s03e-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker></defs>
+
+  <text class="mm r" x="30" y="30">key={index} &mdash; A NEW REQUEST ARRIVES AT THE TOP</text>
+  <rect class="box" x="30" y="46" width="200" height="34" rx="2"/><text class="m" x="44" y="68">0: req-1 &nbsp;[ ] selected</text>
+  <rect class="box" x="30" y="86" width="200" height="34" rx="2"/><text class="m" x="44" y="108">1: req-2 &nbsp;[x] selected</text>
+  <rect class="box" x="30" y="126" width="200" height="34" rx="2"/><text class="m" x="44" y="148">2: req-3 &nbsp;[ ] selected</text>
+
+  <path class="flow-r" d="M244,103 H300" marker-end="url(#s03e-ar)"/>
+  <text class="mm r" x="248" y="94">INSERT</text>
+
+  <rect class="box-r" x="316" y="46" width="220" height="34" rx="2"/><text class="m r" x="330" y="68">0: req-9 &nbsp;[ ] selected</text>
+  <rect class="box-r" x="316" y="86" width="220" height="34" rx="2"/><text class="m r" x="330" y="108">1: req-1 &nbsp;[x] selected</text>
+  <rect class="box" x="316" y="126" width="220" height="34" rx="2"/><text class="m" x="330" y="148">2: req-2 &nbsp;[ ] selected</text>
+  <text class="mm r" x="316" y="180">EVERY KEY STILL MATCHES, SO REACT KEEPS EACH ROW'S</text>
+  <text class="mm r" x="316" y="196">COMPONENT STATE AND ONLY CHANGES THE TEXT.</text>
+  <text class="mm r" x="316" y="212">THE TICK IS NOW ON THE WRONG REQUEST.</text>
+
+  <text class="mm c" x="640" y="30">key={request.id} &mdash; THE SAME INSERT</text>
+  <rect class="box" x="640" y="46" width="200" height="34" rx="2"/><text class="m" x="654" y="68">req-1 &nbsp;[ ] selected</text>
+  <rect class="box" x="640" y="86" width="200" height="34" rx="2"/><text class="m" x="654" y="108">req-2 &nbsp;[x] selected</text>
+  <rect class="box" x="640" y="126" width="200" height="34" rx="2"/><text class="m" x="654" y="148">req-3 &nbsp;[ ] selected</text>
+
+  <path class="flow" d="M854,103 H910" marker-end="url(#s03e-ac)"/>
+
+  <rect class="box-a" x="926" y="46" width="220" height="34" rx="2"/><text class="m b" x="940" y="68">req-9 &nbsp;[ ] &nbsp;NEW NODE</text>
+  <rect class="box-c" x="926" y="86" width="220" height="34" rx="2"/><text class="m c" x="940" y="108">req-1 &nbsp;[ ] &nbsp;untouched</text>
+  <rect class="box-c" x="926" y="126" width="220" height="34" rx="2"/><text class="m c" x="940" y="148">req-2 &nbsp;[x] &nbsp;untouched</text>
+  <text class="mm c" x="926" y="180">REACT MATCHES BY IDENTITY, INSERTS ONE NODE,</text>
+  <text class="mm c" x="926" y="196">AND MOVES THE OTHERS. STATE FOLLOWS ITS OWN ROW.</text>
+
+  <rect class="box-r" x="30" y="248" width="1140" height="56" rx="3"/>
+  <text class="t r" x="46" y="272">The rule</text>
+  <text class="m" x="140" y="272">A key must be stable, unique among siblings, and derived from the data &mdash; never the array index, never <tspan class="c-bad">Math.random()</tspan>.</text>
+  <text class="m" x="46" y="294">Index keys are only safe when the list is static, never reordered, and never filtered. That is rarer than it sounds, so just use the id.</text>
+</svg>
+<figcaption>Drawing 03-G &mdash; reconciliation with and without stable keys. <b>Red</b> = state attached to the wrong row.</figcaption>
+</figure>
+
+<h3 id="react-effects">useEffect, done properly</h3>
+<p>An effect synchronises your component with something <i>outside</i> React: a subscription, a timer, a
+browser API, an analytics call. It is not a lifecycle hook and it is not the place to fetch data in a modern
+app.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 300" role="img" aria-label="The useEffect lifecycle showing the effect running after paint on mount, the cleanup function running before every re-run and on unmount, and how the dependency array controls re-runs.">
+  <defs><marker id="s03f-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker></defs>
+
+  <line class="ln" x1="30" y1="150" x2="1170" y2="150"/>
+  <text class="mm" x="30" y="176">TIME</text>
+
+  <rect class="box-c" x="60" y="88" width="150" height="46" rx="3"/><text class="m mid" x="135" y="116">mount + paint</text>
+  <rect class="box-a" x="240" y="88" width="150" height="46" rx="3"/><text class="m b mid" x="315" y="116">effect runs</text>
+  <rect class="box-r" x="450" y="88" width="150" height="46" rx="3"/><text class="m r mid" x="525" y="116">cleanup runs</text>
+  <rect class="box-a" x="630" y="88" width="150" height="46" rx="3"/><text class="m b mid" x="705" y="116">effect re-runs</text>
+  <rect class="box-r" x="840" y="88" width="150" height="46" rx="3"/><text class="m r mid" x="915" y="116">cleanup runs</text>
+  <rect class="box" x="1020" y="88" width="150" height="46" rx="3"/><text class="m mid" x="1095" y="116">unmount</text>
+
+  <path class="flow-b" d="M214,111 H234" marker-end="url(#s03f-ab)"/>
+  <path class="flow-b" d="M394,111 H444" marker-end="url(#s03f-ab)"/>
+  <path class="flow-b" d="M604,111 H624" marker-end="url(#s03f-ab)"/>
+  <path class="flow-b" d="M784,111 H834" marker-end="url(#s03f-ab)"/>
+  <path class="flow-b" d="M994,111 H1014" marker-end="url(#s03f-ab)"/>
+  <text class="mm" x="398" y="80">A DEPENDENCY CHANGED</text>
+
+  <text class="mm b" x="30" y="216">DEPENDENCY ARRAY &mdash; [] RUNS ONCE &middot; [siteId] RE-RUNS WHEN siteId CHANGES &middot; OMITTED ENTIRELY RUNS AFTER EVERY SINGLE RENDER</text>
+  <text class="mm r" x="30" y="240">CLEANUP IS NOT &ldquo;ON UNMOUNT&rdquo; &mdash; IT RUNS BEFORE EVERY RE-RUN TOO. IF YOU SUBSCRIBE IN THE EFFECT AND DO NOT UNSUBSCRIBE IN THE CLEANUP,</text>
+  <text class="mm r" x="30" y="256">YOU LEAK ONE SUBSCRIPTION PER DEPENDENCY CHANGE. IN DEVELOPMENT, STRICT MODE MOUNTS TWICE ON PURPOSE TO MAKE THAT BUG VISIBLE IMMEDIATELY.</text>
+  <text class="mm" x="30" y="284">IF THE ONLY REASON YOUR EFFECT EXISTS IS TO FETCH DATA, IT PROBABLY SHOULD NOT EXIST &mdash; SEE SERVER COMPONENTS BELOW.</text>
+</svg>
+<figcaption>Drawing 03-H &mdash; the effect lifecycle. <b>Red</b> = the half everybody forgets.</figcaption>
+</figure>
+
+<div class="code" data-lang="tsx">
+<header><b>web/hooks/useDoorEvents.ts &mdash; a legitimate effect</b></header>
+<pre><code>// Synchronising with something outside React: a live event stream.
+function useDoorEvents(siteId: string) {
+  const [events, setEvents] = useState&lt;DoorEvent[]&gt;([]);
+
+  useEffect(() =&gt; {
+    const source = new EventSource(`/api/sites/${siteId}/door-events`);
+    source.onmessage = (e) =&gt; setEvents(prev =&gt; [JSON.parse(e.data), ...prev]);
+
+    return () =&gt; source.close();   // runs before the next siteId, and on unmount
+  }, [siteId]);
+
+  return events;
+}</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the stale closure</span>
+  <p>An effect captures the variables from the render it was created in. With <code>[]</code> as the
+  dependency array, that capture is permanent, so an interval created on mount will read the mount-time
+  value of <code>status</code> forever, no matter how many times the user clicks approve. The lint rule
+  <code>react-hooks/exhaustive-deps</code> exists to catch exactly this. When you find yourself deleting a
+  dependency to stop a loop, the dependency is not the problem &mdash; the effect is doing something it
+  should not.</p>
+</div>
+
+<h3 id="react-perf">useMemo, useCallback, useRef and context</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Hook</th><th>Use it when</th><th>Do not use it when</th></tr></thead>
+<tbody>
+<tr><td><code>useMemo</code></td><td>A genuinely expensive computation (filtering 5,000 requests), or you need a stable object identity for a dependency array</td><td>Wrapping cheap arithmetic. The memo bookkeeping costs more than the work.</td></tr>
+<tr><td><code>useCallback</code></td><td>Passing a function to a <code>memo</code>-wrapped child, or into a dependency array</td><td>Every handler by reflex. A fresh function per render is almost never the bottleneck.</td></tr>
+<tr><td><code>useRef</code></td><td>A DOM node, a timer id, or any mutable value that must survive renders <i>without</i> causing one</td><td>Anything the UI displays. Changing a ref does not re-render, so the screen will not update.</td></tr>
+<tr><td><code>useContext</code></td><td>Rarely-changing app-wide values: theme, current user, locale</td><td>Frequently-changing state. Every consumer re-renders on every change &mdash; use a store or lift state instead.</td></tr>
+<tr><td>Custom hook</td><td>Two components need the same stateful logic</td><td>Only one component needs it. Leave it inline until the second caller exists.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; React</div>
+  <a class="r" href="https://urldefense.com/v3/__https://react.dev/learn__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5As5echd$" target="_blank" rel="noopener"><span>react.dev &mdash; the official tutorial<i>Rewritten from scratch and genuinely excellent. &ldquo;Thinking in React&rdquo; and &ldquo;You Might Not Need an Effect&rdquo; are the two pages to read twice.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=Web*Dev*Simplified*useEffect*everything*you*need*to*know__;KysrKysrKys!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5AYnxET6$" target="_blank" rel="noopener"><span>Web Dev Simplified &mdash; useEffect explained<i>Clears up cleanup and the dependency array better than most.</i></span><span class="dur">25 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@jherr__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5BjvzUsH$" target="_blank" rel="noopener"><span>Jack Herrington<i>Deep, senior-level React content: reconciliation, server components, state management trade-offs.</i></span><span class="dur">series</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=React*keys*reconciliation*index*as*key*bug__;KysrKysr!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Dr9Xgcw$" target="_blank" rel="noopener"><span>Why index as a key is a bug<i>Watch one of these before your first frontend interview. It comes up constantly.</i></span><span class="dur">12 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="nextjs">Next.js</h2>
+<p class="sub">React that runs in two places. The App Router's whole design is about deciding, per component,
+whether it runs on the server, in the browser, or both.</p>
+
+<h3 id="next-rsc">Server components versus client components</h3>
+<figure class="dwg">
+<svg viewBox="0 0 1200 350" role="img" aria-label="The server and client component boundary. Server components run only on the server, can query the database directly and send no JavaScript. Client components run in both places, can use state and event handlers, and their code is downloaded by the browser. Props crossing the boundary must be serialisable.">
+  <defs><marker id="s03g-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  <marker id="s03g-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker></defs>
+
+  <rect class="zone" x="30" y="46" width="540" height="240" rx="4"/>
+  <text class="mm c" x="44" y="70">SERVER &mdash; RUNS ONCE, PER REQUEST, IN YOUR VPC</text>
+
+  <rect class="box-c" x="56" y="88" width="230" height="60" rx="3"/>
+  <text class="t mid" x="171" y="112">app/requests/page.tsx</text>
+  <text class="mm mid" x="171" y="128">SERVER COMPONENT (DEFAULT)</text>
+
+  <rect class="box-c" x="316" y="88" width="230" height="60" rx="3"/>
+  <text class="t mid" x="431" y="112">RequestList</text>
+  <text class="mm mid" x="431" y="128">SERVER COMPONENT</text>
+
+  <text class="mm" x="56" y="180">CAN: await a database query, read a secret, call the</text>
+  <text class="mm" x="56" y="196">gateway with a service token, use a 400 KB markdown</text>
+  <text class="mm" x="56" y="212">parser that never reaches the browser.</text>
+  <text class="mm r" x="56" y="238">CANNOT: useState, useEffect, onClick, window,</text>
+  <text class="mm r" x="56" y="254">localStorage &mdash; there is no browser here.</text>
+  <text class="mm b" x="56" y="278">SHIPS ZERO JAVASCRIPT TO THE CLIENT.</text>
+
+  <rect class="zone" x="630" y="46" width="540" height="240" rx="4"/>
+  <text class="mm b" x="644" y="70">CLIENT &mdash; RUNS ON THE SERVER FOR HTML, THEN AGAIN IN THE BROWSER</text>
+
+  <rect class="box-a" x="656" y="88" width="230" height="60" rx="3"/>
+  <text class="t b mid" x="771" y="112">ApproveButton</text>
+  <text class="mm mid" x="771" y="128">&apos;use client&apos;</text>
+
+  <rect class="box-a" x="916" y="88" width="230" height="60" rx="3"/>
+  <text class="t b mid" x="1031" y="112">FilterBar</text>
+  <text class="mm mid" x="1031" y="128">&apos;use client&apos;</text>
+
+  <text class="mm" x="656" y="180">CAN: state, effects, event handlers, browser APIs,</text>
+  <text class="mm" x="656" y="196">anything interactive.</text>
+  <text class="mm r" x="656" y="222">COSTS: its code is downloaded, parsed and hydrated.</text>
+  <text class="mm r" x="656" y="238">EVERY COMPONENT IT IMPORTS BECOMES CLIENT TOO.</text>
+  <text class="mm" x="656" y="264">&apos;use client&apos; MARKS A BOUNDARY, NOT A SINGLE FILE &mdash;</text>
+  <text class="mm" x="656" y="280">PUT IT AS LOW IN THE TREE AS POSSIBLE.</text>
+
+  <path class="flow" d="M550,118 H650" marker-end="url(#s03g-ac)"/>
+  <text class="mm c" x="556" y="108">PROPS</text>
+
+  <rect class="box-r" x="30" y="304" width="1140" height="36" rx="3"/>
+  <text class="m r" x="46" y="328">Props crossing the boundary are serialised, so they must be plain data. Passing a function, a Date method, a class instance or a database connection throws at build time. Pass ids and strings; do the work on the side that owns it.</text>
+</svg>
+<figcaption>Drawing 03-I &mdash; the server/client boundary. <b>Brass</b> = code the browser must download.</figcaption>
+</figure>
+
+<div class="code" data-lang="tsx">
+<header><b>web/app/requests/page.tsx &mdash; server component</b></header>
+<pre><code>// No 'use client' - this is a server component by default.
+// It is an async function, and it runs on the server only.
+import { ApproveButton } from './ApproveButton';
+
+export default async function RequestsPage({
+  searchParams,
+}: { searchParams: { status?: string } }) {
+  // Called directly. No API route, no useEffect, no loading state.
+  // The service token never reaches the browser.
+  const res = await fetch(
+    `${process.env.GATEWAY_URL}/access-requests?status=${searchParams.status ?? 'pending'}`,
+    { headers: { authorization: `Bearer ${process.env.SERVICE_TOKEN}` },
+      next: { revalidate: 30, tags: ['requests'] } },
+  );
+  const requests: AccessRequest[] = await res.json();
+
+  return (
+    &lt;ul className="grid gap-4"&gt;
+      {requests.map(r =&gt; (
+        &lt;li key={r.id} className="rounded border border-slate-700 p-4"&gt;
+          &lt;h3&gt;{r.site_id} &amp;middot; {r.employee_id}&lt;/h3&gt;
+          &lt;p&gt;{r.starts_on} to {r.ends_on}&lt;/p&gt;
+          {/* only THIS is interactive, so only THIS is a client component */}
+          &lt;ApproveButton requestId={r.id} /&gt;
+        &lt;/li&gt;
+      ))}
+    &lt;/ul&gt;
+  );
+}</code></pre>
+</div>
+
+<div class="code" data-lang="tsx">
+<header><b>web/app/requests/ApproveButton.tsx &mdash; client component + server action</b></header>
+<pre><code>'use client';
+import { useTransition } from 'react';
+import { approveRequest } from './actions';
+
+export function ApproveButton({ requestId }: { requestId: string }) {
+  const [pending, startTransition] = useTransition();
+
+  return (
+    &lt;button
+      disabled={pending}
+      onClick={() =&gt; startTransition(() =&gt; approveRequest(requestId))}
+      className="bg-amber-500 px-4 py-2 disabled:opacity-50"
+    &gt;
+      {pending ? 'Approving...' : 'Approve'}
+    &lt;/button&gt;
+  );
+}</code></pre>
+</div>
+
+<div class="code" data-lang="tsx">
+<header><b>web/app/requests/actions.ts &mdash; the mutation runs on the server</b></header>
+<pre><code>'use server';
+import { revalidateTag } from 'next/cache';
+
+export async function approveRequest(requestId: string) {
+  // Authorisation is checked HERE. A server action is a public endpoint -
+  // treat it exactly like one. Never trust that only your button calls it.
+  const session = await requireSession();
+  if (!session.roles.includes('manager')) throw new Error('forbidden');
+
+  await fetch(`${process.env.GATEWAY_URL}/access-requests/${requestId}/approve`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${process.env.SERVICE_TOKEN}` },
+  });
+
+  revalidateTag('requests');    // the list above re-fetches, no client state needed
+}</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil</span>
+  <p>A server action compiles down to an HTTP endpoint with a generated URL. Anyone can call it with any
+  arguments. Every check you would put on a REST handler &mdash; authentication, authorisation, input
+  validation &mdash; belongs inside the action itself, not in the component that calls it. &ldquo;Only my
+  button calls this&rdquo; is not a security model.</p>
+</div>
+
+<h3 id="next-rendering">The four rendering strategies</h3>
+<figure class="dwg">
+<svg viewBox="0 0 1200 330" role="img" aria-label="A timeline comparing client-side rendering, server-side rendering, static generation and incremental static regeneration, showing when the user first sees content and when the page becomes interactive for each.">
+  <line class="ln" x1="230" y1="286" x2="1150" y2="286"/>
+  <text class="mm" x="230" y="308">0 ms</text>
+  <text class="mm" x="1090" y="308">SLOWER</text>
+
+  <text class="mm r" x="30" y="66">CSR &mdash; plain React SPA</text>
+  <rect class="box" x="230" y="46" width="150" height="26" rx="2"/><text class="mm mid" x="305" y="64">EMPTY HTML</text>
+  <rect class="box-r" x="384" y="46" width="290" height="26" rx="2"/><text class="mm mid" x="529" y="64">DOWNLOAD + RUN JS BUNDLE</text>
+  <rect class="box-r" x="678" y="46" width="230" height="26" rx="2"/><text class="mm mid" x="793" y="64">THEN FETCH THE DATA</text>
+  <text class="mm r" x="920" y="64">CONTENT AT ~900 MS. BLANK SCREEN UNTIL THEN.</text>
+
+  <text class="mm c" x="30" y="118">SSR &mdash; rendered per request</text>
+  <rect class="box-c" x="230" y="98" width="290" height="26" rx="2"/><text class="mm mid" x="375" y="116">SERVER FETCHES + RENDERS</text>
+  <rect class="box-a" x="524" y="98" width="200" height="26" rx="2"/><text class="mm mid" x="624" y="116">HYDRATE</text>
+  <text class="mm c" x="736" y="116">CONTENT AT ~300 MS, INTERACTIVE AT ~500 MS. ALWAYS FRESH.</text>
+
+  <text class="mm b" x="30" y="170">SSG &mdash; built ahead of time</text>
+  <rect class="box-a" x="230" y="150" width="110" height="26" rx="2"/><text class="mm mid" x="285" y="168">CDN HIT</text>
+  <rect class="box-a" x="344" y="150" width="200" height="26" rx="2"/><text class="mm mid" x="444" y="168">HYDRATE</text>
+  <text class="mm b" x="556" y="168">CONTENT AT ~50 MS. FASTEST POSSIBLE. DATA IS AS OLD AS THE LAST BUILD.</text>
+
+  <text class="mm b" x="30" y="222">ISR &mdash; static, revalidated</text>
+  <rect class="box-a" x="230" y="202" width="110" height="26" rx="2"/><text class="mm mid" x="285" y="220">CDN HIT</text>
+  <rect class="box-a" x="344" y="202" width="200" height="26" rx="2"/><text class="mm mid" x="444" y="220">HYDRATE</text>
+  <rect class="box" x="560" y="202" width="290" height="26" rx="2"/><text class="mm mid" x="705" y="220">REBUILD IN BACKGROUND AFTER n SECONDS</text>
+  <text class="mm b" x="862" y="220">SSG SPEED, NEARLY-FRESH DATA.</text>
+
+  <text class="mm" x="30" y="264">FOR BADGEDESK: THE MARKETING AND POLICY PAGES ARE SSG. THE REQUEST LIST AND APPROVAL SCREENS ARE SSR &mdash; THEY ARE PER-USER AND MUST NEVER BE STALE OR CACHED</text>
+  <text class="mm" x="30" y="280">ON A CDN. THE SITE DIRECTORY IS ISR WITH revalidate: 3600, BECAUSE IT CHANGES MONTHLY AND EVERY EMPLOYEE LOADS IT.</text>
+</svg>
+<figcaption>Drawing 03-J &mdash; rendering strategies. <b>Brass</b> = served from cache. <b>Red</b> = the user staring at nothing.</figcaption>
+</figure>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; Next.js</div>
+  <a class="r" href="https://urldefense.com/v3/__https://nextjs.org/learn__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5KFbJQu_$" target="_blank" rel="noopener"><span>Next.js Learn &mdash; the official course<i>Builds a real dashboard with the App Router, server components and server actions. Do this one end to end in Week 04.</i></span><span class="dur">course</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=Jack*Herrington*react*server*components*explained__;KysrKys!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5AV8JNdj$" target="_blank" rel="noopener"><span>Jack Herrington &mdash; server components explained<i>The clearest explanation of what actually crosses the boundary and why.</i></span><span class="dur">25 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@t3dotgg__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5KnZqnsy$" target="_blank" rel="noopener"><span>Theo &mdash; t3.gg<i>Opinionated commentary on the App Router, caching and where Next.js is going. Useful for forming a view you can defend.</i></span><span class="dur">series</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=Next.js*SSR*SSG*ISR*CSR*difference*explained__;KysrKysr!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5KJ3dBsz$" target="_blank" rel="noopener"><span>SSR vs SSG vs ISR vs CSR<i>Guaranteed interview question for any Next.js role. Be able to draw Drawing 03-J from memory.</i></span><span class="dur">15 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="state">Server state is not client state</h2>
+<p class="sub">The distinction that separates a mid-level frontend answer from a senior one. Most React
+&ldquo;state management&rdquo; pain is caused by storing a copy of the server's data in the client and then
+trying to keep the copy honest.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>BadgeDesk state</th><th>Kind</th><th>Where it belongs</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>The list of access requests</td><td>Server state</td><td>Server component, or TanStack Query if it must live client-side</td><td>You do not own it. It is a cache of somebody else's data and it can go stale at any moment.</td></tr>
+<tr><td>The signed-in user and roles</td><td>Server state</td><td>Session cookie read on the server; context only for display</td><td>Authorisation decided in the browser is decoration, not security.</td></tr>
+<tr><td>The status filter and page number</td><td>URL state</td><td><code>searchParams</code> in the URL</td><td>Shareable, bookmarkable, survives refresh, and the back button works. Putting it in <code>useState</code> throws all of that away.</td></tr>
+<tr><td>The half-typed reason in the form</td><td>Client state</td><td><code>useState</code> in the form component</td><td>Nobody else needs it and it dies with the page.</td></tr>
+<tr><td>Whether the reject dialog is open</td><td>Client state</td><td><code>useState</code> in the nearest common parent</td><td>Pure UI. It has no meaning outside this screen.</td></tr>
+<tr><td>Light or dark theme</td><td>Client preference</td><td>Context plus <code>localStorage</code></td><td>Changes rarely, needed everywhere &mdash; the one case context is genuinely right.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">In production</span>
+  <p>Move the filter and page number into the URL and three bugs disappear at once: the back button starts
+  working, a manager can paste &ldquo;the pending list for BLR-01&rdquo; into chat, and a refresh no longer
+  dumps them back to page one. It is usually a ten-line change and it is the single highest-value frontend
+  refactor on this sheet.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="connect">How the subtopics connect</h2>
+<p class="sub">The Week 03&ndash;04 build. Every topic above appears exactly once in one application.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 420" role="img" aria-label="The BadgeDesk web application assembled: routes and layouts, server components fetching from the gateway, client components for interactivity, Tailwind for styling, and server actions for mutations, with the boundary between server and browser marked.">
+  <defs><marker id="s03h-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  <marker id="s03h-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker></defs>
+
+  <rect class="zone" x="30" y="46" width="700" height="248" rx="4"/>
+  <text class="mm c" x="44" y="70">NEXT.JS SERVER</text>
+
+  <rect class="box" x="52" y="88" width="200" height="52" rx="3"/>
+  <text class="t mid" x="152" y="111">app/layout.tsx</text>
+  <text class="mm mid" x="152" y="127">SHELL &middot; FONTS &middot; NAV</text>
+
+  <rect class="box-c" x="272" y="88" width="200" height="52" rx="3"/>
+  <text class="t mid" x="372" y="111">requests/page.tsx</text>
+  <text class="mm mid" x="372" y="127">SERVER &middot; LIST + FILTER</text>
+
+  <rect class="box-c" x="492" y="88" width="216" height="52" rx="3"/>
+  <text class="t mid" x="600" y="111">requests/[id]/page.tsx</text>
+  <text class="mm mid" x="600" y="127">SERVER &middot; DETAIL</text>
+
+  <rect class="box-a" x="272" y="168" width="200" height="52" rx="3"/>
+  <text class="t b mid" x="372" y="191">actions.ts</text>
+  <text class="mm mid" x="372" y="207">&apos;use server&apos; &middot; APPROVE</text>
+
+  <rect class="box" x="492" y="168" width="216" height="52" rx="3"/>
+  <text class="t mid" x="600" y="191">middleware.ts</text>
+  <text class="mm mid" x="600" y="207">REDIRECT IF NO SESSION</text>
+
+  <text class="mm" x="52" y="252">DATA IS FETCHED HERE, WITH A SERVICE TOKEN, INSIDE THE VPC.</text>
+  <text class="mm" x="52" y="268">THE BROWSER NEVER SEES THE TOKEN OR THE GATEWAY URL.</text>
+
+  <rect class="zone" x="780" y="46" width="390" height="248" rx="4"/>
+  <text class="mm b" x="794" y="70">BROWSER</text>
+
+  <rect class="box-a" x="802" y="88" width="170" height="52" rx="3"/>
+  <text class="t b mid" x="887" y="111">ApproveButton</text>
+  <text class="mm mid" x="887" y="127">&apos;use client&apos;</text>
+
+  <rect class="box-a" x="990" y="88" width="164" height="52" rx="3"/>
+  <text class="t b mid" x="1072" y="111">FilterBar</text>
+  <text class="mm mid" x="1072" y="127">WRITES TO THE URL</text>
+
+  <rect class="box-a" x="802" y="168" width="352" height="52" rx="3"/>
+  <text class="t b mid" x="978" y="191">RequestForm</text>
+  <text class="mm mid" x="978" y="207">CONTROLLED INPUTS &middot; NATIVE VALIDATION &middot; aria-live RESULT</text>
+
+  <text class="mm" x="802" y="252">ONLY THESE THREE COMPONENTS SHIP JAVASCRIPT.</text>
+  <text class="mm" x="802" y="268">EVERYTHING ELSE ARRIVES AS FINISHED HTML.</text>
+
+  <rect class="box" x="30" y="330" width="330" height="60" rx="3"/>
+  <text class="t mid" x="195" y="354">NestJS gateway</text>
+  <text class="mm mid" x="195" y="370">GRAPHQL &middot; SHEET 05 &middot; MOCKED IN WEEK 03</text>
+
+  <rect class="box" x="400" y="330" width="330" height="60" rx="3"/>
+  <text class="t mid" x="565" y="354">Tailwind + globals.css</text>
+  <text class="mm mid" x="565" y="370">ONE SPACING AND COLOUR SCALE FOR EVERY SCREEN</text>
+
+  <rect class="box-a" x="780" y="330" width="390" height="60" rx="3"/>
+  <text class="t b mid" x="975" y="354">Ships by Sunday of Week 04</text>
+  <text class="mm mid" x="975" y="370">LIST &middot; DETAIL &middot; NEW REQUEST &middot; APPROVE &mdash; KEYBOARD-USABLE, RESPONSIVE</text>
+
+  <path class="flow" d="M372,144 V164" marker-end="url(#s03h-ac)"/>
+  <path class="flow" d="M372,224 V326" marker-end="url(#s03h-ac)"/>
+  <path class="flow-b" d="M798,114 H716 V114" marker-end="url(#s03h-ab)"/>
+  <text class="mm b" x="720" y="106">SERVER ACTION CALL</text>
+</svg>
+<figcaption>Drawing 03-K &mdash; BadgeDesk web assembled. <b>Brass</b> = the only code the browser downloads.</figcaption>
+</figure>
+
+<div class="panel panel--real">
+  <span class="ph">In production</span>
+  <p>Build Week 03 against a mocked data module with the real TypeScript types, then in Week 05 replace the
+  mock's implementation with a <code>fetch</code> to your FastAPI service. If the types were right, nothing
+  else changes. That swap is the whole argument for defining your API types before writing either side, and
+  it is a good story to tell in an interview.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="drill">Drill book</h2>
+<p class="sub">Answer out loud. If it takes more than 90 seconds, it is not ready.</p>
+
+<div class="drill">
+  <div class="dh">Frontend fundamentals</div>
+  <details><summary>Is the virtual DOM faster than manipulating the DOM directly?</summary>
+    <div class="ans"><p>No. Hand-written, perfectly targeted DOM updates will always beat it, because the
+    virtual DOM adds a diffing step on top of the same final operations. What it buys is a programming
+    model: you describe the UI for a given state and never write the update logic yourself. React trades a
+    little speed for a large reduction in a whole class of bug.</p></div></details>
+  <details><summary>Why must list keys be stable, and what breaks with the array index?</summary>
+    <div class="ans"><p>React matches elements between renders by key to decide what to reuse, move or
+    create. With index keys, inserting at the top shifts every item's key, so React keeps each position's
+    DOM node and component state and only swaps the text &mdash; a checkbox ticked on row two stays on row
+    two even though a different request is now there. With a stable id, React inserts one node and leaves
+    the rest untouched.</p></div></details>
+  <details><summary>Controlled or uncontrolled inputs &mdash; when would you use each?</summary>
+    <div class="ans"><p>Controlled means React state is the source of truth and the input's value comes from
+    it; use it when you need to validate as the user types, disable submit conditionally, or derive one
+    field from another. Uncontrolled leaves the value in the DOM and you read it on submit; use it for
+    simple forms, file inputs, and anything where re-rendering on every keystroke is wasted work. With
+    server actions, uncontrolled forms have become the reasonable default again.</p></div></details>
+  <details><summary>What does an effect's cleanup function actually run for?</summary>
+    <div class="ans"><p>It runs before every re-execution of the effect, and once more on unmount &mdash; not
+    only on unmount, which is the common misunderstanding. Its job is to undo whatever the effect set up:
+    close the EventSource, clear the interval, remove the listener, abort the fetch. Strict Mode in
+    development deliberately mounts, unmounts and remounts to surface effects whose cleanup is missing or
+    wrong.</p></div></details>
+  <details><summary>What can a server component not do, and why?</summary>
+    <div class="ans"><p>No state, no effects, no event handlers, no browser APIs &mdash; it runs once on the
+    server and its output is serialised HTML plus an RSC payload, so there is nothing to attach a listener
+    to and no place to keep state between interactions. In exchange it can await a database query directly,
+    read secrets safely, and use heavy dependencies that never reach the browser.</p></div></details>
+  <details><summary>What is hydration, and what is a hydration mismatch?</summary>
+    <div class="ans"><p>Hydration is React walking the server-rendered HTML in the browser, rebuilding its
+    component tree and attaching event listeners so the page becomes interactive. A mismatch is when the
+    markup React produces on the client differs from what the server sent &mdash; typically caused by
+    <code>Date.now()</code>, <code>Math.random()</code>, reading <code>localStorage</code>, or a
+    locale-dependent format during render. React warns and re-renders that subtree, costing you the
+    performance you server-rendered for.</p></div></details>
+  <details><summary>Two rules both set the colour. Which wins?</summary>
+    <div class="ans"><p>Compare specificity as three numbers &mdash; IDs, then classes and attributes and
+    pseudo-classes, then elements and pseudo-elements &mdash; left to right. One ID beats any number of
+    classes. If the scores tie, the rule that appears later in the stylesheet wins. Inline styles beat all
+    selectors, and <code>!important</code> beats inline. Reaching for either of the last two is a sign the
+    architecture needs fixing.</p></div></details>
+  <details><summary>Flexbox or grid?</summary>
+    <div class="ans"><p>One axis, sized by content: flex &mdash; toolbars, chip rows, a card's internal
+    stack. Two axes, sized by the container: grid &mdash; page skeletons, galleries, anything where things
+    must line up in both directions. They compose: a grid page layout whose cells contain flex rows is the
+    normal arrangement.</p></div></details>
+  <details><summary>The BadgeDesk request page feels slow on a mid-range phone. How do you investigate?</summary>
+    <div class="ans"><p>Measure before guessing. Open DevTools Performance with CPU throttling and record a
+    load; look at where the time sits in the six stages of the rendering path. Check whether the delay is
+    network (waterfall, blocking scripts and fonts), main-thread JavaScript (a large hydration bundle), or
+    layout thrash. On a Next.js app the usual answer is too much marked <code>'use client'</code>, so push
+    the boundary lower and let the static parts stay server-rendered.</p></div></details>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="signoff">Sign-off</h2>
+<p class="sub">Tick only what you have built yourself and can explain with the sheet closed.</p>
+
+<div class="signoff">
+  <div class="sh"><span>Weeks 03&ndash;04</span><span>Sheet 03</span></div>
+  <label><input type="checkbox"><span>Recorded a page load in DevTools Performance and pointed at all six stages of the rendering path.</span></label>
+  <label><input type="checkbox"><span>Built the BadgeDesk request form with real labels, native validation and an <code>aria-live</code> result, and completed it using only the keyboard.</span></label>
+  <label><input type="checkbox"><span>Explained <code>box-sizing</code> and margin collapse from memory, with an example of each.</span></label>
+  <label><input type="checkbox"><span>Scored the specificity of three competing selectors correctly before checking.</span></label>
+  <label><input type="checkbox"><span>Built the request list as a responsive grid of flex cards, with no fixed pixel widths.</span></label>
+  <label><input type="checkbox"><span>Rebuilt one component in Tailwind and can argue both sides of the trade-off.</span></label>
+  <label><input type="checkbox"><span>Reproduced the index-as-key bug on purpose, then fixed it with stable ids.</span></label>
+  <label><input type="checkbox"><span>Wrote an effect with a real cleanup function and proved it runs by logging in it under Strict Mode.</span></label>
+  <label><input type="checkbox"><span>Wrote a custom hook used by two different components.</span></label>
+  <label><input type="checkbox"><span>Built a Next.js page as a server component that fetches data, with only the button as a client component.</span></label>
+  <label><input type="checkbox"><span>Implemented approve as a server action with the authorisation check inside the action.</span></label>
+  <label><input type="checkbox"><span>Moved the status filter and page number into the URL and confirmed the back button works.</span></label>
+</div>
+
+</div><!-- /sheetbody -->
+</main>
+
+<aside class="toc" aria-label="Contents"></aside>
+</div>
+
+<script src="assets/js/nav-data.js"></script>
+<script src="assets/js/sheet.js"></script>
+</body>
+</html>

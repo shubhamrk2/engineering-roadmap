@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheet 09 &mdash; DevOps &mdash; BadgeDesk Roadmap</title>
+<link rel="stylesheet" href="assets/css/sheet.css">
+</head>
+<body data-sheet="09">
+<a class="skip" href="#main">Skip to sheet</a>
+<div class="wrap">
+<nav class="rail" aria-label="Sheet index"></nav>
+
+<main id="main">
+
+<header class="sheethead">
+  <div>
+    <div class="no">Sheet 09 &middot; Ship it and run it &middot; Week 10</div>
+    <h1>Dev&shy;Ops<span>.</span></h1>
+    <p class="lede">Git, Docker, GitHub Actions and Kubernetes &mdash; the machinery that turns a commit on
+    your laptop into a running process serving employees. The idea underneath all four: <b>make the path
+    from change to production so short and so boring that shipping stops being an event.</b></p>
+  </div>
+  <div class="specs">
+    <div><span>Week</span><span>10</span></div>
+    <div><span>Hours</span><span>32 &ndash; 36</span></div>
+    <div><span>Must know</span><span>Git, Docker</span></div>
+    <div><span>Nice to have</span><span>K8s operators</span></div>
+    <div><span>Ships</span><span>Green pipeline</span></div>
+  </div>
+</header>
+
+<div class="sheetbody">
+
+<!-- ===================================================================== -->
+<h2 id="pipeline">Commit to production</h2>
+<p class="sub">The whole week on one drawing. Each stage exists to catch a specific class of problem as
+cheaply as possible &mdash; and the order is deliberate: the fastest checks run first.</p>
+
+<figure class="dwg dwg--hero">
+<svg viewBox="0 0 1200 480" role="img" aria-label="The delivery pipeline: a local commit passes pre-commit hooks, is pushed as a pull request which runs lint, type checks, unit tests, integration tests and a container build with vulnerability scanning; on merge to main the image is pushed to ECR and deployed to staging, then smoke tested, then rolled out to production with automatic rollback on alarm.">
+  <defs>
+    <marker id="s09-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s09-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s09-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <text class="mm" x="30" y="38">LOCAL &mdash; SECONDS</text>
+  <rect class="box" x="30" y="52" width="210" height="60" rx="3"/>
+  <text class="t mid" x="135" y="76">git commit</text>
+  <text class="mm mid" x="135" y="94">PRE-COMMIT: FORMAT, LINT</text>
+
+  <text class="mm c" x="290" y="38">PULL REQUEST &mdash; UNDER 10 MINUTES, OR NOBODY WAITS FOR IT</text>
+  <rect class="zone" x="290" y="46" width="600" height="184" rx="4"/>
+
+  <rect class="box-c" x="308" y="66" width="180" height="46" rx="3"/>
+  <text class="m mid" x="398" y="86">1 &middot; lint + types</text>
+  <text class="mm mid" x="398" y="102">~40 s</text>
+
+  <rect class="box-c" x="504" y="66" width="180" height="46" rx="3"/>
+  <text class="m mid" x="594" y="86">2 &middot; unit tests</text>
+  <text class="mm mid" x="594" y="102">~90 s &middot; NO NETWORK</text>
+
+  <rect class="box-c" x="700" y="66" width="172" height="46" rx="3"/>
+  <text class="m mid" x="786" y="86">3 &middot; build image</text>
+  <text class="mm mid" x="786" y="102">CACHED LAYERS</text>
+
+  <rect class="box-c" x="308" y="132" width="180" height="46" rx="3"/>
+  <text class="m mid" x="398" y="152">4 &middot; integration</text>
+  <text class="mm mid" x="398" y="168">REAL PG + REDIS</text>
+
+  <rect class="box-a" x="504" y="132" width="180" height="46" rx="3"/>
+  <text class="m b mid" x="594" y="152">5 &middot; scan</text>
+  <text class="mm mid" x="594" y="168">TRIVY &middot; SECRETS &middot; SAST</text>
+
+  <rect class="box-c" x="700" y="132" width="172" height="46" rx="3"/>
+  <text class="m mid" x="786" y="152">6 &middot; review</text>
+  <text class="mm mid" x="786" y="168">A HUMAN, LAST</text>
+
+  <text class="mm" x="308" y="204">EVERY STAGE IS A REQUIRED STATUS CHECK ON THE BRANCH PROTECTION RULE.</text>
+  <text class="mm" x="308" y="220">RED MEANS THE MERGE BUTTON IS DISABLED &mdash; NOT THAT SOMEONE SHOULD REMEMBER TO LOOK.</text>
+
+  <rect class="box-a" x="930" y="52" width="240" height="60" rx="3"/>
+  <text class="t b mid" x="1050" y="76">merge to main</text>
+  <text class="mm mid" x="1050" y="94">SQUASH &middot; ONE COMMIT, ONE CHANGE</text>
+
+  <line class="ln dash" x1="20" y1="256" x2="1180" y2="256"/>
+  <text class="mm b" x="30" y="280">DELIVERY &mdash; NO HUMAN TOUCHES A SERVER</text>
+
+  <rect class="box-c" x="30" y="296" width="200" height="58" rx="3"/>
+  <text class="t mid" x="130" y="319">7 &middot; push to ECR</text>
+  <text class="mm mid" x="130" y="335">TAGGED WITH THE SHA</text>
+
+  <rect class="box-c" x="262" y="296" width="200" height="58" rx="3"/>
+  <text class="t mid" x="362" y="319">8 &middot; deploy staging</text>
+  <text class="mm mid" x="362" y="335">AUTOMATIC, EVERY MERGE</text>
+
+  <rect class="box-c" x="494" y="296" width="200" height="58" rx="3"/>
+  <text class="t mid" x="594" y="319">9 &middot; smoke tests</text>
+  <text class="mm mid" x="594" y="335">AGAINST REAL STAGING</text>
+
+  <rect class="box-a" x="726" y="296" width="200" height="58" rx="3"/>
+  <text class="t b mid" x="826" y="319">10 &middot; approve</text>
+  <text class="mm mid" x="826" y="335">THE ONLY MANUAL GATE</text>
+
+  <rect class="box-c" x="958" y="296" width="212" height="58" rx="3"/>
+  <text class="t mid" x="1064" y="319">11 &middot; production</text>
+  <text class="mm mid" x="1064" y="335">ROLLING, TWO AZs</text>
+
+  <path class="flow" d="M244,82 H286" marker-end="url(#s09-ac)"/>
+  <path class="flow" d="M894,82 H926" marker-end="url(#s09-ac)"/>
+  <path class="flow-b" d="M1050,116 V270 H130 V292" marker-end="url(#s09-ab)"/>
+  <path class="flow" d="M234,325 H258" marker-end="url(#s09-ac)"/>
+  <path class="flow" d="M466,325 H490" marker-end="url(#s09-ac)"/>
+  <path class="flow" d="M698,325 H722" marker-end="url(#s09-ac)"/>
+  <path class="flow" d="M930,325 H954" marker-end="url(#s09-ac)"/>
+
+  <rect class="box-r" x="726" y="386" width="444" height="52" rx="3"/>
+  <text class="t r mid" x="948" y="408">12 &middot; automatic rollback</text>
+  <text class="mm mid" x="948" y="426">A CLOUDWATCH ALARM DURING ROLLOUT REVERTS TO THE PREVIOUS TASK DEFINITION</text>
+  <path class="flow-r" d="M1064,358 V382" marker-end="url(#s09-ar)"/>
+
+  <text class="mm" x="30" y="404">THE ARTEFACT BUILT AT STAGE 3 IS THE EXACT ARTEFACT THAT REACHES</text>
+  <text class="mm" x="30" y="422">PRODUCTION AT STAGE 11. IT IS NEVER REBUILT PER ENVIRONMENT.</text>
+  <text class="mm b" x="30" y="446">BUILD ONCE, PROMOTE THE SAME BYTES. CONFIGURATION COMES FROM THE</text>
+  <text class="mm b" x="30" y="464">ENVIRONMENT, NEVER FROM THE IMAGE.</text>
+
+  <circle class="bub" cx="594" cy="248" r="13"/><text class="bubt" x="594" y="252">1</text>
+  <circle class="bub" cx="1050" cy="132" r="13"/><text class="bubt" x="1050" y="136">2</text>
+  <circle class="bub" cx="130" cy="372" r="13"/><text class="bubt" x="130" y="376">3</text>
+  <circle class="bub" cx="826" cy="372" r="13"/><text class="bubt" x="826" y="376">4</text>
+</svg>
+<figcaption>Drawing 09-A &mdash; the delivery pipeline. <b>Cyan</b> = automated and blocking. <b>Brass</b> =
+requires a decision. <b>Red</b> = the safety net.</figcaption>
+</figure>
+
+<div class="notes">
+  <div class="n"><b>1</b><div><b>Fast checks first, and the human last.</b> A reviewer should never be the one
+  who discovers a formatting problem or a failing test &mdash; that wastes the scarcest resource in the
+  pipeline. If the whole pull request run takes more than about ten minutes, people stop waiting for it and
+  start merging on hope.</div></div>
+  <div class="n"><b>2</b><div><b>Squash merges keep <code>main</code> readable.</b> One commit per change,
+  each one revertable in a single command, each one bisectable. The messy exploration stays in the pull
+  request where it belongs.</div></div>
+  <div class="n"><b>3</b><div><b>Tag images with the commit SHA, never <code>latest</code>.</b> Then any
+  running container can be traced back to the exact source that built it, and a rollback is a redeploy of a
+  known tag rather than a rebuild you hope produces the same thing.</div></div>
+  <div class="n"><b>4</b><div><b>One manual gate, at the last possible moment.</b> Everything before it is
+  automatic. The gate exists so a person chooses <i>when</i> production changes, not <i>whether</i> the code
+  is good &mdash; the pipeline already answered that.</div></div>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="git">Git</h2>
+<p class="sub">Most Git confusion disappears once you know what the objects are. It is not a diff tool; it
+is a content-addressed store of snapshots, with movable labels pointing into it.</p>
+
+<h3 id="git-model">The object model</h3>
+<figure class="dwg">
+<svg viewBox="0 0 1200 380" role="img" aria-label="The Git object model: commits point to a tree and to their parent, trees point to blobs and other trees, and branches and HEAD are simply movable pointers to commits. The three states of working directory, staging area and repository are shown with the commands that move between them.">
+  <defs><marker id="s09b-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  <marker id="s09b-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker></defs>
+
+  <text class="mm c" x="30" y="34">FOUR OBJECT TYPES, ALL ADDRESSED BY THE SHA-1 OF THEIR CONTENT</text>
+
+  <rect class="box-c" x="30" y="50" width="150" height="50" rx="3"/><text class="m mid" x="105" y="72">commit a1b2</text><text class="mm mid" x="105" y="90">WHO, WHEN, WHY</text>
+  <rect class="box-c" x="230" y="50" width="150" height="50" rx="3"/><text class="m mid" x="305" y="72">commit c3d4</text><text class="mm mid" x="305" y="90">PARENT: a1b2</text>
+  <rect class="box-c" x="430" y="50" width="150" height="50" rx="3"/><text class="m mid" x="505" y="72">commit e5f6</text><text class="mm mid" x="505" y="90">PARENT: c3d4</text>
+  <path class="flow" d="M226,75 H184" marker-end="url(#s09b-ac)"/>
+  <path class="flow" d="M426,75 H384" marker-end="url(#s09b-ac)"/>
+  <text class="mm" x="200" y="118">PARENT POINTERS RUN BACKWARDS &mdash; HISTORY IS A LINKED LIST</text>
+
+  <rect class="box" x="430" y="140" width="150" height="44" rx="3"/><text class="m mid" x="505" y="167">tree</text>
+  <path class="flow" d="M505,104 V136" marker-end="url(#s09b-ac)"/>
+  <rect class="box" x="360" y="216" width="130" height="40" rx="3"/><text class="mm mid" x="425" y="240">blob main.py</text>
+  <rect class="box" x="510" y="216" width="130" height="40" rx="3"/><text class="mm mid" x="575" y="240">tree app/</text>
+  <path class="flow" d="M490,188 L440,212" marker-end="url(#s09b-ac)"/>
+  <path class="flow" d="M525,188 L565,212" marker-end="url(#s09b-ac)"/>
+  <text class="mm" x="360" y="278">A BLOB IS FILE CONTENT WITH NO NAME. THE TREE SUPPLIES THE NAME.</text>
+  <text class="mm" x="360" y="294">TWO IDENTICAL FILES ANYWHERE IN HISTORY ARE ONE BLOB, STORED ONCE.</text>
+
+  <rect class="box-a" x="640" y="50" width="150" height="40" rx="3"/><text class="m b mid" x="715" y="76">main</text>
+  <rect class="box-a" x="640" y="102" width="150" height="40" rx="3"/><text class="m b mid" x="715" y="128">feature/x</text>
+  <rect class="box-a" x="640" y="154" width="150" height="40" rx="3"/><text class="m b mid" x="715" y="180">HEAD</text>
+  <path class="flow-b" d="M636,70 H584" marker-end="url(#s09b-ab)"/>
+  <path class="flow-b" d="M636,122 H600 V80 H584" marker-end="url(#s09b-ab)"/>
+  <path class="flow-b" d="M636,174 H616 V122 H636" marker-end="url(#s09b-ab)"/>
+  <text class="mm b" x="810" y="76">A BRANCH IS A 41-BYTE FILE CONTAINING A SHA.</text>
+  <text class="mm b" x="810" y="96">CREATING ONE IS FREE. DELETING ONE DELETES NOTHING</text>
+  <text class="mm b" x="810" y="116">BUT THE LABEL.</text>
+  <text class="mm b" x="810" y="152">HEAD IS WHERE YOU ARE. USUALLY IT POINTS AT A</text>
+  <text class="mm b" x="810" y="172">BRANCH; POINTING IT STRAIGHT AT A COMMIT IS</text>
+  <text class="mm b" x="810" y="192">&ldquo;DETACHED HEAD&rdquo; &mdash; NOT AN ERROR, JUST A STATE.</text>
+
+  <line class="ln dash" x1="20" y1="312" x2="1180" y2="312"/>
+  <text class="mm" x="30" y="334">THREE PLACES YOUR WORK CAN BE:</text>
+  <text class="mm" x="30" y="356">WORKING DIRECTORY &mdash;(git add)&rarr; STAGING AREA &mdash;(git commit)&rarr; REPOSITORY &middot; git restore UNDOES THE FIRST &middot; git restore --staged UNDOES THE SECOND</text>
+  <text class="mm" x="30" y="374">git reset --soft KEEPS BOTH &middot; --mixed KEEPS THE WORKING DIRECTORY &middot; --hard DISCARDS EVERYTHING, AND IS THE ONLY GIT COMMAND THAT REALLY DESTROYS UNCOMMITTED WORK</text>
+</svg>
+<figcaption>Drawing 09-B &mdash; the Git object model. <b>Cyan</b> = immutable content. <b>Brass</b> = movable
+pointers.</figcaption>
+</figure>
+
+<h3 id="git-rebase">Merge or rebase</h3>
+<figure class="dwg">
+<svg viewBox="0 0 1200 340" role="img" aria-label="Merge preserves the branch shape and adds a merge commit with two parents, while rebase replays your commits on top of the updated main producing a linear history with new commit hashes.">
+  <defs><marker id="s09c-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker></defs>
+
+  <text class="mm" x="30" y="34">STARTING POINT</text>
+  <circle class="dot" cx="60" cy="80" r="9"/><circle class="dot" cx="140" cy="80" r="9"/>
+  <line class="ln" x1="69" y1="80" x2="131" y2="80"/>
+  <circle class="dot" cx="220" cy="80" r="9"/><circle class="dot" cx="300" cy="80" r="9"/>
+  <line class="ln" x1="149" y1="80" x2="211" y2="80"/><line class="ln" x1="229" y1="80" x2="291" y2="80"/>
+  <text class="mm" x="310" y="84">main</text>
+  <circle class="dot-a" cx="220" cy="140" r="9"/><circle class="dot-a" cx="300" cy="140" r="9"/>
+  <line class="ln" x1="146" y1="88" x2="212" y2="134"/>
+  <line class="ln" x1="229" y1="140" x2="291" y2="140"/>
+  <text class="mm b" x="310" y="144">feature &mdash; A, B</text>
+
+  <line class="ln dash" x1="400" y1="30" x2="400" y2="330"/>
+
+  <text class="mm c" x="430" y="34">git merge main &mdash; PRESERVES WHAT HAPPENED</text>
+  <circle class="dot" cx="460" cy="80" r="9"/><circle class="dot" cx="540" cy="80" r="9"/>
+  <circle class="dot" cx="620" cy="80" r="9"/><circle class="dot" cx="700" cy="80" r="9"/>
+  <line class="ln" x1="469" y1="80" x2="691" y2="80"/>
+  <circle class="dot-a" cx="620" cy="140" r="9"/><circle class="dot-a" cx="700" cy="140" r="9"/>
+  <line class="ln" x1="546" y1="88" x2="612" y2="134"/>
+  <line class="ln" x1="629" y1="140" x2="691" y2="140"/>
+  <circle class="dot-c" cx="790" cy="110" r="11"/>
+  <line class="ln" x1="709" y1="84" x2="781" y2="105"/>
+  <line class="ln" x1="709" y1="136" x2="781" y2="116"/>
+  <text class="mm c" x="806" y="114">MERGE COMMIT &mdash; TWO PARENTS</text>
+  <text class="mm" x="430" y="186">HISTORY IS TRUE BUT BUSHY &middot; HASHES NEVER CHANGE &middot; SAFE ON</text>
+  <text class="mm" x="430" y="204">SHARED BRANCHES &middot; git log LOOKS LIKE A LONDON TUBE MAP</text>
+
+  <text class="mm b" x="430" y="242">git rebase main &mdash; REWRITES FOR READABILITY</text>
+  <circle class="dot" cx="460" cy="286" r="9"/><circle class="dot" cx="540" cy="286" r="9"/>
+  <circle class="dot" cx="620" cy="286" r="9"/><circle class="dot" cx="700" cy="286" r="9"/>
+  <circle class="dot-a" cx="780" cy="286" r="9"/><circle class="dot-a" cx="860" cy="286" r="9"/>
+  <line class="ln" x1="469" y1="286" x2="851" y2="286"/>
+  <text class="mm b" x="876" y="290">A&rsquo; AND B&rsquo; &mdash; NEW HASHES, SAME CHANGES</text>
+  <text class="mm" x="430" y="322">LINEAR AND READABLE &middot; BISECT IS CLEAN &middot; BUT THE COMMITS ARE NEW OBJECTS, SO NEVER REBASE A BRANCH SOMEONE ELSE HAS PULLED</text>
+</svg>
+<figcaption>Drawing 09-C &mdash; merge versus rebase. <b>Brass</b> = your commits. <b>Cyan</b> = the merge
+commit that records the join.</figcaption>
+</figure>
+
+<div class="code" data-lang="bash">
+<header><b>the working rule, and the commands that get you out of trouble</b></header>
+<pre><code># RULE: rebase your own unpushed work to keep it tidy. Merge anything shared.
+#       Never rebase a branch other people have based work on.
+
+git pull --rebase                 # replay your local commits on top of origin
+git rebase -i HEAD~4              # squash, reword, drop before opening a PR
+
+# --- Recovery. Almost nothing in Git is truly lost for 90 days. ---
+git reflog                        # every position HEAD has held, including
+                                  # "lost" commits after a bad reset or rebase
+git reset --hard HEAD@{3}         # go back to where you were three moves ago
+
+git restore --source=HEAD~2 app/main.py    # one file, from an old commit
+git revert a1b2c3d                # a NEW commit undoing an old one - the only
+                                  # safe undo for something already pushed
+git cherry-pick a1b2c3d           # take one commit from another branch
+
+git bisect start
+git bisect bad                    # this commit is broken
+git bisect good v1.2.0            # this one was fine
+                                  # Git binary-searches; ~10 steps for 1000 commits
+git bisect run pytest tests/test_approval.py    # or automate it entirely
+
+# --- The one command that destroys work permanently ---
+git clean -fd                     # deletes untracked files. No reflog. No undo.</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p>&ldquo;You pushed a secret to <code>main</code>. What do you do?&rdquo; &mdash; rotate the secret first,
+  before touching Git, because the push may already have been mirrored, cached by a scanner or cloned.
+  Then rewrite history with <code>git filter-repo</code> or BFG, force-push, and tell everyone with a clone
+  to re-clone. Rewriting without rotating protects nothing, and that is the half of the answer most
+  candidates give.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="docker">Docker</h2>
+<p class="sub">A container is not a small virtual machine. It is a normal process on the host kernel, with
+namespaces limiting what it can see and cgroups limiting what it can use.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 380" role="img" aria-label="Docker image layers: each Dockerfile instruction creates a read-only layer, the running container adds a thin writable layer on top, and the build cache is invalidated from the first changed instruction downwards, which is why dependency installation is placed before copying source code.">
+  <defs><marker id="s09d-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker></defs>
+
+  <text class="mm c" x="30" y="34">GOOD ORDER &mdash; DEPENDENCIES BEFORE SOURCE</text>
+  <rect class="box" x="30" y="50" width="460" height="34" rx="2"/><text class="m" x="44" y="72">FROM python:3.12-slim</text><text class="mm" x="380" y="72">CACHED</text>
+  <rect class="box" x="30" y="90" width="460" height="34" rx="2"/><text class="m" x="44" y="112">WORKDIR /app</text><text class="mm" x="380" y="112">CACHED</text>
+  <rect class="box" x="30" y="130" width="460" height="34" rx="2"/><text class="m" x="44" y="152">COPY requirements.txt .</text><text class="mm" x="380" y="152">CACHED</text>
+  <rect class="box" x="30" y="170" width="460" height="34" rx="2"/><text class="m" x="44" y="192">RUN pip install -r requirements.txt</text><text class="mm c" x="380" y="192">CACHED &mdash; 45 s SAVED</text>
+  <rect class="box-a" x="30" y="210" width="460" height="34" rx="2"/><text class="m b" x="44" y="232">COPY . .</text><text class="mm b" x="380" y="232">REBUILT</text>
+  <rect class="box-a" x="30" y="250" width="460" height="34" rx="2"/><text class="m b" x="44" y="272">CMD ["uvicorn", "app.main:app"]</text><text class="mm b" x="380" y="272">REBUILT</text>
+  <text class="mm c" x="30" y="306">EDITING main.py REBUILDS TWO CHEAP LAYERS. BUILD TIME: 3 SECONDS.</text>
+
+  <line class="ln dash" x1="530" y1="30" x2="530" y2="370"/>
+
+  <text class="mm r" x="560" y="34">BAD ORDER &mdash; ONE LINE MOVED</text>
+  <rect class="box" x="560" y="50" width="460" height="34" rx="2"/><text class="m" x="574" y="72">FROM python:3.12-slim</text><text class="mm" x="910" y="72">CACHED</text>
+  <rect class="box" x="560" y="90" width="460" height="34" rx="2"/><text class="m" x="574" y="112">WORKDIR /app</text><text class="mm" x="910" y="112">CACHED</text>
+  <rect class="box-r" x="560" y="130" width="460" height="34" rx="2"/><text class="m r" x="574" y="152">COPY . .</text><text class="mm r" x="910" y="152">CHANGED</text>
+  <rect class="box-r" x="560" y="170" width="460" height="34" rx="2"/><text class="m r" x="574" y="192">RUN pip install -r requirements.txt</text><text class="mm r" x="910" y="192">REBUILT &mdash; 45 s</text>
+  <rect class="box-r" x="560" y="210" width="460" height="34" rx="2"/><text class="m r" x="574" y="232">CMD ["uvicorn", "app.main:app"]</text><text class="mm r" x="910" y="232">REBUILT</text>
+  <path class="flow-r" d="M1040,147 V228" marker-end="url(#s09d-ar)"/>
+  <text class="mm r" x="1050" y="190">EVERYTHING</text>
+  <text class="mm r" x="1050" y="206">BELOW DIES</text>
+  <text class="mm r" x="560" y="306">EDITING main.py REINSTALLS EVERY DEPENDENCY. BUILD TIME: 50 SECONDS,</text>
+  <text class="mm r" x="560" y="322">ON EVERY COMMIT, FOR EVERY ENGINEER, FOREVER.</text>
+
+  <line class="ln dash" x1="20" y1="340" x2="1180" y2="340"/>
+  <text class="mm" x="30" y="364">THE CACHE RULE: A CHANGED INSTRUCTION INVALIDATES ITSELF AND EVERY LAYER BELOW IT. ORDER FROM LEAST TO MOST FREQUENTLY CHANGED. LAYERS ARE ALSO SHARED BETWEEN IMAGES, SO A COMMON BASE IS PULLED ONCE.</text>
+</svg>
+<figcaption>Drawing 09-D &mdash; layer caching and instruction order. <b>Red</b> = cache invalidated.</figcaption>
+</figure>
+
+<div class="code" data-lang="dockerfile">
+<header><b>services/core/Dockerfile &mdash; multi-stage, non-root, small</b></header>
+<pre><code># ---------- stage 1: build ----------
+FROM python:3.12-slim AS builder
+WORKDIR /app
+
+# Dependencies first, so this layer survives source changes.
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# ---------- stage 2: runtime ----------
+FROM python:3.12-slim AS runtime
+
+# A non-root user. Without this, a container escape starts as root on the host.
+RUN useradd --create-home --uid 10001 appuser
+WORKDIR /app
+
+# Only the installed packages come across - not pip's cache, not build tools,
+# not the compiler that needed to exist to build a wheel.
+COPY --from=builder /install /usr/local
+COPY --chown=appuser:appuser ./app ./app
+
+USER appuser
+EXPOSE 8000
+
+# Distinct from the Kubernetes probes below, but useful for Compose and ECS.
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
+  CMD python -c "import urllib.request;urllib.request.urlopen('<a href="https://urldefense.com/v3/__http://localhost:8000/healthz__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5EdkYxRP$">http://localhost:8000/healthz</a>')"
+
+# Exec form, not shell form. Shell form wraps the process in /bin/sh, which
+# does not forward SIGTERM, so your container is killed rather than shut down.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# Single stage:  1.1 GB, runs as root, ships gcc and pip's cache.
+# Multi-stage:    180 MB, runs as appuser, nothing but runtime dependencies.</code></pre>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Rule</th><th>Why it matters</th></tr></thead>
+<tbody>
+<tr><td>Pin base image tags, ideally by digest</td><td><code>python:3.12-slim</code> changes underneath you. <code>@sha256:...</code> makes the build reproducible.</td></tr>
+<tr><td>Write a <code>.dockerignore</code></td><td>Without it, <code>.git</code>, <code>node_modules</code> and <code>.env</code> are sent to the daemon &mdash; slow builds, and secrets baked into layers.</td></tr>
+<tr><td>Never <code>COPY</code> a secret</td><td>Deleting it in a later layer does not remove it; the earlier layer still contains it and anyone can extract it. Use build secrets or inject at runtime.</td></tr>
+<tr><td>One process per container</td><td>The orchestrator restarts containers, not processes inside them. Two processes means one can die invisibly.</td></tr>
+<tr><td>Log to stdout and stderr</td><td>The platform collects streams. Writing to a file inside a container means the logs vanish with it.</td></tr>
+<tr><td>Handle <code>SIGTERM</code></td><td>You get a grace period to finish in-flight requests. Ignore it and you drop requests on every single deploy.</td></tr>
+<tr><td>Scan in CI</td><td><code>trivy image</code> fails the build on a critical CVE. Cheaper than finding it in production.</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="actions">GitHub Actions</h2>
+<p class="sub">The pipeline in Drawing 09-A, as code that lives beside the code it builds.</p>
+
+<div class="code" data-lang="yaml">
+<header><b>.github/workflows/core.yml</b></header>
+<pre><code>name: core
+
+on:
+  pull_request:
+    paths: ["services/core/**", ".github/workflows/core.yml"]
+  push:
+    branches: [main]
+
+concurrency:
+  # A new push cancels the in-progress run for the same branch. Without this
+  # you queue five runs of a branch you have already fixed.
+  group: core-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_PASSWORD: test, POSTGRES_DB: test }
+        options: &gt;-
+          --health-cmd pg_isready --health-interval 5s --health-retries 10
+        ports: ["5432:5432"]
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip                      # restores ~/.cache/pip between runs
+
+      - run: pip install -r services/core/requirements.txt -r requirements-dev.txt
+      - run: ruff check services/core     # fastest check first
+      - run: mypy services/core
+      - run: pytest services/core -q --cov=app --cov-fail-under=80
+        env:
+          DATABASE_URL: postgresql://postgres:test@localhost:5432/test
+          REDIS_URL: redis://localhost:6379
+
+  build:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write                     # for OIDC - see Sheet 07
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::111122223333:role/badgedesk-deploy
+          aws-region: ap-south-1
+      - uses: aws-actions/amazon-ecr-login@v2
+
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: services/core
+          push: true
+          tags: ${{ steps.ecr.outputs.registry }}/badgedesk-core:${{ github.sha }}
+          cache-from: type=gha            # layer cache across runs
+          cache-to: type=gha,mode=max
+
+      - uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.ecr.outputs.registry }}/badgedesk-core:${{ github.sha }}
+          severity: CRITICAL,HIGH
+          exit-code: "1"                  # fail the build, do not just warn
+
+  deploy-staging:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: staging                  # automatic
+    steps:
+      - run: aws ecs update-service --cluster badgedesk-staging \
+               --service core --force-new-deployment
+
+  deploy-production:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment: production               # protected: requires an approver
+    steps:
+      - run: aws ecs update-service --cluster badgedesk-prod \
+               --service core --force-new-deployment</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; Actions security</span>
+  <p>Never use <code>pull_request_target</code> with a checkout of the pull request head: that runs
+  untrusted code from a fork with access to your repository secrets, and it is the standard supply-chain
+  attack on CI. Pin third-party actions to a full commit SHA rather than a tag, because a tag can be moved.
+  Set <code>permissions</code> explicitly at the top of every workflow, since the default token is more
+  powerful than most jobs need. And never interpolate <code>${{ github.event.issue.title }}</code> or any
+  other user-controlled value directly into a <code>run:</code> block &mdash; that is shell injection with
+  extra steps.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="k8s">Kubernetes</h2>
+<p class="sub">A control loop that continuously moves the cluster's actual state towards the desired state
+you declared. Every object makes more sense once you see it that way.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 400" role="img" aria-label="Kubernetes object relationships: a Deployment manages ReplicaSets which manage Pods, a Service gives them a stable virtual IP, an Ingress routes external traffic to Services, and ConfigMaps and Secrets supply configuration, while HorizontalPodAutoscaler adjusts the replica count.">
+  <defs><marker id="s09e-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  <marker id="s09e-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker></defs>
+
+  <rect class="box" x="30" y="60" width="190" height="52" rx="3"/>
+  <text class="t mid" x="125" y="83">Ingress</text>
+  <text class="mm mid" x="125" y="99">HOST + PATH RULES</text>
+
+  <rect class="box-c" x="270" y="60" width="190" height="52" rx="3"/>
+  <text class="t mid" x="365" y="83">Service</text>
+  <text class="mm mid" x="365" y="99">STABLE VIRTUAL IP</text>
+
+  <rect class="box-c" x="510" y="60" width="200" height="52" rx="3"/>
+  <text class="t mid" x="610" y="83">Deployment</text>
+  <text class="mm mid" x="610" y="99">DESIRED STATE</text>
+
+  <rect class="box-c" x="760" y="60" width="200" height="52" rx="3"/>
+  <text class="t mid" x="860" y="83">ReplicaSet</text>
+  <text class="mm mid" x="860" y="99">ONE PER IMAGE VERSION</text>
+
+  <rect class="box-a" x="1010" y="40" width="160" height="42" rx="3"/>
+  <text class="m b mid" x="1090" y="66">Pod</text>
+  <rect class="box-a" x="1010" y="92" width="160" height="42" rx="3"/>
+  <text class="m b mid" x="1090" y="118">Pod</text>
+
+  <path class="flow" d="M224,86 H266" marker-end="url(#s09e-ac)"/>
+  <path class="flow" d="M464,86 H506" marker-end="url(#s09e-ac)"/>
+  <text class="mm c" x="466" y="78">SELECTOR</text>
+  <path class="flow" d="M714,86 H756" marker-end="url(#s09e-ac)"/>
+  <path class="flow-b" d="M964,80 H1006" marker-end="url(#s09e-ab)"/>
+  <path class="flow-b" d="M964,100 H1006" marker-end="url(#s09e-ab)"/>
+
+  <rect class="box" x="510" y="160" width="200" height="46" rx="3"/>
+  <text class="m mid" x="610" y="180">ConfigMap</text>
+  <text class="mm mid" x="610" y="196">NON-SECRET CONFIG</text>
+  <rect class="box" x="760" y="160" width="200" height="46" rx="3"/>
+  <text class="m mid" x="860" y="180">Secret</text>
+  <text class="mm mid" x="860" y="196">BASE64, NOT ENCRYPTED</text>
+  <rect class="box" x="270" y="160" width="190" height="46" rx="3"/>
+  <text class="m mid" x="365" y="180">HPA</text>
+  <text class="mm mid" x="365" y="196">SCALES THE REPLICA COUNT</text>
+  <path class="flow" d="M610,156 V116" marker-end="url(#s09e-ac)"/>
+  <path class="flow" d="M860,156 V138 H1090 V138" marker-end="url(#s09e-ac)"/>
+  <path class="flow" d="M460,180 H506 V116" marker-end="url(#s09e-ac)"/>
+
+  <line class="ln dash" x1="20" y1="230" x2="1180" y2="230"/>
+  <text class="mm" x="30" y="254">THE CONTROL LOOP: YOU DECLARE replicas: 3. A CONTROLLER COMPARES DESIRED WITH ACTUAL, FOREVER. A NODE DIES AND TWO PODS VANISH &mdash; THE LOOP NOTICES AND CREATES TWO MORE.</text>
+  <text class="mm" x="30" y="274">YOU NEVER TELL KUBERNETES TO &ldquo;START A CONTAINER&rdquo;. YOU TELL IT WHAT SHOULD BE TRUE.</text>
+
+  <text class="mm b" x="30" y="306">THINGS THAT SURPRISE PEOPLE:</text>
+  <text class="mm" x="30" y="328">A SECRET IS BASE64-ENCODED, NOT ENCRYPTED &mdash; ANYONE WITH get secret READS IT. TURN ON ENCRYPTION AT REST, OR USE EXTERNAL SECRETS BACKED BY AWS SECRETS MANAGER.</text>
+  <text class="mm" x="30" y="348">A POD IS THE SMALLEST UNIT, NOT A CONTAINER &mdash; CONTAINERS IN ONE POD SHARE A NETWORK NAMESPACE AND REACH EACH OTHER ON localhost. THAT IS THE SIDECAR PATTERN.</text>
+  <text class="mm" x="30" y="368">PODS ARE CATTLE: THEY GET NEW IPs ON EVERY RESTART. NEVER ADDRESS A POD DIRECTLY &mdash; THAT IS WHAT A SERVICE IS FOR.</text>
+  <text class="mm" x="30" y="388">A DEPLOYMENT CREATES A NEW REPLICASET PER IMAGE VERSION AND SCALES THE OLD ONE DOWN. kubectl rollout undo SCALES IT BACK UP &mdash; WHICH IS WHY ROLLBACK IS INSTANT.</text>
+</svg>
+<figcaption>Drawing 09-E &mdash; Kubernetes objects. <b>Cyan</b> = you write these. <b>Brass</b> = the cluster
+creates these for you.</figcaption>
+</figure>
+
+<div class="code" data-lang="yaml">
+<header><b>infra/k8s/provisioning-worker.yaml</b></header>
+<pre><code>apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: provisioning-worker
+spec:
+  replicas: 3
+  selector:
+    matchLabels: { app: provisioning-worker }
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1            # one extra pod during rollout
+      maxUnavailable: 0      # never drop below 3 healthy - zero downtime
+  template:
+    metadata:
+      labels: { app: provisioning-worker }
+    spec:
+      serviceAccountName: provisioning-worker      # IRSA - maps to an IAM role
+      containers:
+        - name: worker
+          image: 1111.dkr.ecr.ap-south-1.amazonaws.com/worker:a1b2c3d
+          ports: [{ containerPort: 8080 }]
+
+          # Requests are what the scheduler reserves. Limits are the hard cap.
+          # No requests means the scheduler is guessing, and your pod is the
+          # first one evicted when a node runs short.
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits:   { cpu: 500m, memory: 512Mi }
+
+          # THREE PROBES, THREE DIFFERENT QUESTIONS:
+          startupProbe:      # "has it finished booting?" - protects slow starts
+            httpGet: { path: /healthz, port: 8080 }
+            failureThreshold: 30
+            periodSeconds: 2
+          readinessProbe:    # "should it receive traffic?" - failing removes it
+            httpGet: { path: /readyz, port: 8080 }   # checks DB and Kafka
+            periodSeconds: 5
+          livenessProbe:     # "is it wedged?" - failing RESTARTS the container
+            httpGet: { path: /healthz, port: 8080 }  # cheap and local ONLY
+            periodSeconds: 10
+
+          envFrom:
+            - configMapRef: { name: worker-config }
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: worker-secrets, key: db-password }
+
+      terminationGracePeriodSeconds: 45   # longer than your longest request
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: { name: provisioning-worker }
+spec:
+  minAvailable: 2                          # a node drain cannot take all three
+  selector:
+    matchLabels: { app: provisioning-worker }</code></pre>
+</div>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 320" role="img" aria-label="Pod lifecycle and probes: the startup probe gates the other two, the readiness probe controls whether the pod receives traffic from the Service, and the liveness probe restarts the container when it fails. A liveness probe that checks a database causes a cascading restart loop across every pod.">
+  <defs><marker id="s09f-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  <marker id="s09f-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker></defs>
+
+  <rect class="box" x="30" y="60" width="150" height="46" rx="3"/><text class="m mid" x="105" y="88">Pending</text>
+  <rect class="box" x="210" y="60" width="150" height="46" rx="3"/><text class="m mid" x="285" y="88">ContainerCreating</text>
+  <rect class="box-a" x="390" y="60" width="170" height="46" rx="3"/><text class="m b mid" x="475" y="82">Running</text><text class="mm mid" x="475" y="98">NOT READY YET</text>
+  <rect class="box-c" x="590" y="60" width="170" height="46" rx="3"/><text class="m mid" x="675" y="82">Ready</text><text class="mm mid" x="675" y="98">IN THE SERVICE</text>
+  <rect class="box" x="790" y="60" width="170" height="46" rx="3"/><text class="m mid" x="875" y="82">Terminating</text><text class="mm mid" x="875" y="98">SIGTERM SENT</text>
+
+  <path class="flow" d="M184,83 H206" marker-end="url(#s09f-ac)"/>
+  <path class="flow" d="M364,83 H386" marker-end="url(#s09f-ac)"/>
+  <path class="flow" d="M564,83 H586" marker-end="url(#s09f-ac)"/>
+  <text class="mm c" x="566" y="52">readinessProbe PASSES</text>
+  <path class="flow" d="M764,83 H786" marker-end="url(#s09f-ac)"/>
+  <path class="flow-r" d="M675,110 V140 H475 V110" marker-end="url(#s09f-ar)"/>
+  <text class="mm r" x="490" y="134">readinessProbe FAILS &rarr; PULLED FROM THE SERVICE, NOT RESTARTED</text>
+
+  <path class="flow-r" d="M430,110 V176 H285 V110" marker-end="url(#s09f-ar)"/>
+  <text class="mm r" x="300" y="170">livenessProbe FAILS &rarr; CONTAINER RESTARTED</text>
+
+  <line class="ln dash" x1="20" y1="204" x2="1180" y2="204"/>
+  <text class="mm r" x="30" y="228">THE MISTAKE THAT TAKES A CLUSTER DOWN: PUTTING A DATABASE CHECK IN THE LIVENESS PROBE.</text>
+  <text class="mm" x="30" y="250">THE DATABASE BLIPS &rarr; EVERY LIVENESS PROBE FAILS &rarr; KUBERNETES RESTARTS EVERY POD SIMULTANEOUSLY &rarr; ALL OF THEM RECONNECT AT ONCE &rarr; THE DATABASE FALLS OVER PROPERLY.</text>
+  <text class="mm c" x="30" y="276">LIVENESS ANSWERS ONLY &ldquo;IS THIS PROCESS WEDGED?&rdquo; &mdash; MAKE IT CHEAP, LOCAL AND DEPENDENCY-FREE. READINESS IS WHERE DEPENDENCY CHECKS BELONG, BECAUSE FAILING IT</text>
+  <text class="mm c" x="30" y="296">SIMPLY REMOVES THE POD FROM LOAD BALANCING UNTIL THE DEPENDENCY RETURNS. IT IS ALSO WHAT MAKES A ZERO-DOWNTIME ROLLOUT POSSIBLE.</text>
+</svg>
+<figcaption>Drawing 09-F &mdash; pod lifecycle and the three probes. <b>Red</b> = the failure paths.</figcaption>
+</figure>
+
+<div class="code" data-lang="bash">
+<header><b>the kubectl you will actually type</b></header>
+<pre><code>kubectl get pods -w                          # watch a rollout live
+kubectl describe pod worker-7d4b             # EVENTS at the bottom - read these first
+kubectl logs -f deploy/provisioning-worker   # follow across all pods
+kubectl logs worker-7d4b --previous          # logs from the crashed instance
+
+kubectl rollout status deploy/provisioning-worker
+kubectl rollout undo   deploy/provisioning-worker    # instant, no rebuild
+kubectl rollout restart deploy/provisioning-worker   # pick up a new ConfigMap
+
+kubectl exec -it worker-7d4b -- sh           # inside the container
+kubectl port-forward svc/provisioning-worker 8080:80
+kubectl top pods                             # actual CPU and memory usage
+
+# Reading the status column:
+#   ImagePullBackOff  - wrong tag, or the node's role cannot read ECR
+#   CrashLoopBackOff  - it starts and dies. Check logs --previous.
+#   Pending           - nothing will fix itself. describe it: usually the
+#                       requests exceed any node's free capacity
+#   OOMKilled         - it exceeded its memory limit. Raise it, or fix the leak.</code></pre>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="strategies">Deployment strategies</h2>
+<figure class="dwg">
+<svg viewBox="0 0 1200 330" role="img" aria-label="Three deployment strategies: rolling update replaces instances gradually with both versions live at once, blue-green runs a full parallel environment and switches traffic instantly, and canary sends a small percentage of traffic to the new version while watching error rates.">
+  <text class="mm c" x="30" y="34">ROLLING &mdash; THE DEFAULT</text>
+  <rect class="box-c" x="30" y="50" width="50" height="34" rx="2"/><rect class="box-c" x="86" y="50" width="50" height="34" rx="2"/>
+  <rect class="box-a" x="142" y="50" width="50" height="34" rx="2"/><rect class="box-a" x="198" y="50" width="50" height="34" rx="2"/>
+  <text class="mm" x="264" y="72">OLD, OLD, NEW, NEW &mdash; BOTH LIVE AT ONCE</text>
+  <text class="mm" x="30" y="106">CHEAPEST &middot; NO EXTRA INFRASTRUCTURE &middot; ZERO DOWNTIME IF READINESS PROBES ARE CORRECT</text>
+  <text class="mm r" x="30" y="126">REQUIRES BACKWARDS-COMPATIBLE CODE AND SCHEMA, BECAUSE TWO VERSIONS SERVE THE SAME USERS SIMULTANEOUSLY. ROLLBACK IS ANOTHER ROLLING UPDATE, SO IT IS NOT INSTANT.</text>
+
+  <text class="mm b" x="30" y="166">BLUE-GREEN</text>
+  <rect class="box-c" x="30" y="180" width="120" height="34" rx="2"/><text class="mm mid" x="90" y="202">BLUE &mdash; LIVE</text>
+  <rect class="box-a" x="170" y="180" width="120" height="34" rx="2"/><text class="mm mid" x="230" y="202">GREEN &mdash; IDLE</text>
+  <text class="mm" x="310" y="202">SWITCH THE LOAD BALANCER TARGET GROUP &mdash; ALL TRAFFIC MOVES AT ONCE</text>
+  <text class="mm c" x="30" y="234">INSTANT ROLLBACK: POINT BACK AT BLUE &middot; FULL SMOKE TEST AGAINST REAL INFRASTRUCTURE BEFORE ANY USER ARRIVES</text>
+  <text class="mm r" x="30" y="254">COSTS DOUBLE WHILE BOTH RUN &middot; LONG-LIVED CONNECTIONS AND IN-FLIGHT WORK NEED DRAINING &middot; THE DATABASE IS STILL SHARED, SO MIGRATIONS ARE NOT SOLVED BY THIS</text>
+
+  <text class="mm b" x="640" y="166">CANARY</text>
+  <rect class="box-c" x="640" y="180" width="200" height="34" rx="2"/><text class="mm mid" x="740" y="202">95% &rarr; OLD</text>
+  <rect class="box-a" x="856" y="180" width="90" height="34" rx="2"/><text class="mm mid" x="901" y="202">5% &rarr; NEW</text>
+  <text class="mm c" x="640" y="234">SAFEST FOR RISKY CHANGES &mdash; A REAL BUT SMALL BLAST RADIUS</text>
+  <text class="mm" x="640" y="254">AUTOMATE THE DECISION: WATCH ERROR RATE AND p99 FOR TEN MINUTES,</text>
+  <text class="mm" x="640" y="274">THEN GO TO 25%, 50%, 100% &mdash; OR ROLL BACK AUTOMATICALLY.</text>
+
+  <line class="ln dash" x1="20" y1="292" x2="1180" y2="292"/>
+  <text class="mm" x="30" y="316">BADGEDESK USES ROLLING, BECAUSE IT IS FREE AND THE SERVICES ARE STATELESS. THE PART THAT ACTUALLY NEEDS CARE IS THE DATABASE: EXPAND AND CONTRACT MIGRATIONS FROM SHEET 06 ARE WHAT MAKE ANY OF THESE STRATEGIES SAFE.</text>
+</svg>
+<figcaption>Drawing 09-G &mdash; deployment strategies. <b>Cyan</b> = current version. <b>Brass</b> = new
+version.</figcaption>
+</figure>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; DevOps</div>
+  <a class="r" href="https://urldefense.com/v3/__https://learngitbranching.js.org/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5NYMS13n$" target="_blank" rel="noopener"><span>Learn Git Branching<i>An interactive visualiser for merge, rebase, cherry-pick and reset. An hour here beats a week of confusion.</i></span><span class="dur">1 h</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@TechWorldwithNana__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5CyCI6xD$" target="_blank" rel="noopener"><span>TechWorld with Nana<i>The clearest free Docker and Kubernetes teaching anywhere. Her full Kubernetes course is the one to do in Week 10.</i></span><span class="dur">series</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://docs.docker.com/build/building/best-practices/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5FHsaizo$" target="_blank" rel="noopener"><span>Docker &mdash; Dockerfile best practices<i>Layer caching, multi-stage builds and image size, from the source.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://kubernetes.io/docs/tutorials/kubernetes-basics/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5LvhauhX$" target="_blank" rel="noopener"><span>Kubernetes Basics<i>The official interactive tutorial. Do it before reading any YAML.</i></span><span class="dur">2 h</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://docs.github.com/en/actions__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5MD0xxDA$" target="_blank" rel="noopener"><span>GitHub Actions documentation<i>Read the pages on contexts, permissions and reusable workflows &mdash; the parts most tutorials skip.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=kubernetes*liveness*readiness*startup*probes*explained__;KysrKys!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Ik4s0dj$" target="_blank" rel="noopener"><span>Liveness vs readiness probes<i>Very common interview question, and the cause of real production incidents. Be able to draw Drawing 09-F.</i></span><span class="dur">15 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="connect">How the subtopics connect</h2>
+<p class="sub">One line of Python, from your editor to serving employees, naming what each tool
+contributes.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 400" role="img" aria-label="One change traced end to end: Git records the commit and the branch protection rule enforces checks, GitHub Actions runs the tests and builds a Docker image tagged with the commit SHA, the image is stored in ECR, and ECS or Kubernetes performs a rolling update with readiness probes gating the traffic switch.">
+  <defs><marker id="s09g-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  <marker id="s09g-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker></defs>
+
+  <rect class="box" x="30" y="70" width="180" height="56" rx="3"/>
+  <text class="t mid" x="120" y="93">1 &middot; Git</text>
+  <text class="mm mid" x="120" y="109">COMMIT a1b2c3d</text>
+
+  <rect class="box-c" x="250" y="70" width="200" height="56" rx="3"/>
+  <text class="t mid" x="350" y="93">2 &middot; Branch protection</text>
+  <text class="mm mid" x="350" y="109">MERGE BLOCKED UNTIL GREEN</text>
+
+  <rect class="box-c" x="490" y="70" width="200" height="56" rx="3"/>
+  <text class="t mid" x="590" y="93">3 &middot; Actions</text>
+  <text class="mm mid" x="590" y="109">LINT &middot; TYPES &middot; TESTS</text>
+
+  <rect class="box-c" x="730" y="70" width="200" height="56" rx="3"/>
+  <text class="t mid" x="830" y="93">4 &middot; Docker build</text>
+  <text class="mm mid" x="830" y="109">MULTI-STAGE, 180 MB</text>
+
+  <rect class="box-a" x="970" y="70" width="200" height="56" rx="3"/>
+  <text class="t b mid" x="1070" y="93">5 &middot; ECR</text>
+  <text class="mm mid" x="1070" y="109">core:a1b2c3d</text>
+
+  <rect class="box-c" x="730" y="180" width="200" height="56" rx="3"/>
+  <text class="t mid" x="830" y="203">7 &middot; Readiness probe</text>
+  <text class="mm mid" x="830" y="219">GATES THE TRAFFIC SWITCH</text>
+
+  <rect class="box-a" x="970" y="180" width="200" height="56" rx="3"/>
+  <text class="t b mid" x="1070" y="203">6 &middot; Rolling update</text>
+  <text class="mm mid" x="1070" y="219">maxUnavailable: 0</text>
+
+  <rect class="box-c" x="490" y="180" width="200" height="56" rx="3"/>
+  <text class="t mid" x="590" y="203">8 &middot; CloudWatch</text>
+  <text class="mm mid" x="590" y="219">ALARM DURING ROLLOUT?</text>
+
+  <rect class="box" x="250" y="180" width="200" height="56" rx="3"/>
+  <text class="t mid" x="350" y="203">9 &middot; rollout undo</text>
+  <text class="mm mid" x="350" y="219">OR IT JUST FINISHES</text>
+
+  <path class="flow" d="M214,98 H246" marker-end="url(#s09g-ac)"/>
+  <path class="flow" d="M454,98 H486" marker-end="url(#s09g-ac)"/>
+  <path class="flow" d="M694,98 H726" marker-end="url(#s09g-ac)"/>
+  <path class="flow-b" d="M934,98 H966" marker-end="url(#s09g-ab)"/>
+  <path class="flow-b" d="M1070,130 V176" marker-end="url(#s09g-ab)"/>
+  <path class="flow" d="M966,208 H934" marker-end="url(#s09g-ac)"/>
+  <path class="flow" d="M726,208 H694" marker-end="url(#s09g-ac)"/>
+  <path class="flow" d="M486,208 H454" marker-end="url(#s09g-ac)"/>
+
+  <line class="ln dash" x1="20" y1="264" x2="1180" y2="264"/>
+  <text class="mm" x="30" y="288">WHAT EACH TOOL CONTRIBUTES, IN ONE LINE EACH:</text>
+  <text class="mm" x="30" y="312">GIT GIVES YOU AN IMMUTABLE, BISECTABLE RECORD AND A COMMIT SHA TO NAME THINGS BY &middot; BRANCH PROTECTION MAKES THE CHECKS UNSKIPPABLE RATHER THAN OPTIONAL</text>
+  <text class="mm" x="30" y="332">&middot; ACTIONS RUNS THE SAME CHECKS FOR EVERYONE, ON A CLEAN MACHINE, SO &ldquo;WORKS ON MY LAPTOP&rdquo; STOPS BEING AN ARGUMENT &middot; DOCKER MAKES THE ARTEFACT IDENTICAL</text>
+  <text class="mm" x="30" y="352">EVERYWHERE IT RUNS &middot; ECR STORES IT ADDRESSED BY THE COMMIT, SO EVERY RUNNING CONTAINER TRACES BACK TO EXACT SOURCE &middot; THE ORCHESTRATOR REPLACES INSTANCES</text>
+  <text class="mm" x="30" y="372">WITHOUT DROPPING A REQUEST, AND KEEPS THE OLD VERSION READY TO SCALE BACK UP.</text>
+  <text class="mm b" x="30" y="396">THE MEASURE OF ALL OF IT: HOW LONG FROM COMMIT TO PRODUCTION, AND HOW LONG TO GET BACK. TARGET UNDER 20 MINUTES FORWARD, UNDER 2 MINUTES BACK.</text>
+</svg>
+<figcaption>Drawing 09-H &mdash; one change, end to end. <b>Cyan</b> = verification. <b>Brass</b> = the
+artefact moving.</figcaption>
+</figure>
+
+<!-- ===================================================================== -->
+<h2 id="drill">Drill book</h2>
+<p class="sub">Answer out loud. If it takes more than 90 seconds, it is not ready.</p>
+
+<div class="drill">
+  <div class="dh">DevOps</div>
+  <details><summary>Merge or rebase &mdash; when do you use each?</summary>
+    <div class="ans"><p>Rebase your own unpushed branch to keep the history linear and readable before
+    opening a pull request. Merge anything shared, because rebasing rewrites commits into new objects and
+    anyone who has based work on the old ones now has a conflicting copy. In short: rebase private history,
+    merge public history. For merging into <code>main</code>, squash so that each change is one revertable,
+    bisectable commit.</p></div></details>
+  <details><summary>You deleted a branch with unpushed commits. Are they gone?</summary>
+    <div class="ans"><p>Almost certainly not. The commit objects still exist and the reflog still records
+    where <code>HEAD</code> has been, so <code>git reflog</code> finds the SHA and
+    <code>git branch recovered &lt;sha&gt;</code> brings it back. Unreachable objects survive until garbage
+    collection, roughly ninety days by default. The genuine exception is <code>git clean</code>, which
+    removes untracked files that were never in Git at all &mdash; nothing recovers those.</p></div></details>
+  <details><summary>Is a container a lightweight VM?</summary>
+    <div class="ans"><p>No. A VM virtualises hardware and runs its own kernel; a container is ordinary
+    processes on the host kernel, isolated by namespaces (what it can see) and constrained by cgroups (what
+    it can use). That is why containers start in milliseconds, why the image contains no kernel, and why a
+    Linux container needs a Linux kernel underneath &mdash; which on Windows is what WSL2 provides.</p></div></details>
+  <details><summary>Your Docker builds take five minutes on every commit. Why?</summary>
+    <div class="ans"><p>Almost always instruction order: <code>COPY . .</code> sitting above the dependency
+    install, so any source change invalidates the install layer and everything below it. Move the manifest
+    copy and install above the source copy. Then add a <code>.dockerignore</code> so the build context is
+    not sending <code>.git</code> and <code>node_modules</code>, use multi-stage so build tools never reach
+    the final image, and enable a registry or GitHub Actions layer cache in CI.</p></div></details>
+  <details><summary>Explain liveness, readiness and startup probes.</summary>
+    <div class="ans"><p>Startup asks &ldquo;has it finished booting?&rdquo; and suspends the other two until
+    it passes, which protects slow-starting applications from being killed. Readiness asks &ldquo;should
+    this pod receive traffic?&rdquo; and failing it removes the pod from the Service without restarting it
+    &mdash; this is what makes zero-downtime rollouts work. Liveness asks &ldquo;is this process
+    wedged?&rdquo; and failing it restarts the container. Never check a database in liveness: a database
+    blip then restarts every pod simultaneously and turns a blip into an outage.</p></div></details>
+  <details><summary>What actually happens during <code>kubectl apply</code> of a new image tag?</summary>
+    <div class="ans"><p>The Deployment's pod template changes, so a new ReplicaSet is created for that
+    version. Governed by <code>maxSurge</code> and <code>maxUnavailable</code>, it scales the new one up and
+    the old one down: each new pod must pass its readiness probe before it receives traffic and before the
+    next old pod is removed. The old ReplicaSet is kept at zero replicas, which is why
+    <code>kubectl rollout undo</code> is instant &mdash; it simply scales it back up.</p></div></details>
+  <details><summary>How do you deploy with zero downtime?</summary>
+    <div class="ans"><p>Four things together. Correct readiness probes so traffic only reaches pods that can
+    serve. <code>maxUnavailable: 0</code> so capacity never dips. Graceful shutdown &mdash; handle
+    <code>SIGTERM</code>, stop accepting new work, finish in-flight requests, with
+    <code>terminationGracePeriodSeconds</code> longer than the longest request. And backwards-compatible
+    database migrations, because during the rollout both versions are running against the same schema.
+    The last one is the one people forget, and it is the one that causes the outage.</p></div></details>
+  <details><summary>What are the four DORA metrics and why do they matter?</summary>
+    <div class="ans"><p>Deployment frequency, lead time for change, change failure rate, and time to restore
+    service. They matter because they measure the system rather than the individual, and because the
+    counter-intuitive finding is that speed and stability rise together &mdash; teams that deploy often have
+    <i>lower</i> failure rates, since small changes are easier to verify and to reverse. If asked how you
+    would improve a team's delivery, these give you a structure rather than opinions.</p></div></details>
+  <details><summary>How do you handle secrets in CI/CD?</summary>
+    <div class="ans"><p>Do not store them where you can avoid it: OIDC federation lets GitHub Actions assume
+    an AWS role with no stored credentials, and the trust policy pins it to one repository and branch. For
+    what remains, use the platform's encrypted secret store, never <code>.env</code> in the repository, and
+    inject at runtime rather than baking into an image &mdash; a secret in an image layer is permanent even
+    if a later layer deletes it. Add secret scanning in pre-commit and in CI, and rotate on a schedule so
+    that rotation is routine rather than an emergency.</p></div></details>
+  <details><summary>A pod is in <code>CrashLoopBackOff</code>. Walk through your debugging.</summary>
+    <div class="ans"><p><code>kubectl describe pod</code> first, and read the Events at the bottom &mdash;
+    they usually name it outright. Then <code>kubectl logs --previous</code> for the output of the instance
+    that died, since the current one may not have got far enough to log. The common causes are a missing
+    environment variable or secret, a failing liveness probe with too short a threshold, an
+    <code>OOMKilled</code> status meaning the memory limit is too low, or a dependency that is not reachable
+    from that namespace. Check the image tag too &mdash; <code>ImagePullBackOff</code> looks similar and is
+    a completely different problem.</p></div></details>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="signoff">Sign-off</h2>
+<p class="sub">Tick only what you have built yourself and can explain with the sheet closed.</p>
+
+<div class="signoff">
+  <div class="sh"><span>Week 10</span><span>Sheet 09</span></div>
+  <label><input type="checkbox"><span>Can explain commits, trees, blobs and refs, and why creating a branch is free.</span></label>
+  <label><input type="checkbox"><span>Recovered a &ldquo;lost&rdquo; commit with <code>git reflog</code> after a deliberate bad reset.</span></label>
+  <label><input type="checkbox"><span>Used <code>git bisect run</code> to find a deliberately introduced bug automatically.</span></label>
+  <label><input type="checkbox"><span>Resolved a real rebase conflict, and can explain why rebasing a shared branch is a problem.</span></label>
+  <label><input type="checkbox"><span>Wrote a multi-stage Dockerfile that runs as a non-root user and is under 200 MB.</span></label>
+  <label><input type="checkbox"><span>Demonstrated the layer-cache trap by moving <code>COPY . .</code> and timing both builds.</span></label>
+  <label><input type="checkbox"><span>Handled <code>SIGTERM</code> for graceful shutdown and proved no request was dropped during a restart.</span></label>
+  <label><input type="checkbox"><span>Built a GitHub Actions workflow with service containers, dependency caching and a coverage gate.</span></label>
+  <label><input type="checkbox"><span>Deployed to AWS from Actions using OIDC, with no stored credentials anywhere.</span></label>
+  <label><input type="checkbox"><span>Turned on branch protection with required checks and confirmed the merge button is disabled when red.</span></label>
+  <label><input type="checkbox"><span>Added Trivy scanning that fails the build on a critical vulnerability.</span></label>
+  <label><input type="checkbox"><span>Ran the provisioning worker on Kubernetes with all three probes, resource requests and limits, and a PodDisruptionBudget.</span></label>
+  <label><input type="checkbox"><span>Performed a rolling update and a <code>rollout undo</code>, and timed both.</span></label>
+  <label><input type="checkbox"><span>Can describe rolling, blue-green and canary, and say which I would pick for BadgeDesk and why.</span></label>
+</div>
+
+</div><!-- /sheetbody -->
+</main>
+
+<aside class="toc" aria-label="Contents"></aside>
+</div>
+
+<script src="assets/js/nav-data.js"></script>
+<script src="assets/js/sheet.js"></script>
+</body>
+</html>

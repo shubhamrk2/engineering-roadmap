@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheet 07 &mdash; AWS &mdash; BadgeDesk Roadmap</title>
+<link rel="stylesheet" href="assets/css/sheet.css">
+</head>
+<body data-sheet="07">
+<a class="skip" href="#main">Skip to sheet</a>
+<div class="wrap">
+<nav class="rail" aria-label="Sheet index"></nav>
+
+<main id="main">
+
+<header class="sheethead">
+  <div>
+    <div class="no">Sheet 07 &middot; Ship it and run it &middot; Weeks 08&ndash;09</div>
+    <h1>AWS<span>.</span></h1>
+    <p class="lede">EC2, S3, RDS, Lambda, EKS, IAM, VPC and CloudWatch &mdash; eight services that between
+    them run BadgeDesk in production. The framing that makes AWS learnable: <b>every service is either
+    compute, storage, network, identity, or the thing that tells you what the other four are
+    doing.</b> Learn the five categories and new services slot into place.</p>
+  </div>
+  <div class="specs">
+    <div><span>Weeks</span><span>08 &ndash; 09</span></div>
+    <div><span>Hours</span><span>36 &ndash; 40</span></div>
+    <div><span>Must know</span><span>IAM, VPC</span></div>
+    <div><span>Machine</span><span>Personal only</span></div>
+    <div><span>Budget alarm</span><span>Set it first</span></div>
+  </div>
+</header>
+
+<div class="sheetbody">
+
+<!-- ===================================================================== -->
+<h2 id="deployed">BadgeDesk, deployed</h2>
+<p class="sub">The whole target architecture on one drawing. Everything else on this sheet is a zoom into
+one part of it.</p>
+
+<figure class="dwg dwg--hero">
+<svg viewBox="0 0 1200 510" role="img" aria-label="BadgeDesk deployed on AWS: an application load balancer in public subnets across two availability zones, ECS Fargate tasks and EKS nodes in private application subnets, RDS PostgreSQL multi-AZ and ElastiCache in isolated data subnets, a NAT gateway for outbound calls to the vendor API, and S3, Lambda, CloudWatch and Secrets Manager reached over VPC endpoints.">
+  <defs>
+    <marker id="s07-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s07-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+  </defs>
+
+  <rect class="box" x="30" y="24" width="200" height="40" rx="3"/>
+  <text class="t mid" x="130" y="50">Employees</text>
+  <rect class="box-r" x="700" y="24" width="220" height="40" rx="3"/>
+  <text class="t r mid" x="810" y="50">CCure vendor API</text>
+
+  <rect class="zone" x="20" y="80" width="900" height="400" rx="4"/>
+  <text class="mm c" x="34" y="100">VPC 10.0.0.0/16 &mdash; REGION ap-south-1 (MUMBAI)</text>
+
+  <rect class="zone" x="40" y="108" width="860" height="76" rx="3"/>
+  <text class="mm" x="52" y="122">PUBLIC SUBNETS 10.0.0.0/24 (AZ-a) &middot; 10.0.1.0/24 (AZ-b) &mdash; ROUTE TO INTERNET GATEWAY</text>
+  <rect class="box-c" x="60" y="128" width="230" height="46" rx="3"/>
+  <text class="t mid" x="175" y="150">ALB</text>
+  <text class="mm mid" x="175" y="166">TLS TERMINATES HERE</text>
+  <rect class="box-a" x="320" y="128" width="180" height="46" rx="3"/>
+  <text class="t b mid" x="410" y="150">NAT Gateway</text>
+  <text class="mm mid" x="410" y="166">$32/MONTH &mdash; DELETE IT</text>
+  <rect class="box" x="530" y="128" width="180" height="46" rx="3"/>
+  <text class="t mid" x="620" y="150">SSM endpoint</text>
+  <text class="mm mid" x="620" y="166">NO BASTION, NO SSH</text>
+
+  <rect class="zone" x="40" y="204" width="860" height="96" rx="3"/>
+  <text class="mm" x="52" y="220">PRIVATE APP SUBNETS 10.0.10.0/24 &middot; 10.0.11.0/24 &mdash; NO ROUTE FROM THE INTERNET</text>
+  <rect class="box-c" x="60" y="228" width="230" height="56" rx="3"/>
+  <text class="t mid" x="175" y="251">core</text>
+  <text class="mm mid" x="175" y="267">ECS FARGATE &middot; 2 TASKS</text>
+  <rect class="box-c" x="320" y="228" width="230" height="56" rx="3"/>
+  <text class="t mid" x="435" y="251">gateway + notifier</text>
+  <text class="mm mid" x="435" y="267">ECS FARGATE &middot; 2 TASKS</text>
+  <rect class="box-c" x="580" y="228" width="300" height="56" rx="3"/>
+  <text class="t mid" x="730" y="251">EKS worker nodes</text>
+  <text class="mm mid" x="730" y="267">provisioning-worker &mdash; WEEK 09 ONLY</text>
+
+  <rect class="zone" x="40" y="320" width="860" height="96" rx="3"/>
+  <text class="mm" x="52" y="336">ISOLATED DATA SUBNETS 10.0.20.0/24 &middot; 10.0.21.0/24 &mdash; NO ROUTE OUT AT ALL</text>
+  <rect class="box-c" x="60" y="344" width="230" height="56" rx="3"/>
+  <text class="t mid" x="175" y="367">RDS primary</text>
+  <text class="mm mid" x="175" y="383">POSTGRES 16 &middot; AZ-a</text>
+  <rect class="box" x="320" y="344" width="230" height="56" rx="3"/>
+  <text class="t mid" x="435" y="367">RDS standby</text>
+  <text class="mm mid" x="435" y="383">AZ-b &middot; SYNCHRONOUS</text>
+  <rect class="box-c" x="580" y="344" width="300" height="56" rx="3"/>
+  <text class="t mid" x="730" y="367">ElastiCache Redis</text>
+  <text class="mm mid" x="730" y="383">CACHE &middot; RATE LIMITS &middot; IDEMPOTENCY</text>
+
+  <text class="mm b" x="52" y="440">EVERY SERVICE BELOW IS REACHED OVER A VPC ENDPOINT &mdash; TRAFFIC NEVER LEAVES THE AWS NETWORK,</text>
+  <text class="mm b" x="52" y="458">AND NOTHING HERE PAYS NAT GATEWAY DATA CHARGES.</text>
+
+  <rect class="box" x="940" y="108" width="240" height="56" rx="3"/>
+  <text class="t mid" x="1060" y="131">S3</text>
+  <text class="mm mid" x="1060" y="147">AUDIT EXPORTS &middot; BADGE PHOTOS</text>
+
+  <rect class="box-a" x="940" y="184" width="240" height="56" rx="3"/>
+  <text class="t b mid" x="1060" y="207">Lambda</text>
+  <text class="mm mid" x="1060" y="223">audit-reconciler &middot; NIGHTLY</text>
+
+  <rect class="box-c" x="940" y="260" width="240" height="56" rx="3"/>
+  <text class="t mid" x="1060" y="283">CloudWatch</text>
+  <text class="mm mid" x="1060" y="299">LOGS &middot; METRICS &middot; ALARMS</text>
+
+  <rect class="box" x="940" y="336" width="240" height="56" rx="3"/>
+  <text class="t mid" x="1060" y="359">Secrets Manager</text>
+  <text class="mm mid" x="1060" y="375">DB PASSWORD &middot; ROTATED</text>
+
+  <path class="flow" d="M130,68 V100 H175 V124" marker-end="url(#s07-ac)"/>
+  <path class="flow" d="M175,178 V224" marker-end="url(#s07-ac)"/>
+  <path class="flow" d="M215,178 V208 H435 V224" marker-end="url(#s07-ac)"/>
+  <path class="flow" d="M175,288 V340" marker-end="url(#s07-ac)"/>
+  <path class="flow" d="M470,288 V312 H730 V340" marker-end="url(#s07-ac)"/>
+  <path class="flow-b" d="M250,228 V196 H410 V178" marker-end="url(#s07-ab)"/>
+  <path class="flow-b" d="M440,124 V90 H810 V68" marker-end="url(#s07-ab)"/>
+  <path class="flow" d="M924,136 H936" marker-end="url(#s07-ac)"/>
+  <path class="flow" d="M924,212 H936" marker-end="url(#s07-ac)"/>
+  <path class="flow" d="M924,288 H936" marker-end="url(#s07-ac)"/>
+  <path class="flow" d="M924,364 H936" marker-end="url(#s07-ac)"/>
+
+  <line class="ln dash" x1="20" y1="488" x2="1180" y2="488"/>
+  <text class="mm" x="30" y="506">THREE SUBNET TIERS, NOT TWO: PUBLIC HOLDS ONLY THE LOAD BALANCER AND THE NAT &middot; APP SUBNETS CAN REACH OUT BUT NOTHING CAN REACH IN &middot; DATA SUBNETS HAVE NO ROUTE TO THE INTERNET IN EITHER DIRECTION, SO A COMPROMISED APPLICATION CANNOT EXFILTRATE THE DATABASE DIRECTLY</text>
+
+  <circle class="bub" cx="175" cy="106" r="13"/><text class="bubt" x="175" y="110">1</text>
+  <circle class="bub" cx="410" cy="106" r="13"/><text class="bubt" x="410" y="110">2</text>
+  <circle class="bub" cx="175" cy="318" r="13"/><text class="bubt" x="175" y="322">3</text>
+  <circle class="bub" cx="912" cy="288" r="13"/><text class="bubt" x="912" y="292">4</text>
+</svg>
+<figcaption>Drawing 07-A &mdash; BadgeDesk on AWS. <b>Cyan</b> = in the request path. <b>Brass</b> = costs
+money continuously or runs asynchronously.</figcaption>
+</figure>
+
+<div class="notes">
+  <div class="n"><b>1</b><div><b>The load balancer is the only thing with a public address.</b> It terminates
+  TLS with a certificate from ACM (free, auto-renewing) and forwards to targets by private IP. Nothing
+  behind it has a route from the internet, which means a misconfigured application cannot be reached
+  directly even if its port is open.</div></div>
+  <div class="n"><b>2</b><div><b>The NAT Gateway is the single most common surprise on a personal AWS
+  bill.</b> About $32 a month plus per-gigabyte data processing, charged whether or not you use it. It
+  exists so private subnets can make <i>outbound</i> calls &mdash; to CCure, to a package registry. Destroy
+  it at the end of every session and let Terraform recreate it.</div></div>
+  <div class="n"><b>3</b><div><b>Multi-AZ RDS is not a read replica.</b> The standby serves no traffic; it is
+  a synchronous copy in another availability zone that gets promoted automatically if the primary fails.
+  You pay double for availability, not for capacity. A read replica is a separate feature and is
+  asynchronous.</div></div>
+  <div class="n"><b>4</b><div><b>CloudWatch is not optional infrastructure.</b> Without it you have no logs,
+  no metrics and no alarms &mdash; and in an interview, &ldquo;how would you know it broke?&rdquo; follows
+  every architecture answer. Budget a full day for it in Week 09.</div></div>
+</div>
+
+<h3 id="regions">Regions, availability zones and the shared responsibility model</h3>
+<div class="grid g3">
+  <div class="card"><span class="cm">Region</span><b class="ct">A geography</b><p><code>ap-south-1</code> is
+  Mumbai. Data does not leave a region unless you move it. Latency between regions is tens to hundreds of
+  milliseconds. Pick one close to your users and stay in it &mdash; cross-region traffic costs money and
+  most services are region-scoped.</p></div>
+  <div class="card"><span class="cm">Availability Zone</span><b class="ct">A failure domain</b><p>One or
+  more physically separate data centres within a region, on independent power and cooling, a few
+  milliseconds apart. Deploying across two AZs is how you survive a data centre failure. This is why every
+  subnet in the drawing appears twice.</p></div>
+  <div class="card"><span class="cm">Shared responsibility</span><b class="ct">Where the line sits</b>
+  <p>AWS secures <i>of</i> the cloud: hardware, hypervisor, physical access, the managed service internals.
+  You secure <i>in</i> the cloud: IAM policies, security groups, encryption choices, patching your
+  containers, and not putting the database in a public subnet. Nearly every headline breach is on your side
+  of that line.</p></div>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="iam">IAM &mdash; the service that says no</h2>
+<p class="sub">Learn IAM before anything else. Every other service asks it for permission, and every
+confusing AWS error is ultimately an IAM error.</p>
+
+<h3 id="iam-model">Principals, policies and evaluation</h3>
+<figure class="dwg">
+<svg viewBox="0 0 1200 420" role="img" aria-label="IAM policy evaluation logic: an explicit deny anywhere wins immediately; otherwise a service control policy boundary must allow, a permissions boundary must allow, and an identity or resource policy must explicitly allow, or the request is denied by default.">
+  <defs><marker id="s07b-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  <marker id="s07b-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker></defs>
+
+  <rect class="box-c" x="30" y="60" width="200" height="56" rx="3"/>
+  <text class="t mid" x="130" y="83">Request</text>
+  <text class="mm mid" x="130" y="99">PRINCIPAL &middot; ACTION &middot; RESOURCE</text>
+
+  <rect class="box-r" x="290" y="60" width="220" height="56" rx="3"/>
+  <text class="t r mid" x="400" y="83">Explicit DENY?</text>
+  <text class="mm mid" x="400" y="99">ANYWHERE AT ALL</text>
+
+  <rect class="box" x="570" y="60" width="200" height="56" rx="3"/>
+  <text class="t mid" x="670" y="83">SCP allows?</text>
+  <text class="mm mid" x="670" y="99">ORGANISATION CEILING</text>
+
+  <rect class="box" x="830" y="60" width="200" height="56" rx="3"/>
+  <text class="t mid" x="930" y="83">Boundary allows?</text>
+  <text class="mm mid" x="930" y="99">IF ONE IS SET</text>
+
+  <rect class="box-c" x="570" y="180" width="200" height="56" rx="3"/>
+  <text class="t mid" x="670" y="203">Explicit ALLOW?</text>
+  <text class="mm mid" x="670" y="219">IDENTITY OR RESOURCE</text>
+
+  <rect class="box-c" x="830" y="180" width="200" height="56" rx="3"/>
+  <text class="t c mid" x="930" y="211">ALLOWED</text>
+
+  <rect class="box-r" x="290" y="180" width="220" height="56" rx="3"/>
+  <text class="t r mid" x="400" y="205">DENIED</text>
+  <text class="mm mid" x="400" y="221">THE DEFAULT ANSWER</text>
+
+  <path class="flow" d="M234,88 H286" marker-end="url(#s07b-ac)"/>
+  <path class="flow" d="M514,88 H566" marker-end="url(#s07b-ac)"/>
+  <text class="mm" x="518" y="80">NO</text>
+  <path class="flow" d="M774,88 H826" marker-end="url(#s07b-ac)"/>
+  <path class="flow" d="M930,120 V150 H670 V176" marker-end="url(#s07b-ac)"/>
+  <path class="flow" d="M774,208 H826" marker-end="url(#s07b-ac)"/>
+  <text class="mm c" x="778" y="200">YES</text>
+  <path class="flow-r" d="M566,208 H514" marker-end="url(#s07b-ar)"/>
+  <text class="mm r" x="520" y="200">NO</text>
+  <path class="flow-r" d="M400,120 V176" marker-end="url(#s07b-ar)"/>
+  <text class="mm r" x="410" y="150">YES &mdash; STOPS IMMEDIATELY</text>
+
+  <line class="ln dash" x1="20" y1="264" x2="1180" y2="264"/>
+  <text class="mm" x="30" y="288">THE THREE RULES THAT EXPLAIN EVERY IAM OUTCOME:</text>
+  <text class="mm r" x="30" y="312">1 &mdash; EVERYTHING IS DENIED BY DEFAULT. NO POLICY MEANS NO ACCESS.</text>
+  <text class="mm c" x="30" y="334">2 &mdash; AN EXPLICIT ALLOW IN ANY ATTACHED POLICY GRANTS ACCESS.</text>
+  <text class="mm r" x="30" y="356">3 &mdash; AN EXPLICIT DENY ANYWHERE OVERRIDES EVERY ALLOW, ALWAYS. THIS IS HOW GUARDRAILS ARE BUILT.</text>
+  <text class="mm" x="30" y="386">WHEN A CALL FAILS, THE ERROR NAMES THE PRINCIPAL, THE ACTION AND THE RESOURCE. READ ALL THREE &mdash; USUALLY THE PRINCIPAL IS NOT WHO YOU ASSUMED IT WAS.</text>
+  <text class="mm b" x="30" y="410">TOOL: THE IAM POLICY SIMULATOR ANSWERS &ldquo;CAN THIS ROLE DO THIS?&rdquo; WITHOUT RUNNING ANYTHING. USE IT BEFORE GUESSING.</text>
+</svg>
+<figcaption>Drawing 07-B &mdash; IAM policy evaluation. <b>Red</b> = the paths that end in denial.</figcaption>
+</figure>
+
+<div class="code" data-lang="json">
+<header><b>infra/iam/core-task-policy.json &mdash; least privilege, written properly</b></header>
+<pre><code>{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadOwnSecretOnly",
+      "Effect": "Allow",
+      "Action": ["secretsmanager:GetSecretValue"],
+      "Resource": "arn:aws:secretsmanager:ap-south-1:111122223333:secret:badgedesk/prod/db-*"
+    },
+    {
+      "Sid": "WriteAuditExportsToOwnPrefix",
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:GetObject"],
+      "Resource": "arn:aws:s3:::badgedesk-audit-prod/exports/*",
+      "Condition": {
+        "StringEquals": { "s3:x-amz-server-side-encryption": "aws:kms" }
+      }
+    },
+    {
+      "Sid": "PublishOwnMetricsOnly",
+      "Effect": "Allow",
+      "Action": ["cloudwatch:PutMetricData"],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": { "cloudwatch:namespace": "BadgeDesk/Core" }
+      }
+    },
+    {
+      "Sid": "NeverTouchProductionDatabaseDirectly",
+      "Effect": "Deny",
+      "Action": ["rds:DeleteDBInstance", "rds:ModifyDBInstance"],
+      "Resource": "*"
+    }
+  ]
+}</code></pre>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why <code>Resource: "*"</code> is sometimes correct</span>
+  <p>Some actions have no resource to scope to &mdash; <code>cloudwatch:PutMetricData</code> is one. The
+  right move is not to give up on least privilege but to constrain with a <code>Condition</code>, as above:
+  this role may publish metrics, but only into its own namespace. Learning to reach for conditions
+  (<code>aws:SourceVpce</code>, <code>aws:PrincipalTag</code>, <code>s3:prefix</code>,
+  <code>aws:SecureTransport</code>) is what separates a real policy from
+  <code>AdministratorAccess</code> with extra steps.</p>
+</div>
+
+<h3 id="iam-roles">Roles, not users; never long-lived keys</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Situation</th><th>Wrong</th><th>Right</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>An ECS task needs S3</td><td>Access key in an environment variable</td><td>An ECS task role</td><td>Credentials are delivered by the metadata service, rotate automatically, and cannot be copied out of a repository because they were never in one</td></tr>
+<tr><td>An EC2 instance needs a secret</td><td><code>~/.aws/credentials</code> on the box</td><td>An instance profile</td><td>Same reason. Also require IMDSv2, which blocks the SSRF-to-credential-theft path.</td></tr>
+<tr><td>A Lambda needs to write logs</td><td>A key baked into the deployment package</td><td>An execution role</td><td>Lambda cannot start without one, so this is the only path anyway</td></tr>
+<tr><td>GitHub Actions deploys</td><td>An IAM user with keys in repository secrets</td><td>OIDC federation into a role</td><td>No stored credentials at all. The role trusts GitHub's identity provider and can be scoped to one repository and branch.</td></tr>
+<tr><td>You, at the CLI</td><td>An IAM user with a long-lived key</td><td>Identity Center with <code>aws configure sso</code></td><td>Short-lived credentials, MFA, and a session that expires. A leaked key valid forever is the classic breach.</td></tr>
+<tr><td>Cross-account access</td><td>Copying keys between accounts</td><td><code>sts:AssumeRole</code> with an external id</td><td>Auditable, revocable, and time-bounded</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="code" data-lang="yaml">
+<header><b>.github/workflows/deploy.yml &mdash; OIDC, no stored secrets</b></header>
+<pre><code>permissions:
+  id-token: write        # lets the job request an OIDC token
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::111122223333:role/badgedesk-deploy
+          aws-region: ap-south-1
+      - run: aws sts get-caller-identity      # proves who we became
+
+# The role's trust policy pins it to ONE repository and ONE branch:
+#   "Condition": {
+#     "StringEquals": {
+#       "token.actions.githubusercontent.com:sub":
+#         "repo:you/badgedesk:ref:refs/heads/main" } }
+# Without that condition, ANY GitHub repository could assume this role.</code></pre>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="vpc">VPC &mdash; the network</h2>
+<p class="sub">Where most people get stuck, because it is the one part of AWS with no sensible default that
+survives contact with production.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 420" role="img" aria-label="VPC routing: a public subnet's route table sends 0.0.0.0/0 to the internet gateway, a private application subnet sends it to the NAT gateway, and an isolated data subnet has only the local route, so it has no path to or from the internet.">
+  <defs><marker id="s07c-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  <marker id="s07c-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker></defs>
+
+  <text class="mm" x="30" y="34">SUBNET</text>
+  <text class="mm" x="300" y="34">ROUTE TABLE</text>
+  <text class="mm" x="720" y="34">MEANING</text>
+  <line class="ln" x1="30" y1="44" x2="1170" y2="44"/>
+
+  <rect class="box-c" x="30" y="60" width="240" height="70" rx="3"/>
+  <text class="t mid" x="150" y="84">Public</text>
+  <text class="mm mid" x="150" y="102">10.0.0.0/24</text>
+  <text class="mm mid" x="150" y="120">ALB &middot; NAT GATEWAY</text>
+  <rect class="box" x="300" y="60" width="390" height="70" rx="3"/>
+  <text class="m" x="316" y="84">10.0.0.0/16 &rarr; local</text>
+  <text class="m c" x="316" y="108">0.0.0.0/0  &rarr; igw-0a1b2c</text>
+  <text class="m" x="720" y="84">Reachable from the internet, and can</text>
+  <text class="m" x="720" y="104">reach it. A subnet is &ldquo;public&rdquo; because</text>
+  <text class="m" x="720" y="124">of this one route &mdash; nothing else.</text>
+
+  <rect class="box-a" x="30" y="150" width="240" height="70" rx="3"/>
+  <text class="t b mid" x="150" y="174">Private app</text>
+  <text class="mm mid" x="150" y="192">10.0.10.0/24</text>
+  <text class="mm mid" x="150" y="210">ECS TASKS &middot; EKS NODES</text>
+  <rect class="box" x="300" y="150" width="390" height="70" rx="3"/>
+  <text class="m" x="316" y="174">10.0.0.0/16 &rarr; local</text>
+  <text class="m b" x="316" y="198">0.0.0.0/0  &rarr; nat-0d4e5f</text>
+  <text class="m" x="720" y="174">Can call out to CCure and to package</text>
+  <text class="m" x="720" y="194">registries. Nothing on the internet can</text>
+  <text class="m" x="720" y="214">start a connection inwards.</text>
+
+  <rect class="box-c" x="30" y="240" width="240" height="70" rx="3"/>
+  <text class="t mid" x="150" y="264">Isolated data</text>
+  <text class="mm mid" x="150" y="282">10.0.20.0/24</text>
+  <text class="mm mid" x="150" y="300">RDS &middot; ELASTICACHE</text>
+  <rect class="box" x="300" y="240" width="390" height="70" rx="3"/>
+  <text class="m" x="316" y="264">10.0.0.0/16 &rarr; local</text>
+  <text class="m r" x="316" y="288">(no default route at all)</text>
+  <text class="m" x="720" y="264">No path to the internet in either</text>
+  <text class="m" x="720" y="284">direction. A compromised app cannot</text>
+  <text class="m" x="720" y="304">stream the database anywhere.</text>
+
+  <line class="ln dash" x1="20" y1="330" x2="1180" y2="330"/>
+  <text class="mm" x="30" y="354">CIDR IN THIRTY SECONDS: /16 IS 65,536 ADDRESSES, /24 IS 256, AND EACH STEP UP HALVES THE COUNT. AWS RESERVES FIVE ADDRESSES IN EVERY SUBNET, SO A /24 GIVES YOU 251.</text>
+  <text class="mm r" x="30" y="378">SIZE GENEROUSLY: YOU CANNOT SHRINK A VPC CIDR LATER, AND EKS ASSIGNS A VPC IP TO EVERY SINGLE POD. A /24 PER SUBNET RUNS OUT FASTER THAN YOU EXPECT.</text>
+  <text class="mm b" x="30" y="402">NEVER OVERLAP WITH YOUR CORPORATE NETWORK. IF THE OFFICE USES 10.0.0.0/8 AND YOUR VPC DOES TOO, THE VPN WILL NEVER WORK AND THE FIX IS TO REBUILD THE VPC.</text>
+</svg>
+<figcaption>Drawing 07-C &mdash; the three subnet tiers and their route tables. <b>Cyan</b> = has a route
+out. <b>Red</b> = deliberately does not.</figcaption>
+</figure>
+
+<h3 id="vpc-sg">Security groups versus network ACLs</h3>
+<figure class="dwg">
+<svg viewBox="0 0 1200 380" role="img" aria-label="Security groups are stateful, allow-only, attached to instances and can reference other security groups, whereas network ACLs are stateless, support deny rules, are evaluated in numbered order and apply to the whole subnet.">
+  <rect class="box-c" x="30" y="50" width="560" height="230" rx="3"/>
+  <text class="t c mid" x="310" y="76">Security group</text>
+  <line class="ln" x1="46" y1="88" x2="574" y2="88"/>
+  <text class="m" x="46" y="112">Attached to:  an ENI &mdash; a task, an instance, an RDS endpoint</text>
+  <text class="m c" x="46" y="136">Stateful:     return traffic is allowed automatically</text>
+  <text class="m" x="46" y="160">Rules:        ALLOW only. There is no deny rule.</text>
+  <text class="m" x="46" y="184">Evaluation:   all rules together; any match allows</text>
+  <text class="m c" x="46" y="208">Can reference another security group as the source</text>
+  <text class="mm c" x="46" y="234">THAT LAST LINE IS THE IMPORTANT ONE: &ldquo;ALLOW 5432 FROM sg-core&rdquo; KEEPS</text>
+  <text class="mm c" x="46" y="250">WORKING AS TASKS SCALE UP AND DOWN AND THEIR IP ADDRESSES CHANGE.</text>
+  <text class="mm b" x="46" y="272">THIS IS YOUR PRIMARY FIREWALL. USE IT FOR EVERYTHING.</text>
+
+  <rect class="box" x="620" y="50" width="550" height="230" rx="3"/>
+  <text class="t mid" x="895" y="76">Network ACL</text>
+  <line class="ln" x1="636" y1="88" x2="1154" y2="88"/>
+  <text class="m" x="636" y="112">Attached to:  the whole subnet</text>
+  <text class="m r" x="636" y="136">Stateless:    you must allow return traffic explicitly</text>
+  <text class="m" x="636" y="160">Rules:        ALLOW and DENY</text>
+  <text class="m" x="636" y="184">Evaluation:   in rule-number order, first match wins</text>
+  <text class="m r" x="636" y="208">Cannot reference a security group &mdash; CIDR only</text>
+  <text class="mm r" x="636" y="234">THE STATELESS PART CATCHES EVERYONE: YOU ALLOW INBOUND 443 AND WONDER WHY</text>
+  <text class="mm r" x="636" y="250">NOTHING WORKS, BECAUSE THE REPLY LEAVES FROM AN EPHEMERAL PORT (1024-65535)</text>
+  <text class="mm r" x="636" y="266">THAT YOU DID NOT ALLOW OUTBOUND.</text>
+
+  <line class="ln dash" x1="20" y1="300" x2="1180" y2="300"/>
+  <text class="mm" x="30" y="324">USE SECURITY GROUPS FOR EVERYDAY ACCESS CONTROL. LEAVE THE DEFAULT NACL ALONE UNLESS YOU HAVE A SPECIFIC NEED &mdash; TYPICALLY BLOCKING A HOSTILE CIDR AT THE SUBNET EDGE,</text>
+  <text class="mm" x="30" y="344">OR A COMPLIANCE REQUIREMENT FOR A SECOND ENFORCEMENT LAYER. NACLS ARE A BLUNT INSTRUMENT AND A COMMON SOURCE OF &ldquo;IT WORKS IN STAGING&rdquo; MYSTERIES.</text>
+  <text class="mm b" x="30" y="370">THE BADGEDESK CHAIN: INTERNET &rarr; sg-alb (443 FROM 0.0.0.0/0) &rarr; sg-core (8000 FROM sg-alb) &rarr; sg-rds (5432 FROM sg-core). NO CIDR APPEARS AFTER THE FIRST HOP.</text>
+</svg>
+<figcaption>Drawing 07-D &mdash; security groups versus NACLs. <b>Cyan</b> = what you should reach for.
+<b>Red</b> = the traps.</figcaption>
+</figure>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; IAM and VPC</div>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@BeABetterDev__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5HoEOtwy$" target="_blank" rel="noopener"><span>Be A Better Dev<i>Short, precise AWS explanations. The IAM roles and VPC series are the clearest free material on either topic.</i></span><span class="dur">series</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=aws*vpc*explained*subnets*route*tables*nat*gateway*tutorial__;KysrKysrKys!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Duyks7o$" target="_blank" rel="noopener"><span>VPC from scratch<i>Watch one where they build it by hand in the console before you write the Terraform. The clicking teaches you what the resources are.</i></span><span class="dur">45 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5MmAnKOl$" target="_blank" rel="noopener"><span>AWS docs &mdash; policy evaluation logic<i>The authoritative version of Drawing 07-B, with the full flowchart including session policies.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@AWSEventsChannel__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5C26AqLx$" target="_blank" rel="noopener"><span>AWS re:Invent sessions<i>Search for &ldquo;IAM policy deep dive&rdquo; and &ldquo;VPC fundamentals&rdquo;. Dense, senior-level, and free.</i></span><span class="dur">60 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="compute">Compute &mdash; EC2, Lambda and EKS</h2>
+<p class="sub">Three ways to run the same code. The choice is about who manages what, and how the work
+arrives.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 360" role="img" aria-label="A comparison of EC2, ECS Fargate, Lambda and EKS across what you manage, scaling unit, billing granularity, cold start behaviour and best fit, with BadgeDesk components assigned to each.">
+  <text class="mm" x="30" y="34">YOU MANAGE</text>
+  <text class="mm mid" x="400" y="34">EC2</text>
+  <text class="mm mid" x="640" y="34">ECS FARGATE</text>
+  <text class="mm mid" x="880" y="34">LAMBDA</text>
+  <text class="mm mid" x="1100" y="34">EKS</text>
+  <line class="ln" x1="30" y1="44" x2="1170" y2="44"/>
+
+  <text class="m" x="30" y="70">Operating system and patching</text>
+  <text class="t r mid" x="400" y="70">you</text>
+  <text class="t c mid" x="640" y="70">AWS</text>
+  <text class="t c mid" x="880" y="70">AWS</text>
+  <text class="t r mid" x="1100" y="70">you (nodes)</text>
+
+  <text class="m" x="30" y="98">Capacity planning</text>
+  <text class="t r mid" x="400" y="98">you</text>
+  <text class="t c mid" x="640" y="98">per task</text>
+  <text class="t c mid" x="880" y="98">none</text>
+  <text class="t r mid" x="1100" y="98">you</text>
+
+  <text class="m" x="30" y="126">Scaling unit</text>
+  <text class="m mid" x="400" y="126">instance</text>
+  <text class="m mid" x="640" y="126">task</text>
+  <text class="m mid" x="880" y="126">invocation</text>
+  <text class="m mid" x="1100" y="126">pod</text>
+
+  <text class="m" x="30" y="154">Billed by</text>
+  <text class="m mid" x="400" y="154">second, always on</text>
+  <text class="m mid" x="640" y="154">vCPU-second</text>
+  <text class="m c mid" x="880" y="154">ms of execution</text>
+  <text class="m mid" x="1100" y="154">nodes + $73/mo</text>
+
+  <text class="m" x="30" y="182">Idle cost</text>
+  <text class="t r mid" x="400" y="182">full price</text>
+  <text class="t r mid" x="640" y="182">full price</text>
+  <text class="t c mid" x="880" y="182">zero</text>
+  <text class="t r mid" x="1100" y="182">full price</text>
+
+  <text class="m" x="30" y="210">Cold start</text>
+  <text class="t c mid" x="400" y="210">none</text>
+  <text class="t c mid" x="640" y="210">none</text>
+  <text class="t b mid" x="880" y="210">50 ms &ndash; 3 s</text>
+  <text class="t c mid" x="1100" y="210">none</text>
+
+  <text class="m" x="30" y="238">Max run time</text>
+  <text class="m mid" x="400" y="238">unlimited</text>
+  <text class="m mid" x="640" y="238">unlimited</text>
+  <text class="t r mid" x="880" y="238">15 minutes</text>
+  <text class="m mid" x="1100" y="238">unlimited</text>
+
+  <line class="ln dash" x1="30" y1="256" x2="1170" y2="256"/>
+  <text class="m b" x="30" y="282">In BadgeDesk</text>
+  <text class="mm mid" x="400" y="282">NOT USED &mdash; NOTHING</text>
+  <text class="mm c mid" x="640" y="282">core &middot; gateway</text>
+  <text class="mm c mid" x="880" y="282">audit-reconciler</text>
+  <text class="mm c mid" x="1100" y="282">provisioning-worker</text>
+  <text class="mm mid" x="400" y="298">NEEDS A WHOLE VM</text>
+  <text class="mm mid" x="640" y="298">notifier</text>
+  <text class="mm mid" x="880" y="298">S3 EVENT HANDLERS</text>
+  <text class="mm mid" x="1100" y="298">WEEK 09 ONLY, THEN DESTROY</text>
+
+  <text class="mm" x="30" y="334">THE DECISION IN ONE LINE: EVENT-DRIVEN AND SHORT &rarr; LAMBDA &middot; A LONG-RUNNING HTTP SERVICE &rarr; FARGATE &middot; YOU ALREADY RUN KUBERNETES OR NEED ITS ECOSYSTEM &rarr; EKS</text>
+  <text class="mm r" x="30" y="354">&middot; YOU NEED A SPECIFIC KERNEL, A GPU, OR LICENSED SOFTWARE PINNED TO A HOST &rarr; EC2. &ldquo;WE MIGHT NEED KUBERNETES LATER&rdquo; IS NOT A REASON TO START WITH IT.</text>
+</svg>
+<figcaption>Drawing 07-E &mdash; the compute decision. <b>Cyan</b> = the option that removes work from
+you.</figcaption>
+</figure>
+
+<h3 id="lambda">Lambda &mdash; the execution model</h3>
+<figure class="dwg">
+<svg viewBox="0 0 1200 340" role="img" aria-label="The Lambda execution model: a cold start downloads the package, starts the runtime and runs initialisation code before the handler; subsequent invocations reuse the warm environment and skip straight to the handler. Concurrency creates additional environments rather than threads.">
+  <defs><marker id="s07f-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+  <marker id="s07f-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker></defs>
+
+  <text class="mm b" x="30" y="34">COLD START &mdash; FIRST INVOCATION, OR AFTER SCALING UP</text>
+  <rect class="box-a" x="30" y="50" width="200" height="50" rx="3"/><text class="mm mid" x="130" y="72">DOWNLOAD PACKAGE</text><text class="mm mid" x="130" y="88">~100 ms</text>
+  <rect class="box-a" x="250" y="50" width="200" height="50" rx="3"/><text class="mm mid" x="350" y="72">START RUNTIME</text><text class="mm mid" x="350" y="88">~200 ms</text>
+  <rect class="box-a" x="470" y="50" width="240" height="50" rx="3"/><text class="mm mid" x="590" y="72">INIT CODE &mdash; OUTSIDE HANDLER</text><text class="mm mid" x="590" y="88">IMPORTS, DB POOL, SDK CLIENTS</text>
+  <rect class="box-c" x="730" y="50" width="240" height="50" rx="3"/><text class="mm mid" x="850" y="72">YOUR HANDLER</text><text class="mm mid" x="850" y="88">THE ONLY PART YOU BILL FOR&hellip;</text>
+  <path class="flow-b" d="M234,75 H246" marker-end="url(#s07f-ab)"/>
+  <path class="flow-b" d="M454,75 H466" marker-end="url(#s07f-ab)"/>
+  <path class="flow-b" d="M714,75 H726" marker-end="url(#s07f-ab)"/>
+  <text class="mm b" x="990" y="80">&hellip;NOT TRUE: INIT IS BILLED TOO</text>
+
+  <text class="mm c" x="30" y="140">WARM &mdash; EVERY SUBSEQUENT INVOCATION FOR ~5 TO 15 MINUTES</text>
+  <rect class="box-c" x="730" y="156" width="240" height="50" rx="3"/><text class="mm mid" x="850" y="178">YOUR HANDLER</text><text class="mm mid" x="850" y="194">STRAIGHT IN</text>
+  <path class="flow" d="M30,181 H726" marker-end="url(#s07f-ac)"/>
+  <text class="mm c" x="40" y="174">THE ENVIRONMENT IS REUSED &mdash; INIT IS SKIPPED ENTIRELY</text>
+
+  <line class="ln dash" x1="20" y1="226" x2="1180" y2="226"/>
+  <text class="mm" x="30" y="250">WHAT THIS MEANS FOR YOUR CODE:</text>
+  <text class="mm c" x="30" y="272">PUT EXPENSIVE SETUP OUTSIDE THE HANDLER &mdash; SDK CLIENTS, DATABASE POOLS, MODEL LOADS. IT RUNS ONCE PER ENVIRONMENT, NOT ONCE PER REQUEST.</text>
+  <text class="mm r" x="30" y="294">NEVER KEEP REQUEST STATE IN A MODULE-LEVEL VARIABLE. THE ENVIRONMENT IS REUSED, SO ONE USER&rsquo;S DATA WILL LEAK INTO ANOTHER&rsquo;S INVOCATION.</text>
+  <text class="mm" x="30" y="316">CONCURRENCY MEANS MORE ENVIRONMENTS, NOT THREADS &mdash; 100 SIMULTANEOUS INVOCATIONS ARE 100 SANDBOXES, EACH OPENING ITS OWN DATABASE CONNECTION.</text>
+  <text class="mm r" x="30" y="336">THAT IS WHY LAMBDA PLUS RDS NEEDS RDS PROXY: WITHOUT IT, A TRAFFIC SPIKE EXHAUSTS max_connections AND TAKES DOWN THE SERVICES THAT WERE WORKING FINE.</text>
+</svg>
+<figcaption>Drawing 07-F &mdash; the Lambda execution model. <b>Brass</b> = the cold-start cost.
+<b>Cyan</b> = the fast path.</figcaption>
+</figure>
+
+<div class="code" data-lang="python">
+<header><b>services/audit-reconciler/handler.py</b></header>
+<pre><code>import os, boto3, psycopg
+
+# --- INIT: runs once per execution environment, not once per invocation ---
+s3 = boto3.client("s3")
+secrets = boto3.client("secretsmanager")
+DB_SECRET = secrets.get_secret_value(SecretId=os.environ["DB_SECRET_ARN"])
+POOL = psycopg.connect(DB_SECRET["SecretString"])       # reused while warm
+
+def handler(event, context):
+    # Nothing here should be state that outlives the invocation.
+    for record in event["Records"]:                     # SQS or EventBridge
+        reconcile(record)
+
+    # context.get_remaining_time_in_millis() - check it in long loops and
+    # stop cleanly rather than being killed mid-write at the 15 minute limit.
+    return {"statusCode": 200, "reconciled": len(event["Records"])}
+
+# Configuration that matters more than the code:
+#   memory      1769 MB is exactly one full vCPU. More memory buys more CPU,
+#               so a bigger function is often CHEAPER because it finishes sooner.
+#   timeout     Set it just above your p99. The default 3 s hides real failures.
+#   DLQ         Always. An event that fails twice must go somewhere visible.
+#   reserved    Cap concurrency so a burst cannot exhaust the RDS connection pool.</code></pre>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="s3">S3</h2>
+<p class="sub">Object storage. Effectively infinite, eleven nines of durability, and the source of a
+remarkable number of public data breaches.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 330" role="img" aria-label="The presigned URL pattern: the browser asks the application for permission, the application checks authorisation and returns a short-lived signed URL, and the browser then uploads directly to S3, so the file never passes through the application.">
+  <defs><marker id="s07g-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  <marker id="s07g-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker></defs>
+
+  <rect class="box" x="30" y="80" width="200" height="56" rx="3"/>
+  <text class="t mid" x="130" y="103">Browser</text>
+  <text class="mm mid" x="130" y="119">8 MB BADGE PHOTO</text>
+
+  <rect class="box-c" x="420" y="80" width="220" height="56" rx="3"/>
+  <text class="t mid" x="530" y="103">core</text>
+  <text class="mm mid" x="530" y="119">CHECKS AUTHORISATION</text>
+
+  <rect class="box-a" x="880" y="80" width="240" height="56" rx="3"/>
+  <text class="t b mid" x="1000" y="103">S3 bucket</text>
+  <text class="mm mid" x="1000" y="119">badgedesk-photos-prod</text>
+
+  <path class="flow" d="M234,96 H416" marker-end="url(#s07g-ac)"/>
+  <text class="mm c" x="248" y="88">1 &mdash; POST /v1/badge-photos/upload-url</text>
+  <path class="flow" d="M416,124 H234" marker-end="url(#s07g-ac)"/>
+  <text class="mm c" x="248" y="144">2 &mdash; SIGNED PUT URL, VALID 300 SECONDS</text>
+
+  <path class="flow-b" d="M234,182 H1000 V140" marker-end="url(#s07g-ab)"/>
+  <text class="mm b" x="380" y="176">3 &mdash; PUT THE FILE STRAIGHT TO S3. IT NEVER TOUCHES YOUR SERVICE.</text>
+
+  <path class="flow" d="M1000,52 H530 V76" marker-end="url(#s07g-ac)"/>
+  <text class="mm" x="620" y="44">4 &mdash; S3 EVENT NOTIFICATION &rarr; LAMBDA &rarr; RECORD THE KEY AGAINST THE EMPLOYEE</text>
+
+  <line class="ln dash" x1="20" y1="210" x2="1180" y2="210"/>
+  <text class="mm c" x="30" y="234">WHY: NO 8 MB THROUGH YOUR CONTAINER &middot; NO MEMORY SPIKE &middot; NO REQUEST TIMEOUT ON A SLOW PHONE &middot; NO NAT GATEWAY DATA CHARGES &middot; S3 HANDLES RESUMPTION AND MULTIPART</text>
+  <text class="mm b" x="30" y="258">THE SIGNATURE CARRIES YOUR PERMISSIONS AND EXPIRES. CONSTRAIN IT: PIN THE KEY PREFIX, THE CONTENT-TYPE AND A MAXIMUM CONTENT-LENGTH IN THE SIGNED POLICY.</text>
+  <text class="mm r" x="30" y="286">S3 SECURITY, IN ORDER: BLOCK PUBLIC ACCESS ON AT THE ACCOUNT LEVEL &middot; SSE-KMS ENCRYPTION &middot; VERSIONING ON &middot; A BUCKET POLICY DENYING aws:SecureTransport=false</text>
+  <text class="mm r" x="30" y="306">&middot; LIFECYCLE RULES TO EXPIRE OLD VERSIONS &middot; ACCESS LOGGING. IF A BUCKET MUST SERVE THE PUBLIC, PUT CLOUDFRONT IN FRONT WITH AN ORIGIN ACCESS CONTROL &mdash; NEVER MAKE THE BUCKET PUBLIC.</text>
+</svg>
+<figcaption>Drawing 07-G &mdash; the presigned URL pattern. <b>Brass</b> = the path the bytes actually
+take.</figcaption>
+</figure>
+
+<div class="tw">
+<table>
+<thead><tr><th>Storage class</th><th>Retrieval</th><th>Rough cost per GB-month</th><th>BadgeDesk use</th></tr></thead>
+<tbody>
+<tr><td>Standard</td><td>Immediate</td><td>$0.023</td><td>Badge photos, anything read this month</td></tr>
+<tr><td>Intelligent-Tiering</td><td>Immediate</td><td>$0.023 falling automatically</td><td>The safe default when the access pattern is unknown &mdash; it moves objects for you</td></tr>
+<tr><td>Standard-IA</td><td>Immediate, with a retrieval charge</td><td>$0.0125</td><td>Audit exports older than 30 days</td></tr>
+<tr><td>Glacier Instant</td><td>Immediate</td><td>$0.004</td><td>Audit exports older than 90 days</td></tr>
+<tr><td>Glacier Deep Archive</td><td>12 hours</td><td>$0.00099</td><td>The seven-year regulatory retention copy</td></tr>
+</tbody>
+</table>
+</div>
+<p>A lifecycle rule moves objects between these automatically. Ten lines of Terraform turns a seven-year
+retention requirement from an expensive habit into a rounding error &mdash; and &ldquo;how would you handle
+long-term retention cheaply?&rdquo; is a common follow-up question.</p>
+
+<!-- ===================================================================== -->
+<h2 id="rds">RDS</h2>
+<p class="sub">Managed PostgreSQL. You still own the schema, the queries and the indexes from
+<a href="databases.html">Sheet 06</a> &mdash; AWS owns the machine, the backups and the failover.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Decision</th><th>Choose</th><th>Reasoning</th></tr></thead>
+<tbody>
+<tr><td>Multi-AZ or not</td><td>Yes in production, no in your learning account</td><td>Doubles the cost, gives automatic failover in one to two minutes. In a personal account it doubles a bill you are trying to keep near zero.</td></tr>
+<tr><td>Read replica</td><td>Only when reads genuinely dominate</td><td>Asynchronous, so it lags. Never read your own write from a replica &mdash; that is a real, confusing bug class.</td></tr>
+<tr><td>Instance class</td><td><code>db.t4g.micro</code> to learn, Graviton <code>db.m7g</code> in production</td><td>Graviton is roughly 20% cheaper for the same throughput. The <code>t</code> family uses CPU credits and will throttle under sustained load.</td></tr>
+<tr><td>Storage</td><td><code>gp3</code></td><td>IOPS are configured independently of size, so you stop over-provisioning disk just to buy performance.</td></tr>
+<tr><td>Backups</td><td>7 days minimum, plus deletion protection</td><td>Automated backups give point-in-time recovery. The default retention is 1 day, which is not enough to notice a problem.</td></tr>
+<tr><td>Credentials</td><td>Secrets Manager with rotation, or IAM auth</td><td>Never a password in an environment variable or a task definition. IAM database authentication removes the password entirely.</td></tr>
+<tr><td>Aurora instead?</td><td>Not for BadgeDesk</td><td>Better failover and storage scaling, more expensive, and a different operational model. Know it exists and what it buys.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil</span>
+  <p>RDS applies engine patches during your maintenance window, and a minor version upgrade means a restart
+  &mdash; roughly a minute of downtime, or a failover on Multi-AZ. Your application must reconnect
+  automatically rather than staying broken until someone redeploys it. Set
+  <code>pool_pre_ping=True</code>, keep <code>pool_recycle</code> below any idle timeout in the path, and
+  test it by triggering a reboot with failover on purpose. Discovering that your connection pool cannot
+  reconnect during an unplanned failover at 02:00 is a bad way to learn this.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="cloudwatch">CloudWatch and operating the thing</h2>
+<p class="sub">If you cannot answer &ldquo;how would you know it broke?&rdquo;, your architecture answer is
+not finished.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 380" role="img" aria-label="CloudWatch structure: logs flow into log groups and are queried with Logs Insights, metrics feed alarms which notify SNS, X-Ray provides distributed traces, and the four golden signals of latency, traffic, errors and saturation define what to alarm on.">
+  <defs><marker id="s07h-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  <marker id="s07h-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker></defs>
+
+  <rect class="box" x="30" y="60" width="200" height="56" rx="3"/>
+  <text class="t mid" x="130" y="83">ECS &middot; Lambda &middot; RDS</text>
+  <text class="mm mid" x="130" y="99">EMIT EVERYTHING</text>
+
+  <rect class="box-c" x="300" y="50" width="230" height="50" rx="3"/>
+  <text class="t mid" x="415" y="72">Logs</text>
+  <text class="mm mid" x="415" y="88">STRUCTURED JSON, PLEASE</text>
+
+  <rect class="box-c" x="300" y="118" width="230" height="50" rx="3"/>
+  <text class="t mid" x="415" y="140">Metrics</text>
+  <text class="mm mid" x="415" y="156">NUMBERS OVER TIME</text>
+
+  <rect class="box-c" x="300" y="186" width="230" height="50" rx="3"/>
+  <text class="t mid" x="415" y="208">X-Ray traces</text>
+  <text class="mm mid" x="415" y="224">ONE REQUEST ACROSS SERVICES</text>
+
+  <rect class="box" x="600" y="50" width="240" height="50" rx="3"/>
+  <text class="t mid" x="720" y="72">Logs Insights</text>
+  <text class="mm mid" x="720" y="88">QUERY WITHOUT EXPORTING</text>
+
+  <rect class="box-a" x="600" y="118" width="240" height="50" rx="3"/>
+  <text class="t b mid" x="720" y="140">Alarm</text>
+  <text class="mm mid" x="720" y="156">THRESHOLD &middot; DURATION</text>
+
+  <rect class="box-r" x="910" y="118" width="260" height="50" rx="3"/>
+  <text class="t r mid" x="1040" y="140">SNS &rarr; you</text>
+  <text class="mm mid" x="1040" y="156">EMAIL &middot; SLACK &middot; PAGERDUTY</text>
+
+  <path class="flow" d="M234,75 H296" marker-end="url(#s07h-ac)"/>
+  <path class="flow" d="M234,90 H270 V143 H296" marker-end="url(#s07h-ac)"/>
+  <path class="flow" d="M234,104 H256 V211 H296" marker-end="url(#s07h-ac)"/>
+  <path class="flow" d="M534,75 H596" marker-end="url(#s07h-ac)"/>
+  <path class="flow" d="M534,143 H596" marker-end="url(#s07h-ac)"/>
+  <path class="flow-r" d="M844,143 H906" marker-end="url(#s07h-ar)"/>
+  <path class="flow" d="M720,104 V114" marker-end="url(#s07h-ac)"/>
+  <text class="mm" x="730" y="112">METRIC FILTER: COUNT ERROR LINES AS A METRIC</text>
+
+  <line class="ln dash" x1="20" y1="258" x2="1180" y2="258"/>
+  <text class="mm b" x="30" y="282">WHAT TO ALARM ON &mdash; THE FOUR GOLDEN SIGNALS, AND ALMOST NOTHING ELSE:</text>
+  <text class="mm" x="30" y="306">LATENCY &mdash; ALB TargetResponseTime p99 ABOVE 1 s FOR 5 MINUTES &middot; TRAFFIC &mdash; REQUESTCOUNT FALLING TO ZERO IS AS ALARMING AS A SPIKE</text>
+  <text class="mm" x="30" y="326">ERRORS &mdash; HTTPCode_Target_5XX_Count ABOVE 1% OF REQUESTS &middot; SATURATION &mdash; CPU, MEMORY, DATABASE CONNECTIONS AND DISK ABOVE 80%</text>
+  <text class="mm r" x="30" y="354">ALARM ON SYMPTOMS USERS FEEL, NOT ON CAUSES. HIGH CPU WITH HEALTHY LATENCY IS NOT AN INCIDENT &mdash; IT IS A COMPUTER DOING ITS JOB. EVERY PAGE THAT IS NOT ACTIONABLE</text>
+  <text class="mm r" x="30" y="374">TRAINS PEOPLE TO IGNORE PAGES, AND THAT IS HOW REAL OUTAGES GET MISSED.</text>
+</svg>
+<figcaption>Drawing 07-H &mdash; CloudWatch and what to alarm on. <b>Red</b> = wakes a human.</figcaption>
+</figure>
+
+<div class="code" data-lang="text">
+<header><b>CloudWatch Logs Insights &mdash; the queries you will actually use</b></header>
+<pre><code># Find one request across every service, using the trace id from Sheet 05.
+fields @timestamp, service, level, message
+| filter trace_id = "0af7651916cd43dd8448eb211c80319c"
+| sort @timestamp asc
+
+# Which endpoints are slowest at p99?
+fields @timestamp, route, duration_ms
+| filter ispresent(duration_ms)
+| stats count(*) as calls,
+        avg(duration_ms) as avg,
+        pct(duration_ms, 99) as p99 by route
+| sort p99 desc | limit 20
+
+# Error rate per minute, to confirm an alarm is real before acting.
+fields @timestamp
+| filter level = "ERROR"
+| stats count(*) as errors by bin(1m)
+
+# The single most useful line in your application: log structured JSON.
+#   {"level":"error","service":"core","trace_id":"0af765...",
+#    "route":"POST /v1/access-requests","duration_ms":812,
+#    "employee_id":"e_10422","error":"connection pool timeout"}
+# Insights parses JSON fields automatically. Plain-text logs force you to
+# write regular expressions during an incident, which is the worst possible time.</code></pre>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; AWS compute, storage and operations</div>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=aws*lambda*cold*start*execution*environment*explained__;KysrKysr!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5KWh2jUO$" target="_blank" rel="noopener"><span>Lambda cold starts and the execution environment<i>Explains why init code placement matters. Common interview question for serverless roles.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/results?search_query=s3*presigned*url*upload*tutorial*security__;KysrKys!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5PLxo1vX$" target="_blank" rel="noopener"><span>Presigned URLs, done securely<i>Look for one that constrains content type and size in the signed policy, not just the happy path.</i></span><span class="dur">18 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://docs.aws.amazon.com/whitepapers/latest/aws-overview/introduction.html__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5Ed1EdFd$" target="_blank" rel="noopener"><span>AWS Well-Architected Framework<i>Six pillars: operational excellence, security, reliability, performance, cost, sustainability. Reference it by name in system design rounds.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://www.youtube.com/@AWSEventsChannel__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5C26AqLx$" target="_blank" rel="noopener"><span>re:Invent &mdash; &ldquo;Advanced VPC design&rdquo; and &ldquo;Serverless at scale&rdquo;<i>These sessions are pitched at exactly the level of a senior interview.</i></span><span class="dur">60 min</span></a>
+  <a class="r" href="https://urldefense.com/v3/__https://explore.skillbuilder.aws/__;!!OrxsNty6D4my!7kpzI84cLDyTMLS1DdlHe0MSG_c8Xdz7TCjl_tUH38r_M90TF8zcVkQpJI2bhhyXFTclr3z3Xe9VlXWfMc-pzGI1r5iV5C6WnWVY$" target="_blank" rel="noopener"><span>AWS Skill Builder<i>Free tier includes the Cloud Practitioner and Solutions Architect Associate paths. Useful structure even if you never sit the exam.</i></span><span class="dur">course</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="cost">Cost, and how not to be surprised</h2>
+<p class="sub">Read this before you create anything. Personal laptop, personal account, personal money.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Resource</th><th>Monthly if left running</th><th>Free tier?</th><th>Rule</th></tr></thead>
+<tbody>
+<tr><td>NAT Gateway</td><td>~$32 plus $0.045/GB</td><td>No</td><td>Destroy after every session. The single most common bill shock.</td></tr>
+<tr><td>EKS control plane</td><td>~$73 per cluster</td><td>No</td><td>Charged even with zero nodes. One weekend in Week 09, then <code>terraform destroy</code>.</td></tr>
+<tr><td>ALB</td><td>~$16 plus capacity units</td><td>No</td><td>Share one across services. Delete when idle.</td></tr>
+<tr><td>RDS <code>db.t4g.micro</code></td><td>~$15</td><td>750 h/month for 12 months</td><td>One instance only, and Single-AZ. Multi-AZ is not covered.</td></tr>
+<tr><td>EC2 <code>t3.micro</code></td><td>~$8</td><td>750 h/month for 12 months</td><td>Free-tier hours are shared across all instances, not per instance.</td></tr>
+<tr><td>Unattached Elastic IP</td><td>~$3.60 each</td><td>No</td><td>Charged <i>because</i> it is idle. Release them.</td></tr>
+<tr><td>Orphaned EBS volumes</td><td>$0.08/GB</td><td>30 GB free</td><td>They outlive terminated instances. Check for &ldquo;available&rdquo; volumes.</td></tr>
+<tr><td>S3 Standard</td><td>$0.023/GB</td><td>5 GB for 12 months</td><td>Cheap. Watch request counts, not storage, on chatty workloads.</td></tr>
+<tr><td>Lambda</td><td>Effectively free at this scale</td><td>1M requests/month, always</td><td>The always-free tier is genuinely generous.</td></tr>
+<tr><td>CloudWatch Logs</td><td>$0.57/GB ingested</td><td>5 GB</td><td>Debug logging in a loop is how a $2 month becomes $200. Set retention on every log group.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="code" data-lang="bash">
+<header><b>the end-of-session ritual &mdash; run it every time</b></header>
+<pre><code>cd infra/
+terraform destroy -auto-approve
+
+# Then verify, because Terraform only destroys what it created:
+aws ec2 describe-nat-gateways --filter Name=state,Values=available \
+  --query 'NatGateways[].NatGatewayId' --output text
+aws ec2 describe-addresses --query 'Addresses[?!AssociationId].PublicIp' --output text
+aws ec2 describe-volumes --filters Name=status,Values=available \
+  --query 'Volumes[].VolumeId' --output text
+aws eks list-clusters --output text
+aws rds describe-db-instances --query 'DBInstances[].DBInstanceIdentifier' --output text
+aws elbv2 describe-load-balancers --query 'LoadBalancers[].LoadBalancerName' --output text
+
+# All six should return nothing. Then check the forecast:
+aws ce get-cost-forecast --time-period Start=$(date -d tomorrow +%F),End=$(date -d '+30 days' +%F) \
+  --metric UNBLENDED_COST --granularity MONTHLY</code></pre>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="connect">How the subtopics connect</h2>
+<p class="sub">One HTTPS request, from an employee's browser to a row in RDS, naming every AWS component it
+passes through and what each one contributes.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 420" role="img" aria-label="An HTTPS request traced through AWS: Route 53 resolves the name, the ALB terminates TLS using an ACM certificate and routes to a healthy Fargate task, the task role fetches the database secret, security groups permit the connection to RDS, and logs, metrics and traces flow to CloudWatch throughout.">
+  <defs><marker id="s07i-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  <marker id="s07i-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker></defs>
+
+  <rect class="box" x="30" y="70" width="170" height="56" rx="3"/>
+  <text class="t mid" x="115" y="93">1 &middot; Route 53</text>
+  <text class="mm mid" x="115" y="109">DNS &rarr; ALB</text>
+
+  <rect class="box-c" x="230" y="70" width="200" height="56" rx="3"/>
+  <text class="t mid" x="330" y="93">2 &middot; ALB + ACM</text>
+  <text class="mm mid" x="330" y="109">TLS TERMINATES &middot; sg-alb</text>
+
+  <rect class="box-c" x="460" y="70" width="200" height="56" rx="3"/>
+  <text class="t mid" x="560" y="93">3 &middot; Target group</text>
+  <text class="mm mid" x="560" y="109">HEALTH CHECK PASSES</text>
+
+  <rect class="box-c" x="690" y="70" width="200" height="56" rx="3"/>
+  <text class="t mid" x="790" y="93">4 &middot; Fargate task</text>
+  <text class="mm mid" x="790" y="109">core &middot; PRIVATE SUBNET</text>
+
+  <rect class="box-a" x="920" y="70" width="250" height="56" rx="3"/>
+  <text class="t b mid" x="1045" y="93">5 &middot; Task role</text>
+  <text class="mm mid" x="1045" y="109">GETS DB SECRET, NO PASSWORD STORED</text>
+
+  <rect class="box-c" x="690" y="180" width="200" height="56" rx="3"/>
+  <text class="t mid" x="790" y="203">6 &middot; sg-rds</text>
+  <text class="mm mid" x="790" y="219">5432 FROM sg-core ONLY</text>
+
+  <rect class="box-c" x="920" y="180" width="250" height="56" rx="3"/>
+  <text class="t mid" x="1045" y="203">7 &middot; RDS PostgreSQL</text>
+  <text class="mm mid" x="1045" y="219">ISOLATED SUBNET &middot; ENCRYPTED</text>
+
+  <rect class="box-a" x="230" y="180" width="430" height="56" rx="3"/>
+  <text class="t b mid" x="445" y="203">8 &middot; CloudWatch &mdash; throughout</text>
+  <text class="mm mid" x="445" y="219">ALB ACCESS LOGS &middot; TASK LOGS &middot; RDS METRICS &middot; X-RAY TRACE</text>
+
+  <path class="flow" d="M204,98 H226" marker-end="url(#s07i-ac)"/>
+  <path class="flow" d="M434,98 H456" marker-end="url(#s07i-ac)"/>
+  <path class="flow" d="M664,98 H686" marker-end="url(#s07i-ac)"/>
+  <path class="flow-b" d="M894,98 H916" marker-end="url(#s07i-ab)"/>
+  <path class="flow" d="M790,130 V176" marker-end="url(#s07i-ac)"/>
+  <path class="flow" d="M894,208 H916" marker-end="url(#s07i-ac)"/>
+  <path class="flow-b" d="M686,208 H664" marker-end="url(#s07i-ab)"/>
+
+  <line class="ln dash" x1="20" y1="262" x2="1180" y2="262"/>
+  <text class="mm" x="30" y="286">WHERE EACH SERVICE FROM THIS SHEET APPEARS:</text>
+  <text class="mm" x="30" y="310">VPC DECIDES THAT STEP 4 HAS NO PUBLIC ADDRESS AND STEP 7 HAS NO INTERNET ROUTE &middot; IAM DECIDES THAT STEP 5 SUCCEEDS AND THAT THE SAME ROLE CANNOT DELETE THE DATABASE</text>
+  <text class="mm" x="30" y="332">&middot; SECURITY GROUPS DECIDE THAT ONLY sg-core REACHES 5432, BY GROUP REFERENCE RATHER THAN IP, SO SCALING CHANGES NOTHING &middot; CLOUDWATCH IS THE ONLY REASON YOU WILL EVER</text>
+  <text class="mm" x="30" y="354">KNOW WHICH STEP WAS SLOW &middot; S3 AND LAMBDA SIT OFF THIS PATH ENTIRELY, HANDLING UPLOADS AND THE NIGHTLY RECONCILIATION.</text>
+  <text class="mm b" x="30" y="384">THE INTERVIEW VERSION: BE ABLE TO NARRATE THIS IN NINETY SECONDS, NAMING THE COMPONENT AND WHAT IT CONTRIBUTES. THAT SINGLE ANSWER COVERS MOST OF AN AWS SCREEN.</text>
+  <text class="mm r" x="30" y="410">AND KNOW THE FAILURE MODES: AZ-a DIES &rarr; ALB ROUTES TO AZ-b AND RDS FAILS OVER &middot; A TASK DIES &rarr; THE HEALTH CHECK PULLS IT AND ECS STARTS ANOTHER &middot; THE REGION DIES &rarr; YOU ARE DOWN, AND THAT WAS AN ACCEPTED TRADE-OFF.</text>
+</svg>
+<figcaption>Drawing 07-I &mdash; one request through AWS. <b>Cyan</b> = the request path. <b>Brass</b> =
+supporting services.</figcaption>
+</figure>
+
+<!-- ===================================================================== -->
+<h2 id="drill">Drill book</h2>
+<p class="sub">Answer out loud. AWS questions reward specificity &mdash; name the service and the reason.</p>
+
+<div class="drill">
+  <div class="dh">AWS</div>
+  <details><summary>Explain a VPC to someone who has only used a laptop.</summary>
+    <div class="ans"><p>A private network inside AWS that you define with a CIDR block, cut into subnets, each
+    pinned to one availability zone. What makes a subnet public is a single route sending
+    <code>0.0.0.0/0</code> to an internet gateway &mdash; nothing else. Private subnets route outbound
+    through a NAT gateway, and isolated subnets have no default route at all, which is where the database
+    lives. Security groups are stateful firewalls on the resources; route tables decide what is reachable
+    in the first place.</p></div></details>
+  <details><summary>What is the difference between a security group and a network ACL?</summary>
+    <div class="ans"><p>Security groups attach to a resource, are stateful so return traffic is implicit,
+    allow only with no deny rules, and can reference another security group as the source &mdash; which is
+    what makes them survive autoscaling. NACLs attach to a whole subnet, are stateless so you must allow
+    return traffic on ephemeral ports explicitly, support deny, and are evaluated in numbered order with
+    first match winning. Use security groups for everyday work; NACLs for coarse subnet-level blocking.</p></div></details>
+  <details><summary>How does IAM decide whether a call is allowed?</summary>
+    <div class="ans"><p>Deny by default. An explicit deny anywhere &mdash; identity policy, resource policy,
+    service control policy, permissions boundary, session policy &mdash; wins immediately and cannot be
+    overridden. Otherwise the organisation SCP and any permissions boundary must permit it, and some
+    attached policy must explicitly allow it. No allow means denied.</p></div></details>
+  <details><summary>Why is an IAM role better than an access key?</summary>
+    <div class="ans"><p>A role issues short-lived credentials that rotate automatically and are delivered
+    by the environment, so there is nothing to leak into a repository, a log line or a Docker image. Access
+    keys are long-lived, are frequently committed by accident, and are valid until someone notices. For CI
+    the modern answer is OIDC federation, where GitHub Actions assumes a role scoped by a trust policy to
+    one repository and branch, and no credential is stored anywhere.</p></div></details>
+  <details><summary>When would you choose Lambda over a container, and when not?</summary>
+    <div class="ans"><p>Lambda for event-driven, short, spiky or intermittent work: the nightly reconciler,
+    S3 upload handlers, queue processing. It scales to zero, so idle costs nothing. Not for sustained
+    high-throughput HTTP traffic, where per-invocation pricing overtakes a container; not for anything
+    exceeding fifteen minutes; not where cold-start latency is unacceptable at p99; and not where the
+    connection-per-invocation model would exhaust a database pool without RDS Proxy in front.</p></div></details>
+  <details><summary>Your Lambda times out talking to RDS. What do you check?</summary>
+    <div class="ans"><p>Almost always networking. A Lambda attached to a VPC needs subnets and a security
+    group, and the RDS security group must allow the Lambda's group on 5432. Then check the subnets are
+    private-with-NAT if the function also calls the internet, that the timeout is longer than the query, and
+    that concurrency has not exhausted <code>max_connections</code> &mdash; which is what RDS Proxy exists
+    to fix. A Lambda with no VPC attachment cannot reach RDS at all.</p></div></details>
+  <details><summary>How do you handle a large file upload?</summary>
+    <div class="ans"><p>Presigned S3 URLs. The client asks the API for permission, the API checks
+    authorisation and returns a short-lived signed URL constrained by key prefix, content type and maximum
+    size, and the browser uploads straight to S3. The bytes never pass through the application, so there is
+    no memory spike, no request timeout on a slow connection and no NAT data charge. An S3 event
+    notification then triggers a Lambda to record the object against the employee.</p></div></details>
+  <details><summary>Multi-AZ or read replica?</summary>
+    <div class="ans"><p>Different problems. Multi-AZ is availability: a synchronous standby in another zone
+    that serves no traffic and is promoted automatically on failure. A read replica is capacity: an
+    asynchronous copy you can query, which lags behind the primary. Use Multi-AZ for uptime, replicas for
+    read scaling, and never read your own write from a replica.</p></div></details>
+  <details><summary>What would you alarm on for BadgeDesk, and what would you deliberately not?</summary>
+    <div class="ans"><p>The four golden signals: p99 latency above one second sustained, 5xx rate above one
+    per cent, request count dropping to zero, and saturation of CPU, memory, database connections or disk
+    above eighty per cent. Plus business signals such as the provisioning queue depth growing. I would not
+    page on high CPU with healthy latency, or on a single error, because unactionable pages train people to
+    ignore the pager and that is how the real outage gets missed.</p></div></details>
+  <details><summary>Your bill jumped from $5 to $400. How do you investigate?</summary>
+    <div class="ans"><p>Cost Explorer grouped by service, then by usage type, over the period where it
+    changed. The usual suspects are a NAT gateway left running, an EKS control plane, orphaned Elastic IPs
+    and EBS volumes, cross-AZ or NAT data transfer, and CloudWatch Logs ingestion from a debug statement in
+    a hot loop. Then fix the process rather than the symptom: budget alarms at multiple thresholds, mandatory
+    cost-allocation tags, and <code>terraform destroy</code> as a habit rather than an intention.</p></div></details>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="signoff">Sign-off</h2>
+<p class="sub">Personal laptop only. Destroy everything at the end of each session.</p>
+
+<div class="signoff">
+  <div class="sh"><span>Weeks 08&ndash;09</span><span>Sheet 07</span></div>
+  <label><input type="checkbox"><span>Budget alarms at $10 confirmed by email, root MFA on, and daily use through Identity Center rather than an IAM user.</span></label>
+  <label><input type="checkbox"><span>Built a VPC by hand in the console once, with three subnet tiers across two availability zones, and can explain every route table entry.</span></label>
+  <label><input type="checkbox"><span>Wrote a least-privilege IAM policy with a <code>Condition</code>, and verified it with the policy simulator.</span></label>
+  <label><input type="checkbox"><span>Deployed a container to ECS Fargate behind an ALB with HTTPS from an ACM certificate.</span></label>
+  <label><input type="checkbox"><span>Chained security groups by group reference &mdash; ALB to app to database &mdash; with no CIDR after the first hop.</span></label>
+  <label><input type="checkbox"><span>Ran RDS PostgreSQL in an isolated subnet, with the password in Secrets Manager and no credential in any environment variable.</span></label>
+  <label><input type="checkbox"><span>Triggered a reboot with failover and confirmed the application reconnected on its own.</span></label>
+  <label><input type="checkbox"><span>Deployed a Lambda with initialisation outside the handler, a DLQ, and a timeout set from the observed p99.</span></label>
+  <label><input type="checkbox"><span>Implemented presigned S3 uploads with the content type and size constrained in the signed policy.</span></label>
+  <label><input type="checkbox"><span>Configured Block Public Access, SSE-KMS, versioning and a lifecycle rule on a bucket.</span></label>
+  <label><input type="checkbox"><span>Shipped structured JSON logs to CloudWatch and found one request end to end in Logs Insights by trace id.</span></label>
+  <label><input type="checkbox"><span>Created alarms for all four golden signals wired to an SNS topic, and triggered one deliberately.</span></label>
+  <label><input type="checkbox"><span>Stood up an EKS cluster, ran the provisioning worker on it, and destroyed it the same weekend.</span></label>
+  <label><input type="checkbox"><span>Ran the teardown checklist and confirmed the cost forecast returned to near zero.</span></label>
+</div>
+
+</div><!-- /sheetbody -->
+</main>
+
+<aside class="toc" aria-label="Contents"></aside>
+</div>
+
+<script src="assets/js/nav-data.js"></script>
+<script src="assets/js/sheet.js"></script>
+</body>
+</html>
