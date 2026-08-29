@@ -2,6 +2,12 @@
 
 > Personal laptop only (full admin). Follow in order. Do not skip steps.
 
+**Restart legend used in this file:**
+- 🔴 **WINDOWS REBOOT** — shut down and restart the whole PC before continuing
+- 🟡 **WSL RESTART** — run `wsl --shutdown` in PowerShell, then reopen WSL
+- 🟢 **NEW TERMINAL** — close the current terminal window and open a fresh one
+- 🔵 **SHELL RELOAD** — run `exec $SHELL -l` in the same terminal (no window close needed)
+
 ---
 
 ## Step 1 — Shell & base tools (PowerShell Admin)
@@ -16,29 +22,39 @@ winget install --id Microsoft.VisualStudioCode  --silent
 winget install --id 7zip.7zip                   --silent
 ```
 
+> 🟢 **NEW TERMINAL** — Close this window. Open **Windows Terminal** and make sure it is running **PowerShell 7** (not Windows PowerShell 5.1). Check the tab says `pwsh` or the prompt shows `PS C:\>` with version 7+. All steps from here use this terminal.
+
 ---
 
-## Step 2 — WSL2 (PowerShell Admin)
+## Step 2 — WSL2 (PowerShell 7, Admin)
 
 ```powershell
 wsl --install
+```
+
+> 🔴 **WINDOWS REBOOT REQUIRED** — `wsl --install` will ask you to restart. Do it now. After the reboot, Ubuntu will launch automatically and ask you to create a **Linux username and password** (separate from your Windows login). Set them, remember the password — you will need it for every `sudo` command.
+
+After reboot and Ubuntu first-run setup, continue in PowerShell:
+
+```powershell
 wsl --set-default-version 2
 wsl --install --distribution Ubuntu-24.04
 wsl --update
 wsl --status
+# Expected: Default Distribution: Ubuntu-24.04   Default Version: 2
 ```
 
 ---
 
 ## Step 3 — Configure WSL2
 
-**Inside Ubuntu — create `/etc/wsl.conf`:**
+**Inside Ubuntu (open from Windows Terminal → Ubuntu tab):**
 
 ```bash
 sudo nano /etc/wsl.conf
 ```
 
-Paste this:
+Paste this exactly (replace `<your-linux-username>` with the username you set above):
 
 ```
 [boot]
@@ -60,7 +76,9 @@ generateHosts=true
 generateResolvConf=true
 ```
 
-**On Windows — create `C:\Users\<you>\.wslconfig`:**
+Save: `Ctrl+O` → Enter → `Ctrl+X`
+
+**On Windows — create `C:\Users\<you>\.wslconfig`** (use Notepad or VS Code):
 
 ```
 [wsl2]
@@ -72,10 +90,16 @@ nestedVirtualization=true
 vmIdleTimeout=60000
 ```
 
-**Restart WSL (PowerShell):**
+> 🟡 **WSL RESTART** — Run this in PowerShell, then reopen Ubuntu:
 
 ```powershell
 wsl --shutdown
+```
+
+Then open a new Ubuntu terminal and verify:
+
+```bash
+systemctl --version    # should work (confirms systemd is running)
 ```
 
 ---
@@ -87,8 +111,10 @@ sudo apt-get update && sudo apt-get upgrade -y
 sudo apt-get install -y build-essential curl git unzip ca-certificates \
                         pkg-config libssl-dev zip
 mkdir -p ~/code && cd ~/code
-df -hT ~/code | tail -1    # should show ext4, not 9p
+df -hT ~/code | tail -1    # must show ext4, not 9p
 ```
+
+No restart needed.
 
 ---
 
@@ -104,7 +130,10 @@ code --install-extension ms-vscode-remote.remote-wsl
 cd ~/code
 code .
 # Bottom-left corner of VS Code must show: WSL: Ubuntu-24.04
+# If it shows anything else, close VS Code and reopen with `code .` from inside WSL
 ```
+
+No restart needed.
 
 ---
 
@@ -121,12 +150,14 @@ git config --global core.autocrlf input
 git config --global rerere.enabled true
 
 ssh-keygen -t ed25519 -C "personal-laptop-2026-08" -f ~/.ssh/id_ed25519
+# Enter a passphrase when asked (recommended)
+
 eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/id_ed25519
 cat ~/.ssh/id_ed25519.pub
 ```
 
-**Add the key to GitHub:** Settings → SSH and GPG keys → New SSH key → paste the output above
+**Add the key to GitHub:** github.com → Settings → SSH and GPG keys → New SSH key → paste the output above
 
 ```bash
 ssh -T git@github.com
@@ -135,14 +166,23 @@ ssh -T git@github.com
 printf '%s\n' 'eval "$(ssh-agent -s)" >/dev/null' 'ssh-add -q ~/.ssh/id_ed25519 2>/dev/null' >> ~/.bashrc
 ```
 
+No restart needed.
+
 ---
 
 ## Step 7 — Node via fnm (inside WSL)
 
 ```bash
 curl -fsSL https://fnm.vercel.app/install | bash
-exec $SHELL -l
+```
 
+> 🔵 **SHELL RELOAD** — run this before continuing:
+
+```bash
+exec $SHELL -l
+```
+
+```bash
 fnm install 22.11.0
 fnm default 22.11.0
 fnm use 22.11.0
@@ -165,6 +205,11 @@ sudo apt-get install -y python3.12 python3.12-venv python3-pip
 python3.12 -V
 
 curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+> 🔵 **SHELL RELOAD** — run this before continuing:
+
+```bash
 exec $SHELL -l
 uv --version
 ```
@@ -176,9 +221,16 @@ uv --version
 ```bash
 sudo apt-get install -y zip unzip
 curl -s "https://get.sdkman.io" | bash
+```
+
+> 🔵 **SHELL RELOAD** — SDKMAN writes to `.bashrc` and needs the shell sourced:
+
+```bash
 source "$HOME/.sdkman/bin/sdkman-init.sh"
 sdk version
+```
 
+```bash
 sdk install java 21.0.5-tem
 sdk install maven 3.9.9
 sdk install gradle 8.10.2
@@ -195,12 +247,22 @@ mvn -v | head -2
 winget install --id Docker.DockerDesktop --silent
 ```
 
-**After install, in the Docker Desktop UI:**
+> 🔴 **WINDOWS REBOOT MAY BE REQUIRED** — Docker Desktop often prompts for a restart to finish enabling the WSL2 backend. If it asks, reboot now. If it does not ask, continue.
+
+After reboot (or if no reboot was needed), open Docker Desktop and configure:
+
 - Settings → General → "Use the WSL 2 based engine" ✓
 - Settings → Resources → WSL Integration → "Enable integration with my default WSL distro" ✓
 - Settings → Resources → WSL Integration → Ubuntu-24.04 ✓
+- Click **Apply & Restart** inside Docker Desktop
 
-**Verify from inside WSL:**
+> 🟡 **WSL RESTART** — After clicking Apply & Restart in Docker Desktop, also run in PowerShell:
+
+```powershell
+wsl --shutdown
+```
+
+Then open Ubuntu and verify:
 
 ```bash
 docker version
@@ -230,6 +292,8 @@ aws sts get-caller-identity --profile badgedesk-admin
 export AWS_PROFILE=badgedesk-admin
 ```
 
+No restart needed.
+
 ---
 
 ## Step 12 — Azure CLI (inside WSL)
@@ -244,17 +308,25 @@ az group create --name rg-badgedesk-dev --location centralindia
 az configure --defaults group=rg-badgedesk-dev location=centralindia
 ```
 
+No restart needed.
+
 ---
 
 ## Step 13 — Terraform via tfenv (inside WSL)
 
 ```bash
 git clone --depth 1 https://github.com/tfutils/tfenv.git ~/.tfenv
-echo 'export PATH="$HOME/.tfenv/bin:$PATH"' >> ~/.bashrc && exec $SHELL -l
+echo 'export PATH="$HOME/.tfenv/bin:$PATH"' >> ~/.bashrc
+```
+
+> 🔵 **SHELL RELOAD:**
+
+```bash
+exec $SHELL -l
 
 tfenv install 1.9.8
 tfenv use 1.9.8
-terraform version
+terraform version    # Terraform v1.9.8
 ```
 
 ---
@@ -273,6 +345,8 @@ kind create cluster --name badgedesk
 kubectl cluster-info --context kind-badgedesk
 kubectl get nodes
 ```
+
+No restart needed.
 
 ---
 
@@ -305,6 +379,8 @@ sudo apt-get update && sudo apt-get install -y mongodb-mongosh
 winget install MongoDB.Compass.Full
 ```
 
+No restart needed.
+
 ---
 
 ## Step 16 — VS Code extensions (inside WSL)
@@ -324,6 +400,8 @@ do
 done
 ```
 
+No restart needed.
+
 ---
 
 ## Step 17 — Clone badgedesk repo (inside WSL)
@@ -334,6 +412,8 @@ git clone git@github.com:shubhamrk2/badgedesk.git
 cd badgedesk
 cp .env.example .env
 ```
+
+No restart needed.
 
 ---
 
@@ -350,6 +430,8 @@ docker compose exec mongo mongosh --quiet -u badgedesk -p badgedesk \
   --authenticationDatabase admin --eval "db.adminCommand('ping')"
 # Open http://localhost:8080 for Kafka UI
 ```
+
+No restart needed.
 
 ---
 
@@ -397,6 +479,7 @@ docker compose ps --format "{{.Service}} {{.Status}}"
 ```
 
 **Expected output:**
+
 ```
 git        OK   git version 2.x
 node       OK   v22.11.0
@@ -427,6 +510,21 @@ cd ~/code/badgedesk
 git commit --allow-empty -m "chore: week 00 personal laptop ready"
 git push
 ```
+
+---
+
+## Restart summary — all the times you had to stop
+
+| After step | What to do | Why |
+|---|---|---|
+| Step 1 | 🟢 Open new Windows Terminal (PowerShell 7) | Old terminal was still on PowerShell 5 |
+| Step 2 (`wsl --install`) | 🔴 **Full Windows reboot** | WSL2 kernel must be registered at boot |
+| Step 3 (wsl.conf) | 🟡 `wsl --shutdown` in PowerShell | New config is only read when VM restarts |
+| Step 7 (fnm install) | 🔵 `exec $SHELL -l` | fnm added itself to `.bashrc` |
+| Step 8 (uv install) | 🔵 `exec $SHELL -l` | uv added itself to `.bashrc` |
+| Step 9 (SDKMAN) | 🔵 `source ~/.sdkman/bin/sdkman-init.sh` | SDKMAN init must be sourced |
+| Step 10 (Docker Desktop) | 🔴 **Reboot if prompted** + 🟡 `wsl --shutdown` | Docker needs WSL integration applied |
+| Step 13 (tfenv) | 🔵 `exec $SHELL -l` | tfenv PATH added to `.bashrc` |
 
 ---
 
