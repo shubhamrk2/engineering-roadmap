@@ -1586,6 +1586,156 @@ account admin.</p>
   teaching you.</p>
 </div>
 
+<h3 id="zerocost">Running the whole roadmap at zero cost</h3>
+<p>The twelve weeks are designed around a $10 budget so that you <i>can</i> touch real infrastructure. But
+nothing here <b>requires</b> you to spend, and the substitutions below cost you almost no learning. If money
+is the constraint, read this section before you create your first resource &mdash; not after the first
+billing email.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Week</th><th>Sheet</th><th>What you build</th><th>Runs on</th><th>Cost</th></tr></thead>
+<tbody>
+<tr><td>00</td><td>01</td><td>Machine setup</td><td>Local</td><td>$0</td></tr>
+<tr><td>01&ndash;02</td><td>02</td><td>CSV validator in Python, TS, Java</td><td>Local</td><td>$0</td></tr>
+<tr><td>03&ndash;04</td><td>03</td><td>React and Next.js front end</td><td>Local</td><td>$0</td></tr>
+<tr><td>05&ndash;06</td><td>04 + 05</td><td>FastAPI core, NestJS gateway, webhooks</td><td>Local</td><td>$0</td></tr>
+<tr><td>07</td><td>06</td><td>Postgres, Mongo, Redis schema and queries</td><td>Compose</td><td>$0</td></tr>
+<tr><td>08</td><td>07</td><td>EC2, RDS, S3, VPC</td><td>AWS free tier</td><td>$0 &mdash; if no NAT Gateway</td></tr>
+<tr><td>09</td><td>07 + 08</td><td>Lambda, Kubernetes, CloudWatch, Azure</td><td>Free tier + kind</td><td>$0 &mdash; if no EKS</td></tr>
+<tr><td>10</td><td>09 + 10</td><td>GitHub Actions, Docker, Terraform</td><td>Local + free tier</td><td>$0</td></tr>
+<tr><td>11</td><td>11 + 12</td><td>Kafka, LLM and RAG</td><td>Compose + Ollama</td><td>$0</td></tr>
+<tr><td>12</td><td>13 + 14</td><td>Integration, system design, drills</td><td>Local</td><td>$0</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><b>Weeks 00 to 07 are eight consecutive weeks of entirely local work.</b> Everything runs in the Compose
+file from &sect;4. Two-thirds of the roadmap finishes before a cloud provider bills you anything at all.</p>
+
+<h4>What is actually free, and for how long</h4>
+<p>The AWS free tier clock starts the day you create the account, so a Week 00 account covers the entire
+roadmap with nine months to spare. Two of these are free <i>forever</i>, not for twelve months &mdash; know
+which.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Service</th><th>Free allowance</th><th>Duration</th></tr></thead>
+<tbody>
+<tr><td>EC2 <code>t3.micro</code></td><td>750 hours/month &mdash; one instance running continuously</td><td>12 months</td></tr>
+<tr><td>RDS <code>db.t4g.micro</code></td><td>750 hours/month, 20 GB storage</td><td>12 months</td></tr>
+<tr><td>S3</td><td>5 GB standard storage, 20k GET, 2k PUT</td><td>12 months</td></tr>
+<tr><td>Lambda</td><td>1M requests + 400k GB-seconds/month</td><td><b>Always free</b></td></tr>
+<tr><td>DynamoDB</td><td>25 GB storage, 25 WCU/RCU</td><td><b>Always free</b></td></tr>
+<tr><td>CloudWatch</td><td>10 custom metrics, 5 GB log ingestion</td><td><b>Always free</b></td></tr>
+<tr><td>VPC, subnets, security groups, IGW, route tables</td><td>Unlimited</td><td><b>Always free</b></td></tr>
+<tr><td>IAM, users, roles, policies</td><td>Unlimited</td><td><b>Always free</b></td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>The free substitutions worth making</h4>
+<p>Each of these teaches the same concept. The right-hand column is the only thing you give up, and in every
+case it is a detail you can read about rather than pay for.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>The sheet says</th><th>Free equivalent</th><th>What you actually lose</th></tr></thead>
+<tbody>
+<tr><td>EKS cluster (~$73/month)</td><td><code>kind</code> &mdash; installed in &sect;2</td><td>IRSA, managed node groups, the AWS Load Balancer Controller. Read the sheet and use <code>kubectl --dry-run=client</code>.</td></tr>
+<tr><td>Managed Kubernetes, if you want a real one</td><td><b>Azure AKS</b> &mdash; the control plane is free; you pay only for nodes</td><td>Nothing. This is the cheapest route to a genuine managed cluster, and it inverts the usual AWS-first instinct.</td></tr>
+<tr><td>NAT Gateway (~$32/month)</td><td>Public subnet + security group</td><td>Private-subnet egress. Create a NAT Gateway for one hour to see it, then delete it.</td></tr>
+<tr><td>OpenAI or Anthropic API on Sheet 12</td><td><b>Ollama</b> with <code>llama3.1</code>, local</td><td>Nothing meaningful for prompting, RAG or chunking practice. Slower on CPU.</td></tr>
+<tr><td>Managed Kafka (MSK)</td><td>The Kafka container already in your Compose file</td><td>Nothing. KRaft mode locally is the same broker.</td></tr>
+<tr><td>A managed vector database</td><td><code>pgvector</code> in your Postgres container</td><td>Nothing at this scale.</td></tr>
+<tr><td>A public webhook tunnel</td><td>ngrok free tier, or a local <code>curl</code> with a hand-computed signature</td><td>A stable URL. Fine for one session.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why AKS is cheaper than EKS, and why that matters</span>
+  <p>AWS charges $73/month per EKS cluster for the managed control plane, whether or not a single pod is
+  scheduled. Azure charges <b>nothing</b> for the AKS control plane in the free tier &mdash; you pay only for
+  the worker node VMs, and a <code>B2s</code> node sits inside the twelve-month free allowance. If Week 09 is
+  about understanding managed Kubernetes rather than AWS specifically, do it on Azure. Knowing which
+  provider is cheaper for which primitive is itself a Sheet 08 skill, and this is the clearest example on
+  the whole set.</p>
+</div>
+
+<h4>Verify you are at zero &mdash; every Sunday</h4>
+<p>Every call in this script is a free API. Cost Explorer&rsquo;s <code>GetCostAndUsage</code> is the one AWS
+API that <b>charges $0.01 per request</b>, so it is deliberately not used here &mdash; read cost figures in
+the console instead, where they are free.</p>
+
+<div class="code" data-lang="bash">
+<header><b>tools/aws-zero-check.sh &mdash; sweep every region for anything billable</b></header>
+<pre><code>for R in $(aws ec2 describe-regions --query 'Regions[].RegionName' --output text); do
+  VOL=$(aws ec2 describe-volumes --filters Name=status,Values=available \
+          --query 'Volumes[].VolumeId' --output text --region $R 2>/dev/null)
+  EIP=$(aws ec2 describe-addresses \
+          --query 'Addresses[?AssociationId==`null`].PublicIp' \
+          --output text --region $R 2>/dev/null)
+  NAT=$(aws ec2 describe-nat-gateways --filter Name=state,Values=available \
+          --query 'NatGateways[].NatGatewayId' --output text --region $R 2>/dev/null)
+  EKS=$(aws eks list-clusters --query 'clusters' --output text --region $R 2>/dev/null)
+  KMS=$(aws kms list-aliases --region $R \
+          --query 'Aliases[?starts_with(AliasName, `alias/aws/`)==`false`].AliasName' \
+          --output text 2>/dev/null)
+  RDS=$(aws rds describe-db-instances \
+          --query 'DBInstances[].DBInstanceIdentifier' --output text --region $R 2>/dev/null)
+
+  [ -n "$VOL$EIP$NAT$EKS$KMS$RDS" ] &amp;&amp; {
+    echo "--- $R"
+    [ -n "$VOL" ] &amp;&amp; echo "    unattached EBS : $VOL"
+    [ -n "$EIP" ] &amp;&amp; echo "    idle Elastic IP: $EIP   (~\$3.60/mo)"
+    [ -n "$NAT" ] &amp;&amp; echo "    NAT GATEWAY    : $NAT   (~\$32/mo)"
+    [ -n "$EKS" ] &amp;&amp; echo "    EKS CLUSTER    : $EKS   (~\$73/mo)"
+    [ -n "$KMS" ] &amp;&amp; echo "    customer KMS   : $KMS   (\$1/mo each)"
+    [ -n "$RDS" ] &amp;&amp; echo "    RDS instance   : $RDS"
+  }
+done
+echo "sweep complete"
+</code></pre>
+</div>
+
+<p>Only <code>sweep complete</code> printing means the account is clean. Anything else listed is billing you
+right now.</p>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the free service that is not free</span>
+  <p><b>IAM Identity Center is advertised as a free service, and it is &mdash; but it provisions two
+  customer-managed KMS keys, at $1/month each, in <code>us-east-1</code> and <code>us-west-2</code>
+  regardless of your chosen region.</b> Enable it and your &ldquo;empty&rdquo; account starts billing $2 a
+  month forever. That is the correct trade if you want short-lived SSO credentials, and Sheet 07 assumes it.
+  If you would rather stay at absolute zero, use an IAM user with MFA and an access key instead, and
+  re-enable Identity Center in Week 09 when you actually need it. Note also that <b>a KMS key cannot be
+  deleted immediately</b> &mdash; the minimum waiting period is seven days and you are billed throughout, so
+  the decision costs about $0.50 to reverse.</p>
+</div>
+
+<div class="grid g2">
+  <div class="card"><span class="cm">AWS &mdash; the four rules</span><b class="ct">Never create these casually</b>
+    <p>1. <b>NAT Gateway</b> &mdash; $32/month, the classic surprise. 2. <b>EKS cluster</b> &mdash; $73/month
+    idle. 3. <b>A second RDS instance</b> &mdash; free tier covers exactly one. 4. <b>An Elastic IP you do
+    not attach</b> &mdash; charged <i>because</i> it is unattached. Everything else on Sheets 07 and 09 fits
+    inside the free tier.</p></div>
+  <div class="card"><span class="cm">Azure &mdash; the safer default</span><b class="ct">It disables, it does not bill</b>
+    <p>When the $200 credit or the 30 days runs out, Azure <b>disables your resources</b> rather than
+    charging you &mdash; it never auto-converts to pay-as-you-go without an explicit click. There is no Azure
+    equivalent of the AWS surprise bill. The twelve-month free service allowance survives the credit expiry,
+    and that is the part Week 09 actually needs.</p></div>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">In production &mdash; what the zero-cost habit is really teaching</span>
+  <p>Every engineer who has run infrastructure has a story about a resource left running. The habit of
+  knowing what bills, sweeping for it, and tearing down on Sunday night is not frugality &mdash; it is the
+  same instinct that makes you tag resources, set lifecycle policies and right-size instances on a real
+  team. Interviewers ask &ldquo;how would you keep this cheap?&rdquo; far more often than candidates
+  expect, and the answer is a list of specific line items, not &ldquo;we would monitor it&rdquo;.</p>
+</div>
+
 <!-- ===================================================================== -->
 <h2 id="verify">Verification &mdash; the Week 00 gate</h2>
 <p class="sub">Run this on both machines. Do not start Week 01 until the personal machine is fully green and
