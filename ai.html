@@ -778,31 +778,66 @@ response = await client.chat.completions.create(
 <p>Check your VRAM first &mdash; it decides everything. On Windows, <code>nvidia-smi</code> reports it in the
 top-right of the table.</p>
 
+<p>Subtract what the desktop already holds. Windows, a browser and Teams take 600&ndash;800 MB before Ollama
+starts, so a 4 GB card has roughly <b>3.4 GB usable</b> &mdash; budget against that number, not the sticker
+one.</p>
+
 <div class="tw">
 <table>
-<thead><tr><th>VRAM</th><th>Chat / generation</th><th>Code</th><th>Notes</th></tr></thead>
+<thead><tr><th>Usable VRAM</th><th>Chat / generation</th><th>Code</th><th>Notes</th></tr></thead>
 <tbody>
-<tr><td><b>4 GB</b></td><td><code>llama3.1:8b</code></td><td><code>qwen2.5-coder:7b</code></td><td>~4.7 GB at Q4, so part of the model spills to system RAM. Works, but expect 5&ndash;15 tokens/second. Drop to <code>qwen2.5:3b</code> if that is too slow.</td></tr>
-<tr><td><b>6&ndash;8 GB</b></td><td><code>llama3.1:8b</code></td><td><code>qwen2.5-coder:7b</code></td><td>Fits entirely in VRAM. This is the comfortable tier for everything on this sheet.</td></tr>
+<tr><td><b>~3.4 GB</b><br><span class="mm">4 GB card, e.g. RTX 2050</span></td><td><code>qwen2.5:3b</code> &middot; 1.9 GB<br><code>llama3.2:3b</code> &middot; 2.0 GB</td><td><code>qwen2.5-coder:3b</code> &middot; 1.9 GB</td><td>Fits entirely in VRAM at ~30&ndash;40 tok/s. A 7B model is 4.7 GB and will spill to system RAM at 5&ndash;8 tok/s &mdash; fine for batch ingestion you walk away from, painful interactively.</td></tr>
+<tr><td><b>6&ndash;8 GB</b></td><td><code>llama3.1:8b</code> &middot; 4.9 GB</td><td><code>qwen2.5-coder:7b</code> &middot; 4.7 GB</td><td>Fits entirely. The comfortable tier for everything on this sheet.</td></tr>
 <tr><td><b>12 GB+</b></td><td><code>qwen2.5:14b</code></td><td><code>qwen2.5-coder:14b</code></td><td>Noticeably better instruction-following for the reranking and query-expansion steps.</td></tr>
-<tr><td><b>CPU only</b></td><td><code>phi3.5</code> or <code>qwen2.5:3b</code></td><td><code>qwen2.5-coder:3b</code></td><td>Slow but usable for learning. The corporate laptop lives here.</td></tr>
+<tr><td><b>CPU only</b></td><td><code>gemma2:2b</code> or <code>qwen2.5:3b</code></td><td><code>qwen2.5-coder:3b</code></td><td>Slow but usable for reading and drills. The corporate laptop lives here.</td></tr>
 </tbody>
 </table>
 </div>
 
+<div class="code" data-lang="powershell">
+<header><b>Ollama settings that matter on a small card</b></header>
+<pre><code>[Environment]::SetEnvironmentVariable("OLLAMA_MAX_LOADED_MODELS", "1", "User")
+[Environment]::SetEnvironmentVariable("OLLAMA_NUM_PARALLEL",      "1", "User")
+[Environment]::SetEnvironmentVariable("OLLAMA_KEEP_ALIVE",        "5m", "User")
+# Restart Ollama afterwards.
+#
+# MAX_LOADED_MODELS is the important one. By default Ollama keeps every recently
+# used model resident, so RAG - which needs an embedder AND a chat model - will
+# try to hold both and fall back to CPU on a 4 GB card.
+
+# Prove the model is actually on the GPU. Run a prompt, then in another terminal:
+ollama ps
+# NAME           SIZE     PROCESSOR    UNTIL
+# qwen2.5:3b     2.4 GB   100% GPU     4 minutes from now
+#
+# Anything other than 100% GPU means it did not fit. Drop a size.
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; one GPU, one workload</span>
+  <p>If you followed Sheet 01 and installed AUTOMATIC1111 for image generation, it will hold most of a 4 GB
+  card even with <code>--medvram</code>. <b>You cannot run Stable Diffusion and Ollama at the same time on
+  one small GPU</b> &mdash; the second one to start silently falls back to CPU, and you will spend an hour
+  wondering why inference got twenty times slower. Close one before starting the other, and check
+  <code>nvidia-smi</code> when something feels wrong.</p>
+</div>
+
 <div class="code" data-lang="bash">
 <header><b>the three pulls you actually need for this sheet</b></header>
-<pre><code># 1. Generation - answers the question
-ollama pull llama3.1:8b
+<pre><code># 1. Generation - answers the question. Pick the size your card can hold.
+ollama pull qwen2.5:3b            # 1.9 GB - a 4 GB card
+# ollama pull llama3.1:8b         # 4.9 GB - 8 GB or more
 
 # 2. Code - useful from Sheet 02 onwards, not just here
-ollama pull qwen2.5-coder:7b
+ollama pull qwen2.5-coder:3b      # 1.9 GB
+# ollama pull qwen2.5-coder:7b    # 4.7 GB
 
 # 3. EMBEDDINGS - the one people forget. RAG does not work without it.
 ollama pull nomic-embed-text
 
 ollama list
-ollama run llama3.1:8b "say hello"      # smoke test
+ollama run qwen2.5:3b "say hello"       # smoke test
 
 # Ollama serves on 11434 and starts with Windows. From WSL, reach the
 # Windows host rather than localhost:
