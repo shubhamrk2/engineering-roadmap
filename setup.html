@@ -1553,10 +1553,11 @@ account admin.</p>
 
 <div class="grid g2">
   <div class="card"><span class="cm">AWS &mdash; 40 minutes</span><b class="ct">Set-up order</b>
-    <p>1. Create the account. 2. Turn on MFA for the root user, then <b>stop using root</b>. 3. Enable IAM
-    Identity Center and create yourself an administrator user. 4. Set a budget alarm before you create
-    anything else. 5. Pick one region and stay in it &mdash; <code>ap-south-1</code> for Mumbai if you are in
-    India. 6. <code>aws configure sso</code> on the CLI.</p></div>
+    <p>1. Create the account. 2. Turn on MFA for the root user, then <b>stop using root</b>. 3. Create an
+    admin identity &mdash; an <b>IAM user</b> if you want zero cost, or <b>IAM Identity Center</b> if you
+    want short-lived credentials and can accept $2/month. 4. Set a budget alarm before you create anything
+    else. 5. Pick one region and stay in it &mdash; <code>ap-south-1</code> for Mumbai if you are in India.
+    6. Configure the CLI. Full steps in <a href="#iamuser">&sect;6.1</a>.</p></div>
   <div class="card"><span class="cm">Budget alarm &mdash; do this first</span><b class="ct">The exact path</b>
     <p>Billing and Cost Management &rarr; Budgets &rarr; Create budget &rarr; Cost budget &rarr; Monthly,
     fixed, <b>$10</b> &rarr; alert at 50%, 80% and 100% of budgeted amount &rarr; your email. Then Billing
@@ -1584,6 +1585,135 @@ account admin.</p>
   console to confirm the forecast is near zero. Real infrastructure is cheap for an evening and expensive
   for a month, and the discipline of tearing down and rebuilding is itself the skill that Sheet 10 is
   teaching you.</p>
+</div>
+
+<h3 id="iamuser">Creating your admin identity &mdash; the free route</h3>
+<p>You need exactly one identity that is not root. There are two ways to get one, and they differ by $2 a
+month:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th></th><th>IAM user</th><th>IAM Identity Center</th></tr></thead>
+<tbody>
+<tr><td>Cost</td><td><b>$0</b></td><td><b>$2/month</b> &mdash; two customer-managed KMS keys</td></tr>
+<tr><td>Credential type</td><td>Long-lived access key</td><td>Short-lived SSO token, expires in hours</td></tr>
+<tr><td>If the laptop is stolen</td><td>Rotate the key, audit CloudTrail</td><td>Revoke the session. Done.</td></tr>
+<tr><td>CLI command</td><td><code>aws configure</code></td><td><code>aws configure sso</code></td></tr>
+<tr><td>Best for</td><td>A learning account you want at absolute zero</td><td>Anything with real data, and Week 09 onwards if budget allows</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Both are legitimate. The steps below are for the <b>IAM user</b> route, which is what the zero-cost path in
+&sect;6.2 assumes. You can switch to Identity Center later in ten minutes without redoing anything else.</p>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; do not delete your only admin identity</span>
+  <p>If you delete your IAM user <i>and</i> your Identity Center instance, root becomes your only way in.
+  That is recoverable &mdash; root always works, which is exactly why it exists &mdash; but it means signing
+  in with the credentials you were told never to use, and it is entirely avoidable. <b>Create the
+  replacement before you remove the original.</b> The same rule applies to access keys: create the new one,
+  switch to it, confirm it works, and only then delete the old one.</p>
+</div>
+
+<h4>Step 1 &mdash; Sign in as root, once</h4>
+<p>Go to <code>console.aws.amazon.com</code>, choose <b>Root user</b>, and sign in with the account email
+address and your MFA code. This is one of the few tasks that genuinely requires root; you will sign out of it
+at the end of this section.</p>
+
+<h4>Step 2 &mdash; Let IAM users see billing</h4>
+<p>Do this <i>before</i> creating the user, because it is a root-only setting and you will not want to come
+back for it. Without it, your new user gets &ldquo;Access Denied&rdquo; on Cost Explorer even with
+<code>AdministratorAccess</code>.</p>
+<p><b>Top-right account menu &rarr; Account &rarr; IAM user and role access to Billing Information &rarr;
+Edit &rarr; tick &ldquo;Activate IAM Access&rdquo; &rarr; Update.</b></p>
+
+<h4>Step 3 &mdash; Create the user</h4>
+<div class="code" data-lang="text">
+<header><b>IAM &rarr; Users &rarr; Create user</b></header>
+<pre><code>User name:  dev-user
+
+[x] Provide user access to the AWS Management Console
+      -> "I want to create an IAM user"
+      -> Custom password  (use your password manager)
+      -> [ ] Users must create a new password at next sign-in   <- UNTICK
+
+Next -> Set permissions
+      -> "Attach policies directly"
+      -> [x] AdministratorAccess
+
+Next -> Create user
+</code></pre>
+</div>
+<p>On the confirmation screen, <b>copy the console sign-in URL</b>. It looks like
+<code>https://&lt;account-id&gt;.signin.aws.amazon.com/console</code> &mdash; bookmark it, because IAM users
+sign in there rather than at the root login page.</p>
+
+<div class="panel panel--why">
+  <span class="ph">Why <code>AdministratorAccess</code> and not something tighter</span>
+  <p>On a real team you would scope this down hard, and Sheet 07 covers how. On a personal learning account
+  with one human in it, a restrictive policy costs you an evening of debugging
+  <code>AccessDenied</code> for no security benefit &mdash; the blast radius is your own empty account
+  either way. What actually protects you here is <b>MFA on the user</b> and <b>not leaking the access
+  key</b>, which is the next two steps. Spend your care there.</p>
+</div>
+
+<h4>Step 4 &mdash; MFA on the new user</h4>
+<p><b>IAM &rarr; Users &rarr; dev-user &rarr; Security credentials &rarr; Multi-factor authentication &rarr;
+Assign MFA device.</b> Authenticator app, scan the QR code, enter two consecutive codes. Free, and it is the
+single most valuable thing on this page now that you are on long-lived credentials.</p>
+
+<h4>Step 5 &mdash; Create the access key</h4>
+<p><b>Same page &rarr; Access keys &rarr; Create access key &rarr; Command Line Interface (CLI) &rarr;</b>
+tick the acknowledgement <b>&rarr; Create.</b></p>
+<p>Copy both values now. <b>The secret is displayed exactly once</b> &mdash; if you lose it, delete the key
+and make another. Do not download the <code>.csv</code> to a synced folder.</p>
+
+<h4>Step 6 &mdash; Sign out of root, and stay out</h4>
+<p>Sign in again at the account sign-in URL from Step 3, as <code>dev-user</code>. Everything from here
+happens as that user.</p>
+
+<div class="code" data-lang="bash">
+<header><b>Ubuntu (WSL) &mdash; personal laptop only</b></header>
+<pre><code>aws configure
+# AWS Access Key ID [None]:     AKIA...
+# AWS Secret Access Key [None]: ...
+# Default region name [None]:   ap-south-1
+# Default output format [None]: json
+
+aws sts get-caller-identity
+# {
+#   "UserId": "AIDA...",
+#   "Account": "123456789012",
+#   "Arn": "arn:aws:iam::123456789012:user/dev-user"
+# }
+
+# Credentials land in ~/.aws/credentials in PLAIN TEXT. Two rules:
+#   1. .aws/ is already in the .gitignore from this sheet. Keep it there.
+#   2. This file must never exist on the corporate laptop. Not once.
+chmod 600 ~/.aws/credentials
+</code></pre>
+</div>
+
+<div class="code" data-lang="bash">
+<header><b>rotating the key &mdash; do this if it is ever exposed, and every 90 days regardless</b></header>
+<pre><code># 1. Create the NEW key first, in the console. Never delete before you replace.
+# 2. Point the CLI at it:
+aws configure                       # paste the new pair
+
+# 3. Confirm it works:
+aws sts get-caller-identity
+
+# 4. Only now, delete the old key:
+#    IAM -> Users -> dev-user -> Security credentials -> Access keys
+#    -> Deactivate the old one, use the account for a day, then Delete.
+
+# If a key is publicly leaked, skip the ceremony: DELETE it immediately,
+# then check what was done with it:
+aws cloudtrail lookup-events \
+  --lookup-attributes AttributeKey=AccessKeyId,AttributeValue=AKIA... \
+  --max-results 50
+</code></pre>
 </div>
 
 <h3 id="zerocost">Running the whole roadmap at zero cost</h3>
