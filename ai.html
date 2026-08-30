@@ -831,11 +831,13 @@ ollama ps
 
 <div class="panel panel--trap">
   <span class="ph">Red pencil &mdash; one GPU, one workload</span>
-  <p>If you followed Sheet 01 and installed AUTOMATIC1111 for image generation, it will hold most of a 4 GB
-  card even with <code>--medvram</code>. <b>You cannot run Stable Diffusion and Ollama at the same time on
-  one small GPU</b> &mdash; the second one to start silently falls back to CPU, and you will spend an hour
-  wondering why inference got twenty times slower. Close one before starting the other, and check
-  <code>nvidia-smi</code> when something feels wrong.</p>
+  <p>If you have AUTOMATIC1111 or any other Stable Diffusion front end installed, it will hold most of a
+  4 GB card even with <code>--medvram</code>. <b>You cannot run Stable Diffusion and Ollama at the same time
+  on one small GPU</b> &mdash; the second one to start silently falls back to CPU, and you will spend an
+  hour wondering why inference got twenty times slower. On a small card the honest answer is to pick one and
+  uninstall the other: Ollama is what this sheet depends on, image generation is decorative. Removal steps
+  are in <code>assets/images/README.md</code>, and it reclaims 10&ndash;30 GB of disk as well as the VRAM.
+  Check <code>nvidia-smi</code> whenever inference feels slower than it should.</p>
 </div>
 
 <div class="code" data-lang="bash">

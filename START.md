@@ -77,16 +77,33 @@ Then open **http://localhost:8082**
 
 ---
 
-## Optional — Start AUTOMATIC1111 (image generation)
+## Optional — Start Ollama (local LLM, Sheet 12)
 
-Open **File Explorer** → navigate to your `stable-diffusion-webui` folder → double-click **`webui-user.bat`**
+Ollama installs as a Windows service and starts automatically on login. Nothing to do.
 
-Wait for the terminal to print:
+Verify it is up:
+
+```bash
+curl http://localhost:11434/api/tags
+ollama list
 ```
-Running on local URL:  http://127.0.0.1:7860
+
+From **inside WSL**, `localhost` is the WSL VM, not Windows. Reach the host instead:
+
+```bash
+export OLLAMA_HOST="http://$(ip route show default | awk '{print $3}'):11434"
+curl $OLLAMA_HOST/api/tags
 ```
 
-Then open **http://127.0.0.1:7860**
+Confirm a model is actually on the GPU — run a prompt, then in another terminal:
+
+```bash
+ollama ps
+# PROCESSOR column must read 100% GPU. Anything else means it fell back to CPU.
+```
+
+> **AUTOMATIC1111 has been removed.** On a 4 GB card it holds most of the VRAM and forces
+> Ollama onto the CPU. Removal steps are in `assets/images/README.md`.
 
 ---
 
