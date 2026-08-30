@@ -2368,6 +2368,73 @@ observable.</figcaption>
 </div>
 
 <!-- ===================================================================== -->
+<h2 id="zerocost">Running this sheet at zero cost</h2>
+<p class="sub">This is the easiest sheet on the set to do for free: the broker you already run in Compose is
+the same software the managed services wrap. Nothing here needs a cloud account at all.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Managed option</th><th>Costs</th><th>Use instead</th><th>What you lose</th></tr></thead>
+<tbody>
+<tr><td>Amazon MSK</td><td>~$150/month minimum</td><td>The <code>kafka</code> container from Sheet 01 &sect;4</td><td>Nothing about the protocol. Multi-broker replication behaviour only.</td></tr>
+<tr><td>Confluent Cloud</td><td>Free trial credit, then metered</td><td>Same local container</td><td>Schema Registry &mdash; run <code>apicurio</code> or Confluent&rsquo;s own image locally if you want it.</td></tr>
+<tr><td>Amazon MQ / CloudAMQP</td><td>~$15+/month</td><td><code>rabbitmq:3-management</code> container</td><td>Nothing. The management UI is included in the image.</td></tr>
+<tr><td>Managed Kafka UI</td><td>bundled/paid</td><td><code>kafka-ui</code>, already in your Compose file</td><td>Nothing.</td></tr>
+<tr><td>SQS / SNS for the Sheet 07 comparison</td><td>Free tier: 1M requests/month</td><td>Real SQS &mdash; it is <b>always free</b> at that volume</td><td>Nothing. Use the real thing here; it costs nothing.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why local Kafka is not a compromise</span>
+  <p>MSK and Confluent Cloud run the same Apache Kafka you are running in that container. Topics, partitions,
+  offsets, consumer groups, rebalancing, exactly-once semantics, compaction, retention &mdash; every concept
+  on this sheet behaves identically on one local broker. What a managed cluster adds is replication across
+  brokers and someone else being paged at 3 a.m. You should <i>understand</i> <code>min.insync.replicas</code>
+  and why <code>replication.factor = 1</code> is unsafe in production; you do not need to pay $150 a month to
+  watch it work.</p>
+</div>
+
+<div class="code" data-lang="bash">
+<header><b>simulating multi-broker behaviour locally, for free</b></header>
+<pre><code># The Compose file in Sheet 01 runs ONE broker, so replication.factor must be 1.
+# To actually see ISR shrink and a leader election happen, run three brokers -
+# still free, just more RAM. Add to docker-compose.yml as kafka-2 and kafka-3
+# with KAFKA_NODE_ID 2 and 3 and the same CONTROLLER_QUORUM_VOTERS list.
+
+# Then create a topic that can survive a broker loss:
+docker compose exec kafka /opt/kafka/bin/kafka-topics.sh \
+  --bootstrap-server localhost:19092 --create \
+  --topic badge.requests --partitions 3 \
+  --replication-factor 3 --config min.insync.replicas=2
+
+# Kill a broker and watch the ISR shrink - this is the lesson:
+docker compose stop kafka-2
+docker compose exec kafka /opt/kafka/bin/kafka-topics.sh \
+  --bootstrap-server localhost:19092 --describe --topic badge.requests
+#   Topic: badge.requests  Partition: 0  Leader: 1  Replicas: 1,2,3  Isr: 1,3
+
+# Kill a second and watch producers with acks=all start failing:
+docker compose stop kafka-3
+#   NOT_ENOUGH_REPLICAS - exactly what min.insync.replicas=2 is for.
+
+docker compose start kafka-2 kafka-3
+</code></pre>
+</div>
+
+<p>Three brokers on a laptop needs roughly 3 GB of RAM. If <code>.wslconfig</code> caps you at 8 GB as Sheet
+01 suggests, stop the other Compose services first &mdash; or raise the cap for the week.</p>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the one thing that will cost you here</span>
+  <p>If you do decide to try MSK for a weekend, note that <b>it has no free tier and no per-hour minimum you
+  can dodge</b> &mdash; the smallest cluster is roughly $150/month, billed per hour, so even a Saturday
+  afternoon is real money. It is also inside a VPC, which means a NAT Gateway or a bastion to reach it, which
+  is another $32/month shape. Of everything on the roadmap, MSK has the worst ratio of cost to learning.
+  Run three containers instead and spend the money on nothing.</p>
+</div>
+
+<!-- ===================================================================== -->
 <h2 id="drill">Drill book</h2>
 <p class="sub">Answer out loud, standing up, without notes. Anything over 90 seconds is not ready. Draw
 11-A, 11-C and 11-G from memory as part of your answers &mdash; that is how these get asked.</p>

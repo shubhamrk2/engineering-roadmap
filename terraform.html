@@ -2549,6 +2549,156 @@ empty AWS account. The other half of the picture is the boundary: what Terraform
 </div>
 
 <!-- ===================================================================== -->
+<h2 id="zerocost">Running this sheet at zero cost</h2>
+<p class="sub">Terraform itself is free. What costs money is what it creates &mdash; and the discipline of
+knowing which resources bill before you <code>apply</code> is the actual skill this sheet teaches.</p>
+
+<div class="panel panel--why">
+  <span class="ph">Why Terraform is the cheapest way to touch real infrastructure</span>
+  <p>Clicking through a console leaves resources behind because you forget what you created.
+  <code>terraform destroy</code> removes <b>everything in the state file</b> in one command, which is why
+  infrastructure-as-code and a zero bill go together. The Sunday-night ritual from Sheet 01 only works
+  because Terraform remembers what you built. Everyone who has run up a surprise cloud bill did it by
+  clicking.</p>
+</div>
+
+<h3 id="cost-before-apply">Seeing the cost before you apply</h3>
+<p>Three checks, in order, all free. Run them every single time before <code>apply</code>.</p>
+
+<div class="code" data-lang="bash">
+<header><b>the pre-apply routine</b></header>
+<pre><code># 1. What is Terraform actually going to create?
+terraform plan -out=tfplan
+terraform show -json tfplan | jq -r '
+  .resource_changes[]
+  | select(.change.actions[] | . == "create")
+  | "\(.type)  \(.name)"' | sort
+
+# 2. Grep the plan for the four shapes that cost real money.
+terraform show -json tfplan | jq -r '.resource_changes[].type' | sort -u \
+  | grep -E 'nat_gateway|eks_cluster|db_instance|lb$|elasticache|eip|kms_key' \
+  || echo "no expensive resource types in this plan"
+
+# 3. Infracost - free for personal use, gives a per-month figure per resource.
+#    curl -fsSL https://get.infracost.io | sh
+infracost breakdown --path .
+# Name                                    Monthly Qty  Unit    Monthly Cost
+# aws_instance.app
+# └─ Instance usage (Linux, t3.micro)              730  hours         $0.00
+# aws_nat_gateway.this
+# └─ NAT gateway                                   730  hours        $32.85   &lt;-- STOP
+</code></pre>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Resource type</th><th>Monthly</th><th>Free-tier alternative</th></tr></thead>
+<tbody>
+<tr><td><code>aws_nat_gateway</code></td><td>~$32</td><td>Public subnet + <code>aws_security_group</code>. Both free.</td></tr>
+<tr><td><code>aws_eks_cluster</code></td><td>~$73</td><td><code>kind</code> locally, or <code>azurerm_kubernetes_cluster</code> with <code>sku_tier = "Free"</code>.</td></tr>
+<tr><td><code>aws_lb</code> (ALB/NLB)</td><td>~$16&ndash;25</td><td>EC2 public IP + nginx.</td></tr>
+<tr><td><code>aws_db_instance</code></td><td>$0 or ~$15</td><td><code>db.t4g.micro</code>, single-AZ, is free for 750 hrs/month. Multi-AZ is not.</td></tr>
+<tr><td><code>aws_elasticache_cluster</code></td><td>~$12</td><td>Redis container on the instance.</td></tr>
+<tr><td><code>aws_eip</code></td><td>~$3.60 if detached</td><td>Free while attached to a running instance. Only allocate what you attach.</td></tr>
+<tr><td><code>aws_kms_key</code></td><td>$1 each</td><td>SSE-S3 rather than SSE-KMS. See <a href="setup.html#zerocost">Sheet 01</a>.</td></tr>
+<tr><td><code>aws_secretsmanager_secret</code></td><td>$0.40 each</td><td><code>aws_ssm_parameter</code> with <code>type = "SecureString"</code> &mdash; free.</td></tr>
+<tr><td><code>aws_vpc_endpoint</code></td><td>~$7 each</td><td>Route over the internet gateway for a learning environment.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="code" data-lang="hcl">
+<header><b>a free-tier module &mdash; the Week 10 target</b></header>
+<pre><code>variable "free_tier_only" {
+  description = "Guard rail. Set false only when you deliberately accept a bill."
+  type        = bool
+  default     = true
+}
+
+# Fail the plan rather than the credit card.
+resource "null_resource" "cost_guard" {
+  lifecycle {
+    precondition {
+      condition     = var.free_tier_only ? var.instance_type == "t3.micro" : true
+      error_message = "free_tier_only is set: instance_type must be t3.micro."
+    }
+  }
+}
+
+resource "aws_instance" "app" {
+  ami                    = data.aws_ami.al2023.id
+  instance_type          = var.instance_type          # t3.micro - 750 hrs free
+  subnet_id              = aws_subnet.public[0].id    # PUBLIC: avoids the NAT Gateway
+  vpc_security_group_ids = [aws_security_group.app.id]
+
+  root_block_device {
+    volume_size = 8                                   # inside the 30 GB free allowance
+    volume_type = "gp3"
+  }
+  tags = { Name = "badgedesk-app", CostCentre = "learning" }
+}
+
+resource "aws_db_instance" "postgres" {
+  identifier             = "badgedesk"
+  engine                 = "postgres"
+  engine_version         = "16"
+  instance_class         = "db.t4g.micro"   # 750 hrs/month free
+  allocated_storage      = 20               # 20 GB free
+  multi_az               = false            # multi_az = true is NOT free
+  publicly_accessible    = false
+  skip_final_snapshot    = true             # snapshots cost storage
+  storage_encrypted      = true             # free with the AWS-managed key
+  # kms_key_id = ...                        # a CUSTOMER-managed key is $1/month
+}
+
+# Free instead of Secrets Manager:
+resource "aws_ssm_parameter" "db_password" {
+  name  = "/badgedesk/db-password"
+  type  = "SecureString"                    # Standard tier: free
+  value = var.db_password
+}
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the state backend is itself a cost decision</span>
+  <p>Every tutorial tells you to put remote state in S3 with a DynamoDB lock table. Both are inside the free
+  tier &mdash; 5 GB of S3 and 25 GB of DynamoDB &mdash; so that is fine. What is <b>not</b> fine is enabling
+  <b>SSE-KMS with a customer-managed key</b> on the state bucket, which every &ldquo;production-grade&rdquo;
+  guide recommends: that is $1/month forever for a learning project. Use SSE-S3. And on a solo project,
+  <b>local state is a legitimate choice</b> &mdash; commit nothing, back up
+  <code>terraform.tfstate</code>, and move to a remote backend when a second person appears.</p>
+</div>
+
+<div class="code" data-lang="bash">
+<header><b>the Sunday teardown</b></header>
+<pre><code>terraform destroy -auto-approve
+
+# Then prove it. Terraform only knows about what is in ITS state file -
+# anything you created by clicking survives destroy and keeps billing.
+aws ec2 describe-instances --filters Name=instance-state-name,Values=running \
+    --query 'Reservations[].Instances[].InstanceId' --output text
+aws ec2 describe-volumes --filters Name=status,Values=available \
+    --query 'Volumes[].VolumeId' --output text
+aws ec2 describe-nat-gateways --filter Name=state,Values=available \
+    --query 'NatGateways[].NatGatewayId' --output text
+
+# Empty on all three = clean. The full sweep is in Sheet 01.
+</code></pre>
+</div>
+
+<p>On the corporate machine, where cloud credentials must never live, you still get most of this sheet:
+<code>terraform validate</code>, <code>terraform fmt</code>, module authoring and reading plans all work
+without credentials. Only <code>plan</code> against a real provider and <code>apply</code> need an account.</p>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; cost control</div>
+  <a class="r" href="https://www.infracost.io/docs/" target="_blank" rel="noopener"><span>Infracost documentation<i>Free for personal use. Wire it into the Sheet 09 pipeline so every pull request shows its own monthly delta.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://aws.amazon.com/free/" target="_blank" rel="noopener"><span>AWS Free Tier &mdash; the authoritative list<i>Filter by &ldquo;Always Free&rdquo; versus &ldquo;12 Months Free&rdquo;. The distinction decides what you can leave running.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://developer.hashicorp.com/terraform/language/expressions/custom-conditions" target="_blank" rel="noopener"><span>Terraform custom conditions<i>Preconditions and validation blocks &mdash; how the cost guard above fails the plan instead of the budget.</i></span><span class="dur">docs</span></a>
+</div>
+
+<!-- ===================================================================== -->
 <h2 id="drill">Drill book</h2>
 <p class="sub">Answer out loud, standing up, without notes. Every one of these has been asked in a real
 platform interview.</p>

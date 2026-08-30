@@ -541,6 +541,60 @@ sheet has no project, you have read it rather than learnt it.</p>
 </figure>
 
 <!-- ===================================================================== -->
+<h2 id="zerocost">Hosting the live demo for nothing</h2>
+<p class="sub">&ldquo;A running deployed instance at a real URL&rdquo; is the deliverable that turns a claim
+into a demonstration &mdash; and it is the one people skip because they assume it costs money. It does not.
+Every layer of BadgeDesk has a permanent free tier.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Layer</th><th>Host</th><th>Free allowance</th><th>Catch</th></tr></thead>
+<tbody>
+<tr><td>Next.js front end</td><td><b>Vercel</b> Hobby</td><td>100 GB bandwidth/month, unlimited deploys</td><td>Non-commercial only &mdash; a portfolio project qualifies.</td></tr>
+<tr><td>&nbsp;</td><td><b>Cloudflare Pages</b></td><td>Unlimited bandwidth, 500 builds/month</td><td>The most generous of the three. Good if Vercel&rsquo;s terms worry you.</td></tr>
+<tr><td>FastAPI / NestJS services</td><td><b>Fly.io</b></td><td>Small shared-CPU allowance</td><td>Needs a card on file. Set a hard spend limit of $0.</td></tr>
+<tr><td>&nbsp;</td><td><b>Render</b> free web service</td><td>750 hrs/month</td><td>Spins down after 15 min idle; first request then takes ~30 s. Fine for a demo &mdash; say so in the README.</td></tr>
+<tr><td>PostgreSQL</td><td><b>Neon</b></td><td>0.5 GB, always free, branching included</td><td>Scales to zero. Serverless driver is worth learning anyway.</td></tr>
+<tr><td>&nbsp;</td><td><b>Supabase</b></td><td>500 MB, always free</td><td>Paused after 7 days inactive; one click to resume.</td></tr>
+<tr><td>Redis</td><td><b>Upstash</b></td><td>10,000 commands/day, always free</td><td>REST API as well as the Redis protocol.</td></tr>
+<tr><td>MongoDB</td><td><b>Atlas</b> M0</td><td>512 MB, always free</td><td>Shared cluster; no time limit.</td></tr>
+<tr><td>Container images</td><td><b>GHCR</b></td><td>Unlimited for public images</td><td>Same login as the repo. See <a href="devops.html#zerocost">Sheet 09</a>.</td></tr>
+<tr><td>Kafka</td><td>&mdash;</td><td>&mdash;</td><td>No meaningful free tier. <b>Do not deploy it.</b> Demo the event flow locally in the screen recording.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Deploy a slice, not the whole system</span>
+  <p>You do not need all eleven services live to have a demo. Deploy the <b>front end plus the core API plus
+  Postgres</b> &mdash; the request-submit-approve path &mdash; and let the README and the three-minute
+  recording cover the rest. A reviewer clicks the link, submits a badge request, sees it appear, and closes
+  the tab. That is the entire job of the deployed instance. The Kafka worker and the reconciler Lambda are
+  more convincing as a diagram plus a passing test suite than as an idle deployment you are paying to keep
+  warm.</p>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; free hosting still leaks secrets</span>
+  <p>Every platform above wants environment variables through a dashboard, and the temptation is to paste
+  your real values into the first box you see. Two rules carry over from Sheet 01 unchanged: <b>generate
+  separate credentials for the demo</b> &mdash; a Neon connection string that only the demo uses, so
+  rotating it breaks nothing &mdash; and <b>seed the demo with fabricated data only</b>. A public URL with
+  a login form is a public URL: put fake employees behind it, rate-limit the endpoints, and assume someone
+  will try the obvious injection. If the demo is compromised it should be an inconvenience, not an
+  incident.</p>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">In production &mdash; what the free tier teaches you anyway</span>
+  <p>Render spinning down after fifteen minutes is a cold start; Neon scaling to zero is a connection pool
+  problem; Upstash&rsquo;s 10,000 commands a day forces you to notice how often you actually hit the cache.
+  Every constraint on that table is a scaled-down version of a real production concern, and being able to
+  say &ldquo;the demo cold-starts because the free tier suspends idle containers, here is how I would fix
+  that with a warm pool&rdquo; is a better answer than a demo that never had a constraint.</p>
+</div>
+
+<!-- ===================================================================== -->
 <h2 id="drill">Drill book</h2>
 <p class="sub">The project conversation opens most interviews. These are the questions that follow
 &ldquo;tell me about something you have built&rdquo;.</p>

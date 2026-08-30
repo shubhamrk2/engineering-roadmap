@@ -838,6 +838,117 @@ supporting services.</figcaption>
 </figure>
 
 <!-- ===================================================================== -->
+<h2 id="zerocost">Building this sheet at zero cost</h2>
+<p class="sub">The architecture in Drawing 07-A is what you must be able to <b>draw and defend</b> in an
+interview. It is not what you should <b>run</b> on a personal account. Build the stripped-down version below,
+which exercises every concept and stays inside the free tier.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Drawing 07-A shows</th><th>Costs</th><th>Build this instead</th><th>Concept still learned?</th></tr></thead>
+<tbody>
+<tr><td>Application Load Balancer</td><td>~$16&ndash;25/mo</td><td>EC2 with a public IP, nginx as reverse proxy</td><td><b>Yes</b> &mdash; target groups and health checks are the only gap; read them.</td></tr>
+<tr><td><b>NAT Gateway</b></td><td>~$32/mo</td><td>Put the instance in a <b>public subnet</b> with a tight security group</td><td><b>Yes</b> &mdash; you still build the VPC, subnets, route tables and IGW by hand.</td></tr>
+<tr><td>EKS worker nodes + control plane</td><td>~$73/mo idle</td><td><code>kind</code> locally, installed in Sheet 01</td><td><b>Mostly</b> &mdash; you lose IRSA and managed node groups only.</td></tr>
+<tr><td>Multi-AZ RDS</td><td>~$30/mo</td><td>Single-AZ <code>db.t4g.micro</code> &mdash; 750 hrs/month free</td><td><b>Yes</b> &mdash; failover is a paragraph to understand, not a thing to buy.</td></tr>
+<tr><td>ElastiCache</td><td>~$12/mo</td><td>Redis container on the same EC2 instance, or your local Compose Redis</td><td><b>Yes</b> &mdash; the Redis patterns on Sheet 06 are identical.</td></tr>
+<tr><td>VPC endpoints</td><td>~$7/mo each</td><td>Route to S3 and Secrets Manager over the internet gateway</td><td><b>Partly</b> &mdash; understand <i>why</i> endpoints exist; skip provisioning them.</td></tr>
+<tr><td>Secrets Manager</td><td>$0.40/mo per secret</td><td><b>SSM Parameter Store</b>, Standard tier &mdash; free</td><td><b>Yes</b> &mdash; and Parameter Store is what many teams actually use.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why the small version teaches more than you would expect</span>
+  <p>Provisioning a NAT Gateway is three clicks and teaches you nothing. Working out why your instance in a
+  private subnet cannot reach the vendor API, and what your three options are &mdash; NAT Gateway, VPC
+  endpoint, or move it to a public subnet with a restrictive security group &mdash; is the actual VPC
+  lesson. Constraints force you to understand the routing rather than accept a default. When an interviewer
+  asks &ldquo;how would you reduce the cost of this architecture?&rdquo;, you will have a real answer with
+  numbers attached.</p>
+</div>
+
+<h3 id="freetier-build">The free-tier BadgeDesk deployment</h3>
+<p>This is the Week 08 deliverable, built to cost nothing. Everything here is inside the twelve-month free
+tier, which starts the day you create the account &mdash; a Week 00 account covers the whole roadmap.</p>
+
+<div class="code" data-lang="bash">
+<header><b>what to create, in order</b></header>
+<pre><code># 1. VPC - always free, no limits
+#    One VPC, one IGW, two PUBLIC subnets in different AZs, one route table.
+#    Skip private subnets entirely for now: they are what force the NAT Gateway.
+
+# 2. EC2 - free tier: 750 hrs/month of t3.micro for 12 months
+#    That is one instance running 24/7, or three running 8 hrs a day.
+#    Amazon Linux 2023 or Ubuntu 24.04. 8 GB gp3 root volume (30 GB free).
+
+# 3. Security group - free. This replaces the load balancer's job of
+#    restricting who can reach what.
+#      inbound  22   from YOUR IP ONLY, never 0.0.0.0/0
+#      inbound  443  from 0.0.0.0/0
+#      inbound  80   from 0.0.0.0/0
+#      outbound all
+
+# 4. RDS - free tier: 750 hrs/month db.t4g.micro, 20 GB gp2, 12 months
+#      Single-AZ. Public accessibility OFF.
+#      Security group allowing 5432 from the EC2 security group only.
+
+# 5. S3 - free tier: 5 GB, 20k GET, 2k PUT for 12 months
+#      One bucket. Block Public Access ON. Default encryption SSE-S3, NOT SSE-KMS
+#      (a customer-managed KMS key is $1/month - see Sheet 01).
+
+# 6. Secrets - use SSM Parameter Store Standard, which is free:
+aws ssm put-parameter --name /badgedesk/db-password --type SecureString \
+    --value 'the-password' --region ap-south-1
+aws ssm get-parameter --name /badgedesk/db-password --with-decryption \
+    --query 'Parameter.Value' --output text --region ap-south-1
+
+# 7. Lambda for the nightly reconciler - ALWAYS free, not just 12 months:
+#      1M requests + 400k GB-seconds every month, forever.
+
+# 8. CloudWatch - always free: 10 custom metrics, 5 GB log ingestion,
+#      10 alarms. Enough for the whole roadmap.
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the free-tier traps that still bill</span>
+  <p><b>An Elastic IP you allocate but do not attach</b> is charged $3.60/month <i>because</i> it is
+  unattached &mdash; the free tier covers one attached to a running instance only. <b>An EBS volume survives
+  the instance you terminated</b>: check for volumes in the <code>available</code> state after every
+  teardown. <b>SSE-KMS on an S3 bucket with a customer-managed key</b> quietly costs $1/month; use SSE-S3.
+  <b>A second RDS instance</b> puts you outside the free tier immediately &mdash; 750 hours is one instance,
+  not one per instance. And <b>the free tier is regional-agnostic but account-wide</b>: two <code>t3.micro</code>
+  instances in different regions consume the same 750 hours.</p>
+</div>
+
+<div class="code" data-lang="bash">
+<header><b>the Sunday teardown &mdash; run this before you close the laptop</b></header>
+<pre><code># Stop, do not terminate, if you want the instance back tomorrow.
+# A STOPPED instance costs nothing for compute; you still pay for its EBS volume
+# (~$0.64/month for 8 GB, inside the 30 GB free allowance).
+aws ec2 stop-instances --instance-ids i-xxxxxxxx --region ap-south-1
+
+# RDS can be stopped for up to 7 days, after which AWS restarts it automatically.
+aws rds stop-db-instance --db-instance-identifier badgedesk --region ap-south-1
+
+# Then confirm nothing unexpected survived:
+aws ec2 describe-volumes --filters Name=status,Values=available \
+    --query 'Volumes[].VolumeId' --output text --region ap-south-1
+aws ec2 describe-addresses \
+    --query 'Addresses[?AssociationId==`null`].PublicIp' --output text --region ap-south-1
+aws ec2 describe-nat-gateways --filter Name=state,Values=available \
+    --query 'NatGateways[].NatGatewayId' --output text --region ap-south-1
+
+# Empty output on all three = you are at zero.
+</code></pre>
+</div>
+
+<p>The full region sweep is in <a href="setup.html#zerocost">Sheet 01 &sect;6</a>, along with the free-tier
+allowance table and the note on why <code>GetCostAndUsage</code> is the one AWS API that charges you to call
+it.</p>
+
+<!-- ===================================================================== -->
 <h2 id="drill">Drill book</h2>
 <p class="sub">Answer out loud. AWS questions reward specificity &mdash; name the service and the reason.</p>
 

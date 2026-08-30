@@ -2816,6 +2816,109 @@ week of translation. The reasons are unglamorous:</p>
 </div>
 
 <!-- ===================================================================== -->
+<h2 id="zerocost">Running this sheet at zero cost</h2>
+<p class="sub">Azure is the cheaper of the two clouds for this roadmap, for two specific reasons worth
+knowing on their own merits &mdash; both of them come up in cloud-comparison interview questions.</p>
+
+<div class="grid g2">
+  <div class="card"><span class="cm">Reason one</span><b class="ct">Azure disables, it does not bill</b>
+    <p>When the $200 credit or the 30 days expires, Azure <b>deactivates your resources</b> rather than
+    charging you. It never converts to pay-as-you-go without an explicit click. There is no Azure equivalent
+    of the AWS surprise bill &mdash; which makes it the safer place to experiment.</p></div>
+  <div class="card"><span class="cm">Reason two</span><b class="ct">The AKS control plane is free</b>
+    <p>AWS charges <b>$73/month per EKS cluster</b> for the managed control plane, idle or not. Azure charges
+    <b>nothing</b> for the AKS control plane in the Free tier &mdash; you pay only for worker node VMs, and a
+    <code>B2s</code> node sits inside the twelve-month free allowance. This single fact inverts the
+    AWS-first instinct for Week 09.</p></div>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the $200 credit is use-it-or-lose-it</span>
+  <p>The Azure free account gives <b>$200 of credit that expires after 30 days</b>, plus <b>twelve months of
+  free services</b>, plus a set of <b>always-free</b> services. Those are three different things and people
+  conflate them. If you created the account in Week 00 as Sheet 01 instructs, the $200 is gone by Week 04
+  &mdash; long before Week 09 needs it. <b>That is fine.</b> The twelve-month allowance is what this sheet
+  actually depends on, and it survives the credit expiry untouched. Do not reorder the roadmap to chase the
+  credit; Week 09 assumes a containerised app from Week 06 that you will not have yet.</p>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Service</th><th>Free allowance</th><th>Duration</th><th>Used on</th></tr></thead>
+<tbody>
+<tr><td><b>AKS control plane</b></td><td>Unlimited clusters, Free tier</td><td><b>Always free</b></td><td>Week 09 Kubernetes</td></tr>
+<tr><td>Linux VM <code>B1s</code></td><td>750 hrs/month</td><td>12 months</td><td>AKS node or a plain VM</td></tr>
+<tr><td>Azure Functions</td><td>1M executions/month</td><td><b>Always free</b></td><td>The Lambda equivalent</td></tr>
+<tr><td>Blob Storage</td><td>5 GB LRS hot</td><td>12 months</td><td>The S3 mapping exercise</td></tr>
+<tr><td>Azure SQL Database</td><td>250 GB S0 instance</td><td>12 months</td><td>The RDS mapping exercise</td></tr>
+<tr><td>Cosmos DB</td><td>1000 RU/s + 25 GB</td><td><b>Always free</b></td><td>The DynamoDB comparison</td></tr>
+<tr><td>Entra ID Free tier</td><td>50,000 objects, SSO</td><td><b>Always free</b></td><td>The IAM mapping exercise</td></tr>
+<tr><td>Resource groups, VNets, NSGs</td><td>Unlimited</td><td><b>Always free</b></td><td>All of it</td></tr>
+<tr><td>Container Registry Basic</td><td>&mdash;</td><td>~$5/mo</td><td><b>Use GHCR instead</b> &mdash; free for public repos</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="code" data-lang="bash">
+<header><b>a free AKS cluster for the Week 09 exercise</b></header>
+<pre><code># Control plane: free. You pay only for the node VM, which the 12-month
+# allowance covers. One node is enough to learn on.
+az aks create \
+  --resource-group rg-badgedesk-dev \
+  --name aks-badgedesk \
+  --node-count 1 \
+  --node-vm-size Standard_B2s \
+  --tier free \
+  --generate-ssh-keys \
+  --no-wait
+
+az aks get-credentials --resource-group rg-badgedesk-dev --name aks-badgedesk
+kubectl get nodes
+
+# STOP the cluster when you finish for the day. Stopped nodes are not billed;
+# the control plane was free to begin with. This is the Azure equivalent of the
+# Sunday-night ritual on Sheet 01.
+az aks stop  --resource-group rg-badgedesk-dev --name aks-badgedesk
+az aks start --resource-group rg-badgedesk-dev --name aks-badgedesk
+
+# Or delete it entirely - recreating takes about five minutes.
+az aks delete --resource-group rg-badgedesk-dev --name aks-badgedesk --yes
+</code></pre>
+</div>
+
+<div class="code" data-lang="bash">
+<header><b>verify you are at zero &mdash; all of these are free calls</b></header>
+<pre><code>az account show --output table
+
+# Everything you own, in one list. An empty resource group is free.
+az resource list --output table
+
+# The expensive shapes, specifically:
+az aks list          --query '[].{Name:name,RG:resourceGroup,Tier:sku.tier}'      -o table
+az vm list -d        --query '[].{Name:name,Size:hardwareProfile.vmSize,State:powerState}' -o table
+az disk list         --query '[?diskState==`Unattached`].{Name:name,GB:diskSizeGb}' -o table
+az network public-ip list --query '[?ipConfiguration==`null`].{Name:name}'         -o table
+az network nat gateway list --query '[].{Name:name}'                               -o table
+
+# Cost figures are free to read in the portal:
+#   Cost Management + Billing -> Cost analysis
+</code></pre>
+</div>
+
+<p>Unattached managed disks and orphaned public IPs are the Azure equivalents of the AWS traps in
+<a href="aws.html#zerocost">Sheet 07</a> &mdash; both are charged precisely because nothing is using them.</p>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p>&ldquo;You need a managed Kubernetes cluster for a small team. AWS or Azure?&rdquo; The answer they are
+  listening for is a number, not a preference: EKS charges $73/month per cluster for the control plane
+  regardless of load; AKS charges nothing for it and bills only the node pool. For a handful of small
+  clusters &mdash; dev, staging, per-developer &mdash; that difference dominates, and it is the reason many
+  teams with multi-cluster habits sit on Azure. Follow it with the counter-argument: if the rest of your
+  estate is on AWS, the cross-cloud data transfer and the second IAM model usually cost more than the $73.</p>
+</div>
+
+<!-- ===================================================================== -->
 <h2 id="drill">Drill book</h2>
 <p class="sub">Answer out loud, standing up, without notes. An Azure question in an AWS-shaped interview is
 usually a test of how you handle unfamiliar ground &mdash; so answer with the mapping and the caveat, not with

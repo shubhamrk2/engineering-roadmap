@@ -740,6 +740,162 @@ cost and latency.</figcaption>
 </figure>
 
 <!-- ===================================================================== -->
+<h2 id="zerocost">Running this sheet at zero cost &mdash; Ollama instead of OpenAI</h2>
+<p class="sub">Every concept on this sheet &mdash; prompting, chunking, embeddings, retrieval, reranking,
+citation, evaluation &mdash; is model-agnostic. You can build the entire &ldquo;Ask BadgeDesk&rdquo; assistant
+without an API key and without spending anything.</p>
+
+<p>Ollama exposes an <b>OpenAI-compatible endpoint</b> at <code>http://localhost:11434/v1</code>. That single
+fact means the code on this sheet runs unchanged apart from two lines &mdash; you keep the same SDK, the same
+<code>chat.completions.create</code> calls, the same streaming, the same error types.</p>
+
+<div class="code" data-lang="python">
+<header><b>the only change to the client from &sect;2</b></header>
+<pre><code>from openai import AsyncOpenAI, APITimeoutError, RateLimitError
+
+# Paid version:
+# client = AsyncOpenAI(api_key=settings.openai_api_key, timeout=30.0, max_retries=0)
+
+# Free version - identical API surface, running on your own GPU:
+client = AsyncOpenAI(
+    base_url="http://localhost:11434/v1",
+    api_key="ollama",          # required by the SDK, ignored by Ollama
+    timeout=120.0,             # local models are slower; raise the timeout
+    max_retries=0,
+)
+
+# Then everywhere the sheet says model="gpt-4o-mini", use a local tag instead:
+response = await client.chat.completions.create(
+    model="qwen2.5:7b",        # or llama3.1:8b
+    messages=messages,
+    temperature=0,
+    stream=True,
+)
+</code></pre>
+</div>
+
+<h3 id="localmodels">Which models to pull, and what your GPU can hold</h3>
+<p>Check your VRAM first &mdash; it decides everything. On Windows, <code>nvidia-smi</code> reports it in the
+top-right of the table.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>VRAM</th><th>Chat / generation</th><th>Code</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><b>4 GB</b></td><td><code>llama3.1:8b</code></td><td><code>qwen2.5-coder:7b</code></td><td>~4.7 GB at Q4, so part of the model spills to system RAM. Works, but expect 5&ndash;15 tokens/second. Drop to <code>qwen2.5:3b</code> if that is too slow.</td></tr>
+<tr><td><b>6&ndash;8 GB</b></td><td><code>llama3.1:8b</code></td><td><code>qwen2.5-coder:7b</code></td><td>Fits entirely in VRAM. This is the comfortable tier for everything on this sheet.</td></tr>
+<tr><td><b>12 GB+</b></td><td><code>qwen2.5:14b</code></td><td><code>qwen2.5-coder:14b</code></td><td>Noticeably better instruction-following for the reranking and query-expansion steps.</td></tr>
+<tr><td><b>CPU only</b></td><td><code>phi3.5</code> or <code>qwen2.5:3b</code></td><td><code>qwen2.5-coder:3b</code></td><td>Slow but usable for learning. The corporate laptop lives here.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="code" data-lang="bash">
+<header><b>the three pulls you actually need for this sheet</b></header>
+<pre><code># 1. Generation - answers the question
+ollama pull llama3.1:8b
+
+# 2. Code - useful from Sheet 02 onwards, not just here
+ollama pull qwen2.5-coder:7b
+
+# 3. EMBEDDINGS - the one people forget. RAG does not work without it.
+ollama pull nomic-embed-text
+
+ollama list
+ollama run llama3.1:8b "say hello"      # smoke test
+
+# Ollama serves on 11434 and starts with Windows. From WSL, reach the
+# Windows host rather than localhost:
+#   http://$(ip route show default | awk '{print $3}'):11434/v1
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the dimension mismatch that silently breaks retrieval</span>
+  <p>The schema in &sect;4 declares <code>embedding vector(1536)</code>, which is
+  <code>text-embedding-3-small</code>&rsquo;s width. <b><code>nomic-embed-text</code> produces 768
+  dimensions.</b> If you swap the embedding model without changing the column, Postgres rejects the insert
+  &mdash; which is the good outcome. The bad outcome is swapping models <i>after</i> ingestion and querying
+  a table embedded with a different model: no error, just quietly meaningless similarity scores. This is
+  Drawing 12-D&rsquo;s &ldquo;embedding mismatch&rdquo; failure, and it is the single most common RAG bug.
+  Change the column, then re-embed <b>everything</b>.</p>
+</div>
+
+<div class="code" data-lang="sql">
+<header><b>the schema change for a local embedding model</b></header>
+<pre><code>-- nomic-embed-text  -> 768        mxbai-embed-large -> 1024
+-- text-embedding-3-small -> 1536  (what the sheet assumes)
+
+CREATE EXTENSION IF NOT EXISTS vector;
+
+ALTER TABLE policy_chunks DROP COLUMN IF EXISTS embedding;
+ALTER TABLE policy_chunks ADD  COLUMN embedding vector(768) NOT NULL;
+
+DROP INDEX IF EXISTS policy_chunks_embedding_idx;
+CREATE INDEX policy_chunks_embedding_idx ON policy_chunks
+  USING hnsw (embedding vector_cosine_ops);
+
+-- Then re-run ingestion. Every row must be re-embedded with the new model.
+</code></pre>
+</div>
+
+<div class="code" data-lang="python">
+<header><b>embedding through Ollama</b></header>
+<pre><code>import httpx
+
+async def embed(text: str) -&gt; list[float]:
+    async with httpx.AsyncClient(timeout=60.0) as http:
+        r = await http.post(
+            "http://localhost:11434/api/embeddings",
+            json={"model": "nomic-embed-text", "prompt": text},
+        )
+        r.raise_for_status()
+        return r.json()["embedding"]        # 768 floats
+
+# Or through the OpenAI SDK, since the compatible endpoint covers embeddings too:
+resp = await client.embeddings.create(model="nomic-embed-text", input=text)
+vector = resp.data[0].embedding
+</code></pre>
+</div>
+
+<h3 id="freetradeoffs">What you give up, and what you do not</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th>Concept on this sheet</th><th>Works locally?</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td>Prompt engineering, system prompts, few-shot</td><td><b>Yes</b></td><td>Identical. Smaller models need more explicit instructions, which teaches the skill better.</td></tr>
+<tr><td>Chunking strategies</td><td><b>Yes</b></td><td>Entirely local; nothing about it is model-specific.</td></tr>
+<tr><td>Embeddings and pgvector</td><td><b>Yes</b></td><td><code>nomic-embed-text</code> is genuinely competitive with OpenAI&rsquo;s small model on retrieval benchmarks.</td></tr>
+<tr><td>Hybrid search and rank fusion</td><td><b>Yes</b></td><td>Pure algorithm. No model involved in the fusion step.</td></tr>
+<tr><td>Streaming, timeouts, retries</td><td><b>Yes</b></td><td>Same SDK, same exception types.</td></tr>
+<tr><td>Citation and grounding checks</td><td><b>Yes</b></td><td>Weaker models hallucinate more, so your citation verifier gets a better workout.</td></tr>
+<tr><td>Token counting and cost logging</td><td>Partly</td><td>Token counts still return. Cost is zero, so log tokens as a <i>latency</i> proxy instead.</td></tr>
+<tr><td>Function / tool calling</td><td>Partly</td><td>Supported by <code>llama3.1</code> and <code>qwen2.5</code>, less reliably than a frontier model. Validate the JSON.</td></tr>
+<tr><td>Answer quality at the top end</td><td><b>No</b></td><td>A 7B model is not <code>gpt-4o</code>. The pipeline is the lesson; the model is a swappable component &mdash; which is itself the point.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why building against a local model makes you better at this</span>
+  <p>A frontier model hides sloppy retrieval. Give <code>gpt-4o</code> twelve mediocre chunks and it will
+  still produce a plausible answer, so you never learn whether your chunking worked. A 7B model has no such
+  slack: if the right chunk is not in the context, the answer is visibly wrong. Building the pipeline
+  against a weak model forces the retrieval to be genuinely good, and retrieval &mdash; not the model &mdash;
+  is what you are actually being hired to get right. Swap in a paid model at the end and everything gets
+  better for free.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch when stuck &mdash; local models</div>
+  <a class="r" href="https://ollama.com/library" target="_blank" rel="noopener"><span>Ollama model library<i>Every tag, with its quantisation and download size. Check the size against your VRAM before pulling.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://github.com/ollama/ollama/blob/main/docs/openai.md" target="_blank" rel="noopener"><span>Ollama &mdash; OpenAI compatibility<i>Exactly which endpoints and parameters are supported. Read this before debugging a 400.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://github.com/pgvector/pgvector" target="_blank" rel="noopener"><span>pgvector README<i>Index types and the dimension limits. Confirms the HNSW build cost you will feel on re-embedding.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://huggingface.co/spaces/mteb/leaderboard" target="_blank" rel="noopener"><span>MTEB embedding leaderboard<i>Compare <code>nomic-embed-text</code> against paid embeddings on retrieval tasks before assuming the paid one is better.</i></span><span class="dur">15 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
 <h2 id="drill">Drill book</h2>
 <p class="sub">Answer out loud. AI questions reward engineering judgement over vocabulary.</p>
 

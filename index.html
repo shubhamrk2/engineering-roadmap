@@ -297,6 +297,36 @@ Week 08 assumes you have a containerised app from Week 06 to actually deploy.</p
 </table>
 </div>
 
+<h3 id="zerocost">The whole thing, for nothing</h3>
+<p>Every week above can be completed at <b>zero cost</b>. Weeks 00 to 07 are eight consecutive weeks of
+entirely local work &mdash; the Compose file from <a href="setup.html">Sheet 01</a> is the whole platform.
+From Week 08 the cloud work fits inside the free tiers, provided you avoid four specific resources. Each
+sheet now carries its own zero-cost section with the substitutions and the verification commands.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Week</th><th>Runs on</th><th>The one thing that would cost you</th><th>Free instead</th></tr></thead>
+<tbody>
+<tr><td>00&ndash;07</td><td>Docker Compose, locally</td><td>Nothing</td><td>&mdash; <a href="setup.html#zerocost">Sheet 01</a></td></tr>
+<tr><td>08</td><td>AWS free tier</td><td>NAT Gateway &mdash; $32/mo</td><td>Public subnet + security group &mdash; <a href="aws.html#zerocost">Sheet 07</a></td></tr>
+<tr><td>09</td><td>Free tier + <code>kind</code></td><td>EKS control plane &mdash; $73/mo</td><td><code>kind</code>, or AKS whose control plane is free &mdash; <a href="azure.html#zerocost">Sheet 08</a></td></tr>
+<tr><td>10</td><td>GitHub Actions + Terraform</td><td>Self-hosted runners, ALB</td><td>Free runners, GHCR, <code>terraform destroy</code> &mdash; <a href="devops.html#zerocost">Sheet 09</a>, <a href="terraform.html#zerocost">Sheet 10</a></td></tr>
+<tr><td>11</td><td>Compose + Ollama</td><td>MSK &mdash; $150/mo; LLM API tokens</td><td>Local Kafka; Ollama on your own GPU &mdash; <a href="messaging.html#zerocost">Sheet 11</a>, <a href="ai.html#zerocost">Sheet 12</a></td></tr>
+<tr><td>12</td><td>Free hosting tiers</td><td>Keeping every service deployed</td><td>Deploy one slice &mdash; <a href="projects.html#zerocost">Sheet 13</a></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why the constraint is worth keeping even if you can afford it</span>
+  <p>Knowing that a NAT Gateway is $32 a month, that an EKS control plane bills whether or not a pod is
+  scheduled, and that an unattached Elastic IP is charged <i>because</i> it is unattached, is not
+  penny-pinching &mdash; it is the same knowledge that makes you useful on a team with a cloud budget.
+  &ldquo;How would you make this architecture cheaper?&rdquo; is a standard system-design follow-up, and the
+  candidates who answer it well are the ones who have personally paid for a mistake. Better to learn it on a
+  $10 budget than on someone else&rsquo;s $10,000 one.</p>
+</div>
+
 <h3 id="rhythm">The weekly rhythm</h3>
 <p>Sixteen hours a week is the target. Spread it like this, because the distribution matters more than the
 total &mdash; recall is built by returning to material, not by staring at it longer.</p>
