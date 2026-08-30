@@ -174,17 +174,34 @@ $notes = @(
     @{ m = '\.(pst|ost)$';                  n = 'Outlook mailbox. Personal - back up.' }
 )
 
-$drives = (Get-CimInstance Win32_LogicalDisk -Filter "DriveType=3").DeviceID
-foreach ($d in $drives) {
-    Get-ChildItem "$d\" -Recurse -File -Force -ErrorAction SilentlyContinue |
-      Where-Object { $_.Length -gt 500MB } |
-      Sort-Object Length -Descending | Select-Object -First 30 |
-      ForEach-Object {
-        $note = "unrecognised - check before deleting"
-        foreach ($r in $notes) { if ($_.FullName -match $r.m) { $note = $r.n; break } }
-        "{0}  {1}" -f (GB $_.Length), $_.FullName
-        "            -> $note"
+"(scanning - this is the slow section, roughly 1-3 minutes)"
+""
+
+# Scan the drive root itself (catches pagefile.sys, hiberfil.sys, swapfile.sys)
+# then every top-level folder EXCEPT the Windows and Program Files trees, which
+# hold no user-deletable large files and account for most of the scan time.
+# Windows.old sits at the root, so it is still caught.
+$skipTop = @('Windows','Program Files','Program Files (x86)','ProgramData',
+             '$Recycle.Bin','System Volume Information','Recovery','PerfLogs',
+             'MSOCache','Config.Msi')
+
+$targets = @()
+foreach ($d in (Get-CimInstance Win32_LogicalDisk -Filter "DriveType=3").DeviceID) {
+    Get-ChildItem "$d\" -File -Force -ErrorAction SilentlyContinue |
+      Where-Object { $_.Length -gt 500MB } | ForEach-Object { $targets += $_ }
+    Get-ChildItem "$d\" -Directory -Force -ErrorAction SilentlyContinue |
+      Where-Object { $_.Name -notin $skipTop } | ForEach-Object {
+        Get-ChildItem $_.FullName -Recurse -File -Force -ErrorAction SilentlyContinue |
+          Where-Object { $_.Length -gt 500MB } | ForEach-Object { $targets += $_ }
       }
 }
+
+$targets | Sort-Object Length -Descending | Select-Object -First 40 |
+  ForEach-Object {
+    $note = "unrecognised - check before deleting"
+    foreach ($r in $notes) { if ($_.FullName -match $r.m) { $note = $r.n; break } }
+    "{0}  {1}" -f (GB $_.Length), $_.FullName
+    "            -> $note"
+  }
 
 Section "END OF REPORT"
