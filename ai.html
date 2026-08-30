@@ -782,6 +782,21 @@ top-right of the table.</p>
 starts, so a 4 GB card has roughly <b>3.4 GB usable</b> &mdash; budget against that number, not the sticker
 one.</p>
 
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; &ldquo;shared GPU memory&rdquo; is not more VRAM</span>
+  <p>Task Manager reports <b>dedicated</b> GPU memory and <b>shared</b> GPU memory, the latter usually half
+  your system RAM. It is tempting to add them together. Do not. Shared GPU memory is ordinary system RAM
+  reached over PCIe &mdash; useful to a game spilling textures, useless here. Ollama splits a model
+  <b>by layer</b>: some layers run on the GPU in dedicated VRAM, the remainder run <b>on the CPU</b> in
+  system RAM, and it sizes that split against dedicated VRAM alone. If a CUDA allocation does spill into
+  shared memory, throughput collapses further than a clean CPU offload would, because every weight access
+  now crosses PCIe on the critical path. Plan against dedicated VRAM minus what the desktop is holding, and
+  set <b>NVIDIA Control Panel &rarr; Manage 3D settings &rarr; CUDA - Sysmem Fallback Policy &rarr; Prefer
+  No Sysmem Fallback</b> so an oversized model fails loudly instead of silently running at two tokens a
+  second. Your <i>system</i> RAM still matters &mdash; it holds the CPU-offloaded layers &mdash; so 16 GB
+  makes a 7B model merely slow where 8 GB makes it thrash.</p>
+</div>
+
 <div class="tw">
 <table>
 <thead><tr><th>Usable VRAM</th><th>Chat / generation</th><th>Code</th><th>Notes</th></tr></thead>
