@@ -1,0 +1,15 @@
+# Everything the python-lab exercises need, merged from the per-week requirements-weekNN.txt files.
+# Install once, inside the python-lab virtual environment:   python -m pip install -r requirements.txt
+#
+# The lab tests need only pytest plus (for weeks 6, 9 and 29) the packages below. The teaching sheets have a few
+# heavier, OPTIONAL examples with their own installs (langgraph, mcp, sentence-transformers, tiktoken, psycopg);
+# each sheet says what it needs.
+pytest>=8
+httpx>=0.27          # weeks 5 and 29
+httpx2               # week 6: Starlette's TestClient asks for httpx2 on current releases (use httpx on older Starlette)
+fastapi>=0.115       # week 6
+uvicorn>=0.30        # week 6
+pydantic>=2.7        # weeks 6, 30, 32
+pydantic-settings>=2.3   # week 6
+cryptography>=42     # week 9
+hypothesis>=6        # week 29

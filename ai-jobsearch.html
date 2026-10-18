@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheet 36 — Job Search Method — Applied AI Roadmap</title>
+<link rel="stylesheet" href="assets/css/sheet.css">
+<link rel="stylesheet" href="assets/css/glass.css">
+</head>
+<body data-sheet="36" class="glass">
+<a class="skip" href="#main">Skip to sheet</a>
+<div class="wrap">
+<nav class="rail" aria-label="Sheet index"></nav>
+
+<main id="main">
+
+<header class="sheethead">
+  <div>
+    <div class="no">Sheet 36 &middot; Applied AI track &middot; Weeks 13&ndash;22</div>
+    <h1>Job search method<span>.</span></h1>
+    <p class="lede">A job search is a <b>pipeline you can measure</b>, not a mood. This sheet gives you the method: how to read a posting, match it to
+    evidence you can link to, check that it is real and open to you, apply as soon as the evidence is credible, track what happens, and
+    compare offers on a written matrix. It is a <b>method, not market data</b>: it names no salaries, no vacancies and no hiring numbers, because
+    those go stale and you must research them yourself, on the day.</p>
+  </div>
+  <div class="specs">
+    <div><span>Weeks</span><span>13 &ndash; 22</span></div>
+    <div><span>Hours</span><span>~ 2 per week, more in weeks 21&ndash;22</span></div>
+    <div><span>Must know</span><span>Gate 3</span></div>
+    <div><span>Nice to have</span><span>referrals</span></div>
+    <div><span>Ships</span><span>posting log, evidence file, offer matrix</span></div>
+  </div>
+</header>
+
+<div class="sheetbody">
+
+<div class="panel panel--real">
+  <span class="ph">Tested with</span>
+  <p>Tested with: python 3.14.7 (standard library only for every code block on this page), pytest 9.1.1 (lab tests only), on 18 Oct 2026, on Windows.
+  Every Python block below was executed offline by <code>tools/run-python-blocks.py</code>, and the printed output shown under each block is the real output
+  of that run. Every posting, company, link and number in the examples is <b>invented</b> for teaching; none describes a real vacancy or a real pay level.
+  Platform names (LinkedIn, Naukri, Wellfound and so on) are mentioned for what they are generally useful for. Their features, pricing and policies change:
+  check the current terms yourself before you rely on any of them.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="map">The search as a pipeline with evidence at every stage</h2>
+<p class="sub">Postings go in at the top, offers come out at the bottom, and most of what you start with leaks away on the way. That is normal. The
+method is about spending effort where the evidence is strongest and measuring what actually happens.</p>
+
+<figure class="dwg dwg--hero">
+<svg viewBox="0 0 1200 400" role="img" aria-label="A funnel of six stages from saved postings through verified, applied, screen and interview to a written offer. To the right, a brass box says evidence feeds every stage, a cyan box says a weekly review closes the loop, and a red box lists the normal leaks: closed or fake postings, silence, rejections and your own decisions to decline.">
+  <defs>
+    <marker id="s36-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s36-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s36-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <rect class="box" x="50" y="40" width="560" height="46" rx="3"/>
+  <text class="t mid" x="330" y="60" text-anchor="middle">1 Saved</text>
+  <text class="mm mid" x="330" y="77" text-anchor="middle">MATCHES ONE ROLE FAMILY</text>
+  <rect class="box" x="85" y="98" width="490" height="46" rx="3"/>
+  <text class="t mid" x="330" y="118" text-anchor="middle">2 Verified</text>
+  <text class="mm mid" x="330" y="135" text-anchor="middle">OPEN, REAL, ELIGIBLE FOR INDIA</text>
+  <rect class="box-c" x="120" y="156" width="420" height="46" rx="3"/>
+  <text class="t mid" x="330" y="176" text-anchor="middle">3 Applied</text>
+  <text class="mm mid" x="330" y="193" text-anchor="middle">TAILORED, EVIDENCE LINKED, LOGGED</text>
+  <rect class="box-c" x="155" y="214" width="350" height="46" rx="3"/>
+  <text class="t mid" x="330" y="234" text-anchor="middle">4 Screen</text>
+  <text class="mm mid" x="330" y="251" text-anchor="middle">RECRUITER OR MANAGER CALL</text>
+  <rect class="box-c" x="190" y="272" width="280" height="46" rx="3"/>
+  <text class="t mid" x="330" y="292" text-anchor="middle">5 Interview loop</text>
+  <text class="mm mid" x="330" y="309" text-anchor="middle">INTERVIEW SHEET</text>
+  <rect class="box-a" x="225" y="330" width="210" height="46" rx="3"/>
+  <text class="t b mid" x="330" y="350" text-anchor="middle">6 Offer in writing</text>
+  <text class="mm mid" x="330" y="367" text-anchor="middle">THEN EVALUATE</text>
+
+  <rect class="box-a" x="720" y="40" width="460" height="86" rx="3"/>
+  <text class="t b" x="740" y="64">Evidence feeds every stage</text>
+  <text class="m" x="740" y="86">repo links, READMEs, eval results,</text>
+  <text class="m" x="740" y="104">a demo transcript you can show.</text>
+
+  <rect class="box-c" x="720" y="148" width="460" height="86" rx="3"/>
+  <text class="t" x="740" y="172">Weekly review closes the loop</text>
+  <text class="m" x="740" y="194">count, compare, change one thing.</text>
+  <text class="m" x="740" y="212">Saturday in the day plan.</text>
+
+  <rect class="box-r" x="720" y="256" width="460" height="120" rx="3"/>
+  <text class="t r" x="740" y="280">The normal leaks</text>
+  <text class="m" x="740" y="302">closed or fake posting, no reply,</text>
+  <text class="m" x="740" y="320">rejection, a role you decline.</text>
+  <text class="m" x="740" y="338">Measure them. Do not take them</text>
+  <text class="m" x="740" y="356">as a verdict on you.</text>
+
+  <path class="flow-r dash" d="M582,121 H690 V290 H714" marker-end="url(#s36-ar)"/>
+  <path class="flow-b dash" d="M714,83 H640" marker-end="url(#s36-ab)"/>
+  <path class="flow dash" d="M714,191 H550" marker-end="url(#s36-ac)"/>
+
+  <circle class="bub" cx="30" cy="63" r="13"/><text class="bubt" x="30" y="67">1</text>
+  <circle class="bub" cx="30" cy="121" r="13"/><text class="bubt" x="30" y="125">2</text>
+  <circle class="bub" cx="100" cy="179" r="13"/><text class="bubt" x="100" y="183">3</text>
+  <circle class="bub" cx="1160" cy="22" r="13"/><text class="bubt" x="1160" y="26">4</text>
+  <circle class="bub" cx="1160" cy="244" r="13"/><text class="bubt" x="1160" y="248">5</text>
+</svg>
+<figcaption>Drawing 36-A &mdash; the job search as a funnel. <b>Cyan</b> = the path you control. <b>Brass</b> = evidence, the thing that moves you down.
+<b>Red</b> = leaks, which are expected at every stage.</figcaption>
+</figure>
+
+<div class="notes">
+  <div class="n"><b>1</b><div><b>Save narrowly.</b> A saved posting should map to one of the role families in the next section. If it does not, it is noise, however
+  attractive the company is.</div></div>
+  <div class="n"><b>2</b><div><b>Verify before you invest.</b> Stage 2 is where closed postings, duplicate reposts, scams and &ldquo;remote, but not from India&rdquo; roles
+  are removed. It costs ten minutes and saves hours.</div></div>
+  <div class="n"><b>3</b><div><b>Apply on credible evidence, not on completeness.</b> The plan sets Gate 3 for the first real applications once Project 1 is public.
+  Waiting to finish every topic first is the most common way to lose a month.</div></div>
+  <div class="n"><b>4</b><div><b>Evidence is the currency.</b> A link to a repo, a README with honest limitations and a demo transcript beats an adjective on a r&eacute;sum&eacute;.</div></div>
+  <div class="n"><b>5</b><div><b>Leaks are data.</b> If many applications get silence, the problem is usually at stage 2 or 3 (targeting or r&eacute;sum&eacute;). If screens
+  happen but interviews do not follow, it is the screen. Each stage has a different fix, and only a log tells you which.</div></div>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; two rules that cannot bend</span>
+  <p><b>Never misrepresent your experience.</b> Do not claim Python or AI depth you do not have, do not inflate a title or a duration, and do not list
+  a tool you cannot discuss for five minutes. <b>Never put confidential employer information anywhere:</b> not on a r&eacute;sum&eacute;, not in a repo, not in a
+  portfolio, not in an interview answer. Both rules protect you, because the first one is tested live and the second one has contractual consequences.
+  Sheet 23 (<a href="ai-python.html">Python from zero</a>) shows what a defensible, honest project looks like.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="taxonomy">Role taxonomy: what the titles usually mean</h2>
+<p class="sub">Titles are not standardised. Treat this table as a <b>typical, not guaranteed</b> map: read the responsibilities in the posting and
+trust those over the title.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Title family</th><th>What it usually means</th><th>Typical daily work</th><th>Python depth usually expected</th><th>Overlaps with</th></tr></thead>
+<tbody>
+<tr><td>Forward Deployed Engineer (FDE)</td><td>Engineer embedded with customers to make the product work in their environment.</td><td>Integrations, data plumbing, demos, debugging at a customer site or call, feeding gaps back to the product team.</td><td>Working; breadth over depth. Strong communication.</td><td>Solutions, Applied AI, Integration</td></tr>
+<tr><td>Applied AI Engineer</td><td>Builds features on top of existing models: retrieval, tool use, evaluation.</td><td>Prompting, RAG, evaluation sets, guardrails, shipping to users, measuring quality.</td><td>Solid; tests, typing, APIs.</td><td>GenAI, Agentic, FDE</td></tr>
+<tr><td>AI Integration Engineer</td><td>Connects AI capabilities to business systems and data.</td><td>APIs, webhooks, auth, queues, mapping data between systems, reliability.</td><td>Working; stronger on APIs and systems than on models.</td><td>FDE, Automation, Backend</td></tr>
+<tr><td>GenAI Engineer / Developer</td><td>A broad label for building with generative models.</td><td>Varies widely: chatbots, document pipelines, internal tools, sometimes fine-tuning.</td><td>Varies. Read the stack list.</td><td>Applied AI, Agentic</td></tr>
+<tr><td>Agentic AI Engineer</td><td>Builds systems where a model chooses tools and steps.</td><td>Agent loops, tool schemas, state, approval and audit, failure handling, evaluation of multi-step runs.</td><td>Solid; async and error handling matter.</td><td>Applied AI, GenAI</td></tr>
+<tr><td>AI Solutions Engineer / Architect</td><td>Pre- and post-sale technical design with customers.</td><td>Discovery calls, architecture proposals, proofs of concept, estimates, workshops.</td><td>Working; design and communication weigh more.</td><td>FDE, Integration</td></tr>
+<tr><td>AI Automation Engineer</td><td>Automates business processes using AI plus workflow tools.</td><td>Workflow platforms, scripts, document processing, approvals, monitoring.</td><td>Light to working; often low-code plus Python.</td><td>Integration, Solutions</td></tr>
+<tr><td>Python Backend Engineer (for AI)</td><td>Ordinary backend work at a company whose product uses AI.</td><td>APIs, databases, queues, deployment, observability; AI is one component.</td><td>Strong; this is a backend job first.</td><td>Applied AI, Integration</td></tr>
+</tbody></table></div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the same title, three different jobs</span>
+  <p>&ldquo;AI Engineer&rdquo; can mean model research, a prompt-and-glue job, or a backend job with an AI feature. The title tells you almost nothing.
+  The verbs in the responsibilities do: <i>train, fine-tune, evaluate</i> point one way; <i>integrate, deploy, support customers</i> point another; <i>design,
+  present, scope</i> a third. Sort each posting by its verbs before you decide whether it is yours.</p>
+</div>
+
+<h3 id="tax-fit">Where your background is a strength</h3>
+<p>You have roughly four years of enterprise integration. That is directly useful for <b>FDE, AI Integration, AI Solutions and AI Automation</b> roles, where
+the hard part is connecting a model to messy, permissioned systems. It is a smaller advantage for roles that are mostly model work, and you should
+not apply to those expecting it to carry you. Be honest about this in the log: mark each role with how much of the work is integration versus modelling.</p>
+
+<div class="res">
+  <div class="rh">Read &mdash; role taxonomy</div>
+  <a class="r" href="https://www.levels.fyi/" target="_blank" rel="noopener"><span>Levels.fyi<i>A public site where people report compensation and levels. Useful for vocabulary (what roles are called at different employers); check what is free today and treat the numbers as self-reported.</i></span><span class="dur">site</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=tm0MI9GcxCQ" target="_blank" rel="noopener"><span>Teal &mdash; How to read a job description like a recruiter<i>Orientation for splitting a posting into the parts that matter. Teal is a career-tools company; ignore any product pitch.</i></span><span class="dur">video</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="jd">Reading a job description</h2>
+<p class="sub">A posting is a wish list written by several people. Your job is to separate what is required from what is hoped for, and to notice what is
+missing.</p>
+
+<h3 id="jd-parts">Must-have, nice-to-have, years, stack, location</h3>
+<div class="tw"><table>
+<thead><tr><th>Part of the posting</th><th>What to extract</th><th>How to read it</th></tr></thead>
+<tbody>
+<tr><td>Title and team</td><td>Role family, seniority word, which team</td><td>Sort by verbs (see the taxonomy). &ldquo;Senior&rdquo; or &ldquo;Lead&rdquo; with 3 years asked is inconsistent; ask or skip.</td></tr>
+<tr><td>Responsibilities</td><td>What you would actually do in the first six months</td><td>This is the real job. Count how many lines you could do now, with learning, or not at all.</td></tr>
+<tr><td>Required / must-have</td><td>Skills phrased as &ldquo;you have&rdquo;, &ldquo;required&rdquo;, &ldquo;must&rdquo;</td><td>Treat as a filter, but a soft one: postings are often written for an ideal person. A gap in one or two items, stated honestly, is common to apply with.</td></tr>
+<tr><td>Nice-to-have / preferred</td><td>&ldquo;Plus&rdquo;, &ldquo;bonus&rdquo;, &ldquo;familiarity with&rdquo;</td><td>Do not let these decide whether you apply. Mention a nice-to-have only if you can evidence it.</td></tr>
+<tr><td>Years of experience</td><td>A number, and what it counts</td><td>Years of <i>what</i>? Four years of integration is not four years of Python, and you should say exactly that, not round it up.</td></tr>
+<tr><td>Stack</td><td>Languages, cloud, data stores, AI tooling</td><td>Mark each as: evidenced, learnable in weeks, or a real gap. The matching helper below does the first pass.</td></tr>
+<tr><td>Location and remote terms</td><td>City, hybrid days, &ldquo;remote&rdquo; qualifiers</td><td>&ldquo;Remote&rdquo; alone does not mean &ldquo;remote from India&rdquo;. See the eligibility drawing later in this sheet.</td></tr>
+<tr><td>Process and compensation</td><td>Number of rounds, take-home, any pay range</td><td>A stated range is advertised compensation. Record it as such (see the compensation section).</td></tr>
+</tbody></table></div>
+
+<h3 id="jd-flags">Red flags</h3>
+<ul>
+  <li><b>An unrealistic stack.</b> Twenty tools, three cloud providers, two languages and &ldquo;5+ years of GenAI&rdquo; for a role at a young company is either a copy-paste
+  wish list or a sign that nobody has scoped the job. Years of experience asked for a technology cannot exceed how long it has existed.</li>
+  <li><b>Vague scope.</b> No product, no team, no responsibilities beyond &ldquo;work on cutting-edge AI&rdquo;. Ask what the first project would be; a real team can answer.</li>
+  <li><b>Unpaid work.</b> A large, unpaid assignment that looks like the company&rsquo;s real backlog, or a &ldquo;trial period&rdquo; without pay. Use the take-home policy below.</li>
+  <li><b>Money going the wrong way.</b> Any fee for applying, training, a laptop, or a &ldquo;security deposit&rdquo; is a scam pattern, not a hiring practice.</li>
+  <li><b>Pressure and secrecy.</b> &ldquo;Respond in 24 hours or we move on&rdquo;, no named hiring manager, contact only through a messaging app.</li>
+  <li><b>A salary that is strikingly out of line</b> with similar postings you have researched, with no explanation. Too generous can be as suspicious as too low.</li>
+</ul>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 560" role="img" aria-label="A decision tree for a new posting. Five yes-or-no questions run down the left: is there a real company, role and location; is it on the company's own careers page; is it free of scam patterns; is India or your city explicitly allowed; can you evidence the must-haves honestly. A yes goes down to the next question and finally to apply. A no goes right to a red outcome: discard, park as unverified, stop and report, skip or ask in writing, or log the gap.">
+  <defs>
+    <marker id="s36-bc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s36-bb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s36-br" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <rect class="box-c" x="40" y="20" width="500" height="56" rx="3"/>
+  <text class="t" x="58" y="44">1 Real company, role and location named?</text>
+  <text class="mm" x="58" y="63">NO NAME OR NO CONTACT MEANS NOTHING TO VERIFY</text>
+  <rect class="box-c" x="40" y="106" width="500" height="56" rx="3"/>
+  <text class="t" x="58" y="130">2 On the company's own careers page?</text>
+  <text class="mm" x="58" y="149">OR FROM A NAMED RECRUITER YOU CAN CONFIRM</text>
+  <rect class="box-c" x="40" y="192" width="500" height="56" rx="3"/>
+  <text class="t" x="58" y="216">3 Free of scam patterns?</text>
+  <text class="mm" x="58" y="235">FEES, OFF-PLATFORM CHAT, EARLY ID OR BANK REQUESTS</text>
+  <rect class="box-c" x="40" y="278" width="500" height="56" rx="3"/>
+  <text class="t" x="58" y="302">4 India (or your city) explicitly allowed?</text>
+  <text class="mm" x="58" y="321">LOCATION, PAYROLL AND TIME-ZONE WORDING</text>
+  <rect class="box-c" x="40" y="364" width="500" height="56" rx="3"/>
+  <text class="t" x="58" y="388">5 Can you evidence the must-haves honestly?</text>
+  <text class="mm" x="58" y="407">LINKS, NOT ADJECTIVES</text>
+  <rect class="box-a" x="40" y="468" width="500" height="56" rx="3"/>
+  <text class="t b" x="58" y="492">Apply: tailored, evidence linked, logged</text>
+  <text class="mm" x="58" y="511">THEN SET A FOLLOW-UP DATE</text>
+
+  <path class="flow" d="M290,80 V100" marker-end="url(#s36-bc)"/>
+  <path class="flow" d="M290,166 V186" marker-end="url(#s36-bc)"/>
+  <path class="flow" d="M290,252 V272" marker-end="url(#s36-bc)"/>
+  <path class="flow" d="M290,338 V358" marker-end="url(#s36-bc)"/>
+  <path class="flow-b" d="M290,424 V462" marker-end="url(#s36-bb)"/>
+  <text class="mm c" x="300" y="94">YES</text>
+  <text class="mm c" x="300" y="180">YES</text>
+  <text class="mm c" x="300" y="266">YES</text>
+  <text class="mm c" x="300" y="352">YES</text>
+  <text class="mm b" x="300" y="448">YES</text>
+
+  <rect class="box-r" x="680" y="20" width="500" height="56" rx="3"/>
+  <text class="t r" x="698" y="44">Discard</text>
+  <text class="m" x="698" y="63">Nothing here can be checked.</text>
+  <rect class="box-r" x="680" y="106" width="500" height="56" rx="3"/>
+  <text class="t r" x="698" y="130">Park as unverified</text>
+  <text class="m" x="698" y="149">Do not apply until it can be confirmed.</text>
+  <rect class="box-r" x="680" y="192" width="500" height="56" rx="3"/>
+  <text class="t r" x="698" y="216">Stop. Do not reply. Report it.</text>
+  <text class="m" x="698" y="235">Share no document or number.</text>
+  <rect class="box-r" x="680" y="278" width="500" height="56" rx="3"/>
+  <text class="t r" x="698" y="302">Skip, or ask in writing</text>
+  <text class="m" x="698" y="321">One short question to the recruiter.</text>
+  <rect class="box-r" x="680" y="364" width="500" height="56" rx="3"/>
+  <text class="t r" x="698" y="388">Log the gap, then decide</text>
+  <text class="m" x="698" y="407">Apply only if you will state it plainly.</text>
+
+  <path class="flow-r dash" d="M544,48 H674" marker-end="url(#s36-br)"/>
+  <path class="flow-r dash" d="M544,134 H674" marker-end="url(#s36-br)"/>
+  <path class="flow-r dash" d="M544,220 H674" marker-end="url(#s36-br)"/>
+  <path class="flow-r dash" d="M544,306 H674" marker-end="url(#s36-br)"/>
+  <path class="flow-r dash" d="M544,392 H674" marker-end="url(#s36-br)"/>
+  <text class="mm r" x="580" y="40">NO</text>
+  <text class="mm r" x="580" y="126">NO</text>
+  <text class="mm r" x="580" y="212">NO</text>
+  <text class="mm r" x="580" y="298">NO</text>
+  <text class="mm r" x="580" y="384">NO</text>
+</svg>
+<figcaption>Drawing 36-B &mdash; posting triage. <b>Cyan</b> = a yes moves you down. <b>Brass</b> = apply. <b>Red</b> = every no has a named outcome so you
+never stall on a posting. Question 3 is written so that a yes is the safe answer.</figcaption>
+</figure>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p><b>&ldquo;You do not meet the years of Python they asked for. Why apply?&rdquo;</b> Because the posting&rsquo;s responsibilities match work I have done
+  (integration, APIs, retries, data mapping) and I can show it. I have X months of focused Python, here are the repos, and here is the gap I am closing and by when.
+  I am not claiming more than that. Follow-up they will ask: &ldquo;what would you struggle with in the first month?&rdquo; Name a real item and your plan for it.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Read and watch &mdash; reading a posting</div>
+  <a class="r" href="https://www.youtube.com/watch?v=fhZ2QNNd2k4" target="_blank" rel="noopener"><span>Teal &mdash; How to Read a Job Description (According to a Real Recruiter)<i>Splitting responsibilities from wish lists. A career-tools channel; the method is useful, ignore the pitch.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://consumer.ftc.gov/consumer-alerts/2025/09/how-spot-job-scam" target="_blank" rel="noopener"><span>FTC &mdash; How to spot a job scam<i>A US regulator&rsquo;s consumer page. The patterns (fees, early sensitive data, pressure) are general; the reporting channel is US-specific.</i></span><span class="dur">5 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="matching">Matching requirements to your evidence</h2>
+<p class="sub">Before you apply, fill a four-column table. The point is not a score. It is to find, in ten minutes, which three lines of your
+r&eacute;sum&eacute; carry this application and which requirement you must address openly.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Requirement (from the posting)</th><th>My evidence (a link I can open)</th><th>Gap</th><th>Plan</th></tr></thead>
+<tbody>
+<tr><td>Python backend APIs</td><td>Repo link, README, tests, commit history</td><td>Months of focused experience, not years</td><td>Say it plainly in the first paragraph; point to the repo</td></tr>
+<tr><td>REST, webhooks, retries</td><td>Personal webhook receiver repo with idempotency tests</td><td>None for this line</td><td>Lead with it</td></tr>
+<tr><td>RAG over documents</td><td>Project 1 README, evaluation results, limitations section</td><td>Smaller corpus than a production system</td><td>Describe the corpus size honestly</td></tr>
+<tr><td>Kubernetes</td><td>none</td><td>Real gap</td><td>Do not claim it. Mention what you have run (Docker Compose) and that you would learn the rest</td></tr>
+</tbody></table></div>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 420" role="img" aria-label="Three columns. On the left, four requirements from an invented posting. In the middle, the evidence link for each: a repo, a webhook receiver, a RAG project README, and for Kubernetes nothing. On the right, the gap and plan for each. The first three are mostly solid and cyan; the Kubernetes row is red with a dashed arrow because no evidence exists.">
+  <defs>
+    <marker id="s36-cc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s36-cb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s36-cr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+  <text class="mm" x="30" y="34">REQUIREMENT (INVENTED POSTING)</text>
+  <text class="mm" x="440" y="34">MY EVIDENCE</text>
+  <text class="mm" x="850" y="34">GAP AND PLAN</text>
+
+  <rect class="box" x="30" y="50" width="340" height="56" rx="3"/>
+  <text class="t" x="46" y="74">Python backend APIs</text><text class="mm" x="46" y="94">REQUIRED</text>
+  <rect class="box-c" x="440" y="50" width="340" height="56" rx="3"/>
+  <text class="t" x="456" y="74">log-analyzer repo + tests</text><text class="mm" x="456" y="94">LINK, COMMITS, README</text>
+  <rect class="box-a" x="850" y="50" width="320" height="56" rx="3"/>
+  <text class="t b" x="866" y="74">Gap: months, not years</text><text class="mm" x="866" y="94">SAY IT IN LINE ONE</text>
+
+  <rect class="box" x="30" y="126" width="340" height="56" rx="3"/>
+  <text class="t" x="46" y="150">REST, webhooks, retries</text><text class="mm" x="46" y="170">REQUIRED</text>
+  <rect class="box-c" x="440" y="126" width="340" height="56" rx="3"/>
+  <text class="t" x="456" y="150">webhook receiver repo</text><text class="mm" x="456" y="170">IDEMPOTENCY TESTS</text>
+  <rect class="box-a" x="850" y="126" width="320" height="56" rx="3"/>
+  <text class="t b" x="866" y="150">No gap</text><text class="mm" x="866" y="170">LEAD WITH THIS</text>
+
+  <rect class="box" x="30" y="202" width="340" height="56" rx="3"/>
+  <text class="t" x="46" y="226">RAG over documents</text><text class="mm" x="46" y="246">REQUIRED</text>
+  <rect class="box-c" x="440" y="202" width="340" height="56" rx="3"/>
+  <text class="t" x="456" y="226">Project 1 README + eval</text><text class="mm" x="456" y="246">LIMITATIONS SECTION</text>
+  <rect class="box-a" x="850" y="202" width="320" height="56" rx="3"/>
+  <text class="t b" x="866" y="226">Gap: corpus is small</text><text class="mm" x="866" y="246">STATE THE SIZE</text>
+
+  <rect class="box" x="30" y="278" width="340" height="56" rx="3"/>
+  <text class="t" x="46" y="302">Kubernetes</text><text class="mm" x="46" y="322">PREFERRED</text>
+  <rect class="box-r" x="440" y="278" width="340" height="56" rx="3"/>
+  <text class="t r" x="456" y="302">no evidence</text><text class="mm" x="456" y="322">DO NOT CLAIM IT</text>
+  <rect class="box-r" x="850" y="278" width="320" height="56" rx="3"/>
+  <text class="t r" x="866" y="302">Real gap</text><text class="mm" x="866" y="322">NAME IT, SAY WHAT YOU HAVE RUN</text>
+
+  <path class="flow" d="M374,78 H434" marker-end="url(#s36-cc)"/>
+  <path class="flow" d="M374,154 H434" marker-end="url(#s36-cc)"/>
+  <path class="flow" d="M374,230 H434" marker-end="url(#s36-cc)"/>
+  <path class="flow-r dash" d="M374,306 H434" marker-end="url(#s36-cr)"/>
+  <path class="flow-b" d="M784,78 H844" marker-end="url(#s36-cb)"/>
+  <path class="flow-b" d="M784,154 H844" marker-end="url(#s36-cb)"/>
+  <path class="flow-b" d="M784,230 H844" marker-end="url(#s36-cb)"/>
+  <path class="flow-r dash" d="M784,306 H844" marker-end="url(#s36-cr)"/>
+
+  <rect class="zone" x="30" y="356" width="1140" height="48" rx="3"/>
+  <text class="m" x="46" y="378">A requirement with no evidence link is a gap, whatever you believe about your skill.</text>
+  <text class="m" x="46" y="396">That includes the ones you &ldquo;have used a bit&rdquo;: a bit is not evidence.</text>
+</svg>
+<figcaption>Drawing 36-C &mdash; evidence to requirement. <b>Cyan</b> = a link you can open. <b>Brass</b> = what you say about the gap. <b>Red</b> = no evidence,
+so no claim.</figcaption>
+</figure>
+
+<h3 id="match-tool">A keyword-overlap helper (a crude aid, not a verdict)</h3>
+<p>Keep a plain evidence file: one line per skill, <code>term | link you can open</code>. The helper finds which terms from your vocabulary list appear in a
+posting and sorts them into <b>matched</b> (you listed a link), <b>unevidenced</b> (you listed the term but no link) and <b>gaps</b> (not in your file at all).
+It matches whole terms only, so <code>rag</code> does not fire inside <code>storage</code>.</p>
+
+<p><b>Be honest about what this does.</b> It counts words. It cannot tell &ldquo;required&rdquo; from &ldquo;nice to have&rdquo;, cannot judge how deep your
+evidence is, and misses any skill that is not in your vocabulary list. A high percentage is not permission to apply and a low one is not a reason to
+skip. Use it to find the gaps you would otherwise miss, then read the posting yourself.</p>
+
+<div class="code" data-lang="python">
+<header><b>keyword_match.py &mdash; you must be able to explain the whole-term regex</b></header>
+<pre><code>"""Crude keyword overlap between a job posting and your evidence file.
+
+A keyword overlap is an aid for noticing gaps. It is not a verdict on whether you
+should apply: it cannot read context, seniority or how deep your evidence goes.
+"""
+import re
+
+
+def find_terms(text, vocab):
+    """Return the sorted list of vocabulary terms that appear in text.
+
+    Matching is case-insensitive and whole-term: 'rag' must not match 'storage',
+    and 'c++' must be found next to punctuation. Terms may contain spaces
+    ('vector database'). Duplicates in vocab are reported once.
+    """
+    lowered = text.lower()
+    found = set()
+    for term in vocab:
+        t = term.strip().lower()
+        if not t:
+            continue
+        pattern = r"(?&lt;![a-z0-9+#])" + re.escape(t) + r"(?![a-z0-9+#])"
+        if re.search(pattern, lowered):
+            found.add(t)
+    return sorted(found)
+
+
+def parse_evidence(text):
+    """Parse 'term | link' lines into {term: link}.
+
+    Blank lines and lines starting with '#' are ignored. Terms are lower-cased
+    and stripped. A line with no '|' (or an empty link) keeps the term with the
+    link '' : a claim without evidence.
+    """
+    out = {}
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        term, _, link = line.partition("|")
+        term = term.strip().lower()
+        if term:
+            out[term] = link.strip()
+    return out
+
+
+def match_report(posting, evidence, vocab):
+    """Compare the posting's vocabulary terms with an evidence dict.
+
+    Returns a dict with:
+      terms       sorted terms found in the posting
+      matched     {term: link} for terms with a non-empty evidence link
+      unevidenced sorted terms you listed but with no link (do not count as matched)
+      gaps        sorted terms in the posting that are not in your evidence at all
+      coverage    len(matched) / len(terms), rounded to 2 places; 0.0 if no terms
+    """
+    terms = find_terms(posting, vocab)
+    matched, unevidenced, gaps = {}, [], []
+    for t in terms:
+        if t in evidence and evidence[t]:
+            matched[t] = evidence[t]
+        elif t in evidence:
+            unevidenced.append(t)
+        else:
+            gaps.append(t)
+    coverage = round(len(matched) / len(terms), 2) if terms else 0.0
+    return {"terms": terms, "matched": matched, "unevidenced": sorted(unevidenced),
+            "gaps": sorted(gaps), "coverage": coverage}
+
+
+# ---- demo: an INVENTED posting (not a real vacancy) and an INVENTED evidence file ----
+VOCAB = ["python", "fastapi", "rag", "vector database", "evaluation", "docker",
+         "kubernetes", "aws", "rest", "sql", "llm", "ci/cd", "terraform", "mcp"]
+
+POSTING = """
+Applied AI Engineer (invented posting, not a real vacancy)
+You will build RAG services in Python and FastAPI, store embeddings in a vector database,
+write evaluation sets for LLM answers, and ship with Docker and CI/CD.
+Kubernetes and Terraform are a plus. REST API experience required.
+"""
+
+EVIDENCE = """
+# term | link you can open (placeholders here)
+python  | https://github.com/your-name/log-analyzer
+fastapi | https://github.com/your-name/doc-qa
+rest    | https://github.com/your-name/webhook-receiver
+docker  | https://github.com/your-name/doc-qa
+rag     | https://github.com/your-name/doc-qa
+evaluation
+kubernetes
+"""
+
+report = match_report(POSTING, parse_evidence(EVIDENCE), VOCAB)
+print("terms in posting :", report["terms"])
+print("matched          :", sorted(report["matched"]))
+print("unevidenced      :", report["unevidenced"])
+print("gaps             :", report["gaps"])
+print("coverage         :", report["coverage"], "(a crude aid, not a verdict)")
+</code></pre>
+</div>
+<div class="code" data-lang="text">
+<header><b>what that printed (real output of the run)</b></header>
+<pre><code>terms in posting : ['ci/cd', 'docker', 'evaluation', 'fastapi', 'kubernetes', 'llm', 'python', 'rag', 'rest', 'terraform', 'vector database']
+matched          : ['docker', 'fastapi', 'python', 'rag', 'rest']
+unevidenced      : ['evaluation', 'kubernetes']
+gaps             : ['ci/cd', 'llm', 'terraform', 'vector database']
+coverage         : 0.45 (a crude aid, not a verdict)</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">You must be able to explain this line</span>
+  <p><code>(?&lt;![a-z0-9+#])term(?![a-z0-9+#])</code> is a lookbehind and a lookahead. They assert that the characters either side of the term are not letters,
+  digits, <code>+</code> or <code>#</code>, without consuming them. That is why <code>c++</code> is found in &ldquo;some C++, some CI/CD&rdquo; but <code>c++17</code> and
+  <code>cpython</code> do not match <code>c++</code> or <code>python</code>. A plain <code>\b</code> would fail on <code>c++</code> because <code>+</code> is not a word character.</p>
+</div>
+
+<details><summary>Predict: the posting says &ldquo;experience with Kubernetes preferred&rdquo; and your evidence file has no <code>kubernetes</code> line. Where does it appear, and does it change the coverage?</summary>
+<div class="ans"><p>It appears under <b>gaps</b>, and it lowers coverage like any other term, because the helper does not know &ldquo;preferred&rdquo; from &ldquo;required&rdquo;. That is the
+tool&rsquo;s main weakness: you must weigh the gaps yourself. One preferred gap and one required gap are very different, and a percentage hides that.</p></div></details>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the link-less line</span>
+  <p>Adding <code>kubernetes</code> to your evidence file with no link feels harmless. The helper puts it under <b>unevidenced</b> on purpose, as a reminder that it is a claim,
+  not evidence. If you cannot paste a link that proves it, either build the proof or leave the line off the r&eacute;sum&eacute;. Never let the helper&rsquo;s output
+  nudge you into adding a skill you have not used.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Official reading &mdash; the tools used here</div>
+  <a class="r" href="https://docs.python.org/3/howto/regex.html" target="_blank" rel="noopener"><span>Python HOWTO &mdash; Regular Expression HOWTO<i>Read the sections on lookahead and lookbehind assertions, which the matcher relies on.</i></span><span class="dur">30 min</span></a>
+  <a class="r" href="https://docs.python.org/3/library/re.html" target="_blank" rel="noopener"><span>re &mdash; Regular expression operations<i>Reference for re.escape and re.search as used above.</i></span><span class="dur">reference</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="log">The posting log</h2>
+<p class="sub">One CSV file, ten columns, on a personal device. It is the only way to answer &ldquo;what is actually happening?&rdquo; with a number instead of a feeling.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Column</th><th>Holds</th><th>Why it exists</th></tr></thead>
+<tbody>
+<tr><td><code>date_added</code></td><td>ISO date you saved it</td><td>Age of a posting is a freshness signal.</td></tr>
+<tr><td><code>company</code>, <code>role</code></td><td>Names as written</td><td>You will forget which was which within a week.</td></tr>
+<tr><td><code>source</code></td><td>careers page, board, referral, community</td><td>Tells you which channel produces replies.</td></tr>
+<tr><td><code>url</code></td><td>Link to the posting</td><td>Postings disappear; the link plus date proves what it said. Paste a note if it changes.</td></tr>
+<tr><td><code>status</code></td><td>One of a fixed list</td><td>A closed list keeps the summary honest. Free text breaks counting.</td></tr>
+<tr><td><code>fit</code></td><td>Your 1&ndash;5 rating from the ranking section</td><td>So you can later check if high-fit roles replied more.</td></tr>
+<tr><td><code>applied_on</code>, <code>follow_up_on</code></td><td>ISO dates</td><td>Drives the follow-up list.</td></tr>
+<tr><td><code>notes</code></td><td>Short, non-confidential</td><td>Recruiter name, what was said, what you promised.</td></tr>
+</tbody></table></div>
+
+<p>The script uses the standard <code>csv</code> module, which handles commas and quotes inside a field for you. It refuses an unknown column or a status outside the
+list, because a typo like <code>aplied</code> would otherwise silently drop a row out of every count.</p>
+
+<div class="code" data-lang="python">
+<header><b>posting_log.py</b></header>
+<pre><code>"""A plain CSV log of the postings you track, with a summary and follow-up dates."""
+import csv
+import os
+from datetime import date, timedelta
+
+COLUMNS = ["date_added", "company", "role", "source", "url", "status",
+           "fit", "applied_on", "follow_up_on", "notes"]
+STATUSES = ["saved", "applied", "screen", "interview", "take-home",
+            "offer", "rejected", "withdrawn", "ghosted"]
+RESPONDED = {"screen", "interview", "take-home", "offer", "rejected"}
+
+
+def add_row(path, row):
+    """Append one posting to the CSV at path, writing the header if the file is new.
+
+    Missing columns are written as ''. An unknown column name or a status that is
+    not in STATUSES raises ValueError (and nothing is written). A missing or empty
+    status is stored as 'saved'.
+    """
+    unknown = set(row) - set(COLUMNS)
+    if unknown:
+        raise ValueError("unknown columns: " + ", ".join(sorted(unknown)))
+    status = row.get("status") or "saved"
+    if status not in STATUSES:
+        raise ValueError("bad status: %r" % status)
+    full = {c: row.get(c, "") for c in COLUMNS}
+    full["status"] = status
+    new_file = not os.path.exists(path) or os.path.getsize(path) == 0
+    with open(path, "a", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=COLUMNS)
+        if new_file:
+            w.writeheader()
+        w.writerow(full)
+
+
+def read_rows(path):
+    """Return the rows of the CSV as a list of dicts; [] if the file does not exist."""
+    if not os.path.exists(path):
+        return []
+    with open(path, newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+
+def next_follow_up(applied_on, days=7):
+    """Return the follow-up date: applied_on plus days, moved to Monday if it lands on a weekend."""
+    d = applied_on + timedelta(days=days)
+    while d.weekday() &gt;= 5:
+        d += timedelta(days=1)
+    return d
+
+
+def summarise(rows):
+    """Count rows per status.
+
+    Returns a dict with every status in STATUSES order (zero when absent) plus
+    'total'. A status outside STATUSES is counted under 'other' (only present
+    when there is at least one).
+    """
+    counts = {s: 0 for s in STATUSES}
+    other = 0
+    for r in rows:
+        s = r.get("status", "")
+        if s in counts:
+            counts[s] += 1
+        else:
+            other += 1
+    if other:
+        counts["other"] = other
+    counts["total"] = len(rows)
+    return counts
+
+
+def due_follow_ups(rows, today):
+    """Return [(company, role)] for rows still 'applied' or 'screen' whose follow_up_on is today or earlier.
+
+    Rows with an empty or unparseable follow_up_on are skipped. Sorted by
+    follow_up_on, then company.
+    """
+    due = []
+    for r in rows:
+        if r.get("status") not in ("applied", "screen"):
+            continue
+        try:
+            when = date.fromisoformat(r.get("follow_up_on", ""))
+        except ValueError:
+            continue
+        if when &lt;= today:
+            due.append((when, r.get("company", ""), r.get("role", "")))
+    due.sort()
+    return [(c, ro) for _, c, ro in due]
+
+
+def response_rate(rows):
+    """Share of applied postings that got any human response.
+
+    Only rows with a non-empty applied_on count. Responded statuses: screen,
+    interview, take-home, offer, rejected. Returns a float rounded to 2 places,
+    or None when nothing has been applied to.
+    """
+    applied = [r for r in rows if r.get("applied_on")]
+    if not applied:
+        return None
+    got = sum(1 for r in applied if r.get("status") in RESPONDED)
+    return round(got / len(applied), 2)
+
+
+# ---- demo: invented companies, fixed dates so the output is repeatable ----
+if __name__ == "__main__":
+    import tempfile
+    from pathlib import Path
+
+    path = Path(tempfile.mkdtemp()) / "jobs.csv"       # a throwaway file for this demo
+    applied = date(2027, 2, 1)                          # a Monday
+    add_row(path, {"date_added": "2027-01-30", "company": "ExampleCo", "role": "AI Integration Engineer",
+                   "source": "careers page", "fit": "4", "status": "applied",
+                   "applied_on": applied.isoformat(), "follow_up_on": next_follow_up(applied).isoformat()})
+    add_row(path, {"date_added": "2027-01-31", "company": "SampleLtd", "role": "GenAI Developer",
+                   "source": "referral", "fit": "3", "status": "screen",
+                   "applied_on": "2027-01-25", "follow_up_on": "2027-02-02"})
+    add_row(path, {"date_added": "2027-02-01", "company": "Demo, Inc", "role": "FDE",
+                   "source": "job board", "fit": "2", "status": "saved",
+                   "notes": 'says "remote"; check India eligibility'})
+    try:
+        add_row(path, {"company": "Typo Corp", "status": "aplied"})
+    except ValueError as err:
+        print("rejected:", err)
+
+    rows = read_rows(path)
+    print({k: v for k, v in summarise(rows).items() if v})
+    print("follow up on:", due_follow_ups(rows, date(2027, 2, 8)))
+    print("response rate:", response_rate(rows))
+    print("Fri 5 Mar + 1 day -&gt;", next_follow_up(date(2027, 3, 5), days=1), "(a Monday)")
+    print(path.read_text(encoding="utf-8").splitlines()[0])
+</code></pre>
+</div>
+<div class="code" data-lang="text">
+<header><b>what that printed (real output of the run)</b></header>
+<pre><code>rejected: bad status: 'aplied'
+{'saved': 1, 'applied': 1, 'screen': 1, 'total': 3}
+follow up on: [('SampleLtd', 'GenAI Developer'), ('ExampleCo', 'AI Integration Engineer')]
+response rate: 0.5
+Fri 5 Mar + 1 day -&gt; 2027-03-08 (a Monday)
+date_added,company,role,source,url,status,fit,applied_on,follow_up_on,notes</code></pre>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">Where this file lives</span>
+  <p>On your <b>personal</b> laptop, in a private folder (not a public repo, and not on an employer device or an employer-managed cloud drive). It contains your job search,
+  which is nobody&rsquo;s business but yours. <code>python-lab/week36/</code> has the same three modules as stubs with tests, if you want to rebuild them test-first
+  as practice; the code on this page is the working version. Run lab tests from <code>python-lab</code> with <code>pytest week36</code>.
+  See <a href="setup.html">setup</a> for the two-machine rule.</p>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; a log that flatters you</span>
+  <p>If you only log applications that went well, the response rate is meaningless. Log a posting when you <i>save</i> it, give silence a status (<code>ghosted</code>) after
+  a set time, and never delete a rejection. The number that matters is the response rate by <b>source</b> and by <b>fit</b>; it only exists if the denominators are honest.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Official reading &mdash; the tools used here</div>
+  <a class="r" href="https://docs.python.org/3/library/csv.html" target="_blank" rel="noopener"><span>csv &mdash; CSV File Reading and Writing<i>DictWriter, DictReader and why you must open the file with newline=&quot;&quot;.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://docs.python.org/3/library/datetime.html" target="_blank" rel="noopener"><span>datetime<i>date, timedelta, weekday(): the follow-up date logic.</i></span><span class="dur">reference</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=gtsgGSQu5Yc" target="_blank" rel="noopener"><span>nikitisza &mdash; Unemployed in Tech in 2026: My Job Application Tracking Method<i>One person&rsquo;s tracker. Compare its columns with yours; the template link is theirs, not required.</i></span><span class="dur">video</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="ranking">Ranking roles: fit, compensation signal, readiness</h2>
+<p class="sub">You cannot apply to everything and you should not apply to whatever is newest. A transparent weighted score makes you write down what you
+care about, then lets the arithmetic argue with your mood.</p>
+
+<h3 id="rank-rubric">The rubric</h3>
+<div class="tw"><table>
+<thead><tr><th>Criterion</th><th>Rate 1 to 5 by asking</th><th>Example weight (you set yours)</th></tr></thead>
+<tbody>
+<tr><td><code>fit</code></td><td>How much of the responsibilities can you evidence today? 1 = almost none, 5 = most.</td><td>3</td></tr>
+<tr><td><code>pay</code></td><td>Compensation signal against the range <i>you</i> researched. 1 = below your floor or unknown, 5 = at or above your target. Advertised ranges only; unknown is a 2 or 3, not a 5.</td><td>1</td></tr>
+<tr><td><code>ready</code></td><td>Interview readiness: could you pass their likely process now? 1 = no, 5 = yes.</td><td>2</td></tr>
+<tr><td><code>growth</code></td><td>Will you learn the thing you want: Python depth, production AI, strong colleagues?</td><td>2</td></tr>
+<tr><td><code>access</code></td><td>Is it eligible and practical: location, time zone, notice-period timing?</td><td>2</td></tr>
+</tbody></table></div>
+
+<p>The weights are <b>yours</b>. If you need income fast, raise <code>pay</code> and <code>access</code>. If you are optimising for the next three years,
+raise <code>growth</code>. The script normalises them, so any positive numbers work. The helper below also reports a <b>close call</b> when the top two
+scores are within a margin, because a 0.1 difference is noise, not an instruction.</p>
+
+<div class="code" data-lang="python">
+<header><b>role_scorer.py</b></header>
+<pre><code>"""A transparent weighted scorer: you set the weights, you rate each criterion 1 to 5."""
+
+
+def normalise_weights(weights):
+    """Return the weights scaled to sum to 1.
+
+    Raises ValueError if any weight is negative or the total is zero.
+    """
+    if any(w &lt; 0 for w in weights.values()):
+        raise ValueError("weights must not be negative")
+    total = sum(weights.values())
+    if total &lt;= 0:
+        raise ValueError("weights must not all be zero")
+    return {k: w / total for k, w in weights.items()}
+
+
+def score(ratings, weights):
+    """Weighted average of ratings, rounded to 2 places.
+
+    ratings and weights are dicts keyed by criterion. Every criterion that has a
+    weight must have a rating between 1 and 5 inclusive; otherwise ValueError.
+    Ratings for criteria with no weight are ignored.
+    """
+    w = normalise_weights(weights)
+    total = 0.0
+    for k, share in w.items():
+        if k not in ratings:
+            raise ValueError("missing rating for " + k)
+        r = ratings[k]
+        if not 1 &lt;= r &lt;= 5:
+            raise ValueError("rating for %s must be 1 to 5, got %r" % (k, r))
+        total += r * share
+    return round(total, 2)
+
+
+def rank(roles, weights):
+    """Return [(name, score)] sorted by score descending, ties broken by name A to Z."""
+    scored = [(name, score(r, weights)) for name, r in roles.items()]
+    return sorted(scored, key=lambda p: (-p[1], p[0]))
+
+
+def close_call(ranked, margin=0.25):
+    """True when the top two scores differ by less than margin (a tie is a close call).
+
+    Needs at least two entries; with fewer, return False.
+    """
+    if len(ranked) &lt; 2:
+        return False
+    return (ranked[0][1] - ranked[1][1]) &lt; margin
+
+
+# ---- demo: invented roles, ratings are the learner's own judgement ----
+if __name__ == "__main__":
+    weights = {"fit": 3, "pay": 1, "ready": 2, "growth": 2, "access": 2}    # you set these
+    roles = {
+        "ExampleCo / AI Integration Engineer": {"fit": 5, "pay": 3, "ready": 4, "growth": 3, "access": 5},
+        "SampleLtd / GenAI Developer":          {"fit": 3, "pay": 4, "ready": 3, "growth": 4, "access": 5},
+        "Demo Inc / Forward Deployed Engineer": {"fit": 4, "pay": 2, "ready": 2, "growth": 5, "access": 2},
+    }
+    ranked = rank(roles, weights)
+    for name, s in ranked:
+        print(f"{s:4.2f}  {name}")
+    print("close call:", close_call(ranked))
+
+    # change one weight and see whether the order is stable
+    print("--- pay matters more now")
+    for name, s in rank(roles, {**weights, "pay": 4}):
+        print(f"{s:4.2f}  {name}")
+
+    # the same scorer works for offers: different criteria, ratings from WRITTEN facts
+    print("--- offers")
+    offer_weights = {"role": 3, "stack_learning": 2, "manager": 2, "stability": 2, "compensation": 2, "terms": 1}
+    offers = {
+        "Offer A": {"role": 4, "stack_learning": 4, "manager": 4, "stability": 3, "compensation": 3, "terms": 4},
+        "Offer B": {"role": 3, "stack_learning": 3, "manager": 3, "stability": 4, "compensation": 5, "terms": 3},
+    }
+    ranked_offers = rank(offers, offer_weights)
+    print(ranked_offers, "close call:", close_call(ranked_offers))
+</code></pre>
+</div>
+<div class="code" data-lang="text">
+<header><b>what that printed (real output of the run)</b></header>
+<pre><code>4.20  ExampleCo / AI Integration Engineer
+3.70  SampleLtd / GenAI Developer
+3.20  Demo Inc / Forward Deployed Engineer
+close call: False
+--- pay matters more now
+3.92  ExampleCo / AI Integration Engineer
+3.77  SampleLtd / GenAI Developer
+2.92  Demo Inc / Forward Deployed Engineer
+--- offers
+[('Offer A', 3.67), ('Offer B', 3.5)] close call: True</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; precision you do not have</span>
+  <p>Ratings are your estimates, so two decimals of output do not make them accurate. Use the score to order a shortlist and to notice when your gut and your
+  weights disagree. If the order flips when you change a weight by one, the roles are effectively tied. Pick on a factor the score does not capture, such as the manager you spoke to.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Read &mdash; ranking and fit</div>
+  <a class="r" href="https://career.cornell.edu/channels/negotiate-an-offer/" target="_blank" rel="noopener"><span>Cornell Career Services &mdash; negotiate an offer<i>A university guide that includes weighing offers on more than pay. The same criteria idea applies to ranking postings.</i></span><span class="dur">15 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="verify">Verifying a posting is open, real and legitimate</h2>
+<p class="sub">Ten minutes before you apply: is this a role someone is really hiring for, from a company that exists, contacting you the way a company would?</p>
+
+<h3 id="verify-open">Is it still open?</h3>
+<ul>
+  <li><b>Find it on the company&rsquo;s own careers page</b>, reached by typing the company&rsquo;s domain yourself, not by clicking the link in a message. If it is there, that is the best signal. If the company has a careers page and the role is not on it, treat the posting as stale or unverified.</li>
+  <li><b>Read the age.</b> A board usually shows when a posting was published or refreshed. Reposting does not reset the question of whether anyone is still reading applications.</li>
+  <li><b>Look for recent activity</b> from the company: product updates, engineering posts, people joining. A company that has gone quiet for a long time may have frozen hiring.</li>
+  <li><b>Search the exact title plus the company</b> to find duplicates. The same role posted by five agencies can mean one real role or none.</li>
+</ul>
+
+<h3 id="verify-real">Is the recruiter and the company real?</h3>
+<ul>
+  <li><b>Check the identity.</b> A recruiter profile with a real history, connections that make sense and an email on the company&rsquo;s own domain is a good sign. A free webmail address for a company recruiter, a new empty profile, or a mismatch between name and message is a reason to slow down.</li>
+  <li><b>Check the company.</b> A website with a real product, a history, named people, and a registered business. For India-based entities, official company registries publish registration details; use the official government source and treat anything shown only on the recruiter&rsquo;s own pages with caution.</li>
+  <li><b>Check independent signals.</b> Search the company name with &ldquo;scam&rdquo; or &ldquo;complaint&rdquo;. Read employee reviews critically (see below).</li>
+  <li><b>Ask for a call or a video meeting</b> on a named platform before sharing anything beyond your r&eacute;sum&eacute;. Real recruiters expect this.</li>
+</ul>
+
+<h3 id="verify-scam">Scam patterns</h3>
+<div class="tw"><table>
+<thead><tr><th>Pattern</th><th>What it looks like</th><th>What to do</th></tr></thead>
+<tbody>
+<tr><td>You pay</td><td>Registration, &ldquo;training&rdquo;, laptop, deposit, or a courier fee.</td><td>Stop. A real employer does not charge you to be hired.</td></tr>
+<tr><td>Off-platform chat</td><td>An immediate move to a messaging app, interviews entirely by text.</td><td>Ask for a video call and an email from the company domain. Refusal is your answer.</td></tr>
+<tr><td>Sensitive data too early</td><td>Government ID, bank account or card details &ldquo;for onboarding&rdquo; before any interview or written offer.</td><td>Share nothing. Offers are verified in writing before onboarding paperwork, and even then only what your employer legitimately needs.</td></tr>
+<tr><td>Too good, too fast</td><td>An offer with no real interview, pay far above normal, urgency.</td><td>Treat as a scam until verified.</td></tr>
+<tr><td>Money through you</td><td>You are asked to receive money and forward it, or buy gift cards.</td><td>Stop and report; this is a well-known fraud.</td></tr>
+<tr><td>Impersonation</td><td>A message &ldquo;from a well-known company&rdquo; sent from an unrelated address.</td><td>Open the company&rsquo;s site yourself and check the role there.</td></tr>
+</tbody></table></div>
+
+<div class="panel panel--real">
+  <span class="ph">If you were targeted</span>
+  <p>Stop replying, keep the messages, and do not send money. In India, the national cybercrime reporting portal and the 1930 helpline are the official channels
+  for financial cybercrime. Check the portal directly for the current process before relying on this description. Report the posting to the platform where you saw it. If you shared bank details, contact your bank
+  immediately.</p>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the review-site trap</span>
+  <p>Employee review sites help you spot patterns, but they are anonymous, can be gamed in both directions, and cover few small companies. One bad review proves nothing;
+  ten that describe the same specific behaviour is a signal. Never treat a review site as verification that a company exists or that a posting is real.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Official and reputable &mdash; scams</div>
+  <a class="r" href="https://consumer.ftc.gov/articles/job-scams" target="_blank" rel="noopener"><span>FTC &mdash; Job Scams<i>A US regulator&rsquo;s overview of how job scams work and how to protect yourself. Patterns are general; reporting steps are US-specific.</i></span><span class="dur">10 min</span></a>
+  <a class="r" href="https://cybercrime.gov.in/" target="_blank" rel="noopener"><span>Indian Cyber Crime Reporting Portal<i>The official Government of India portal for reporting cybercrime. Check the site for current procedures and the helpline.</i></span><span class="dur">portal</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=z_qGuaZ2Vas" target="_blank" rel="noopener"><span>WCNC &mdash; New scam targets desperate job seekers with &ldquo;dream&rdquo; offers: how to spot the red flags<i>A short local-news explainer in a US context; the red flags carry over.</i></span><span class="dur">video</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="sourcing">Sourcing channels</h2>
+<p class="sub">Different channels produce different kinds of leads. Track your own replies per source in the log rather than trusting anyone&rsquo;s advice about which is best.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Channel</th><th>Generally useful for</th><th>Watch out for</th></tr></thead>
+<tbody>
+<tr><td>Company career pages</td><td>The most reliable evidence a role is open; often not cross-posted.</td><td>You must pick companies first; some pages lag the real status.</td></tr>
+<tr><td>Large professional networks (LinkedIn) and Indian job boards (Naukri, Cutshort and similar)</td><td>Breadth, alerts, recruiter discovery, profile visibility.</td><td>Reposts, recruiters of unequal quality, scams. Check each platform&rsquo;s current features, privacy settings and any paid tiers yourself.</td></tr>
+<tr><td>Startup boards (Wellfound and similar)</td><td>Small companies and early-stage roles, often with direct founder contact.</td><td>Startup risk (funding, stability); verify the company carefully.</td></tr>
+<tr><td>Remote job boards (Himalayas and similar)</td><td>Discovering roles that are remote; filters by region on some boards.</td><td>&ldquo;Remote&rdquo; often has hidden country limits; apply the eligibility checks below.</td></tr>
+<tr><td>Referrals</td><td>Skipping the pile; context about the team.</td><td>A referral gets you read, not hired. Ask only when you can show evidence.</td></tr>
+<tr><td>Communities and open source</td><td>Meetups, project communities, issue threads: people see how you work.</td><td>Slow and uneven. Contribute because you want to, not as a transaction.</td></tr>
+</tbody></table></div>
+
+<h3 id="src-referral">Asking for a referral respectfully</h3>
+<ul>
+  <li>Ask people who have <b>seen your work or spoken to you</b>, not strangers who have never heard of you. Cold requests to strangers have a low yield and cost goodwill.</li>
+  <li>Make it <b>easy to say no</b>. &ldquo;If you think I am a fit&rdquo;, never &ldquo;you must&rdquo;.</li>
+  <li>Give them <b>what they need in one message</b>: the posting link, one paragraph on why you fit with a repo link, and your r&eacute;sum&eacute;. Do not make them dig.</li>
+  <li><b>Thank them</b> whatever happens, and tell them the outcome.</li>
+</ul>
+
+<h3 id="src-cold">Cold-outreach template</h3>
+<p>This is a template for a short, specific, respectful message to someone at a company you have verified. Replace every bracket. It is an invented example.</p>
+<div class="code" data-lang="text">
+<header><b>cold message, under 100 words</b></header>
+<pre><code>Subject: [Role family] question: [Company]
+
+Hello [Name],
+
+I saw [Company] is hiring for [role title]. I am an integration engineer moving
+into applied AI. My closest evidence is [repo or project link]: [one sentence on
+what it does and the one honest limit].
+
+Would you be open to a 15-minute call about what the first six months in this
+team looks like? I have attached my CV. If a referral is not appropriate for
+your team, no problem at all.
+
+Thank you for reading,
+[Your name] [profile link]</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; mass messaging</span>
+  <p>Fifty copied messages teach you nothing and burn goodwill. Three personal messages a week to people at companies you have verified, each referencing something specific,
+  will give you more information than fifty identical ones. Never message from an employer account or during employer time.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch and read &mdash; referrals and sourcing</div>
+  <a class="r" href="https://www.youtube.com/watch?v=ahqFp9Ly9zs" target="_blank" rel="noopener"><span>Concept &amp;&amp; Coding &mdash; LinkedIn cold message for an SDE referral: right and wrong way<i>Software-engineer-specific do&rsquo;s and don&rsquo;ts for a referral message. Written for the India market.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://wellfound.com/" target="_blank" rel="noopener"><span>Wellfound<i>A startup-focused job platform. Check its current features, terms and any fees before relying on it.</i></span><span class="dur">site</span></a>
+  <a class="r" href="https://himalayas.app/" target="_blank" rel="noopener"><span>Himalayas<i>A remote-job board. Check which regions each listing accepts, and the platform&rsquo;s current terms.</i></span><span class="dur">site</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="resume">R&eacute;sum&eacute; and LinkedIn for this transition</h2>
+<p class="sub">Lead with evidence, state the gap in your own words, and present enterprise integration as the strength it is without borrowing credit for depth you
+have not built.</p>
+
+<h3 id="res-principles">Principles</h3>
+<ul>
+  <li><b>Evidence first.</b> Put &ldquo;Selected projects&rdquo; with links near the top, above older employment. A reader decides in seconds; a repo link and a one-line result beat a long skills list.</li>
+  <li><b>Quantify honestly.</b> Use numbers you can defend: tests, a corpus size, response time you measured, items processed in your demo. If you cannot reproduce a number, do not print it. Never quote employer metrics.</li>
+  <li><b>One page or two?</b> With under five years, aim for one page. Two is acceptable if the second page earns its place with projects; padding is worse than brevity. Keep the top third strongest.</li>
+  <li><b>ATS-friendly formatting.</b> Applicant tracking systems often parse text: use a single column, standard headings (Experience, Projects, Skills, Education), real text rather than images, a common font, and plain bullet characters. Avoid tables, text boxes and icons for essential content. Submit PDF or the format the posting asks for.</li>
+  <li><b>Tailor the top, not the whole thing.</b> Change the two-line summary and the order of your projects per role family. Do not invent keywords to match the posting.</li>
+  <li><b>No confidential detail.</b> Describe the type of integration (&ldquo;ticketing system to storage, with retries and audit&rdquo;), never client names, internal systems, volumes or code.</li>
+</ul>
+
+<h3 id="res-ownership">The honest-ownership line per project</h3>
+<p>Under every project, add one line stating what is yours, what an AI tool or a tutorial produced, and what you can explain. It is rare and it works,
+because it pre-empts the question an interviewer will ask anyway.</p>
+
+<div class="code" data-lang="text">
+<header><b>project entry with the ownership line (invented example)</b></header>
+<pre><code>Document Q&amp;A service (Python, FastAPI, pgvector)   github.com/your-name/doc-qa
+- Answers questions over 40 public documents with citations; refuses when sources do not support an answer.
+- 28 tests, no network needed; evaluation set of 25 questions with results in docs/eval.md.
+- Ownership: I wrote the retrieval and refusal logic and the tests; an AI assistant drafted the
+  Dockerfile and I reviewed it. I can explain every module. Limits: small corpus, no auth.</code></pre>
+</div>
+
+<h3 id="res-enterprise">Presenting enterprise experience as a strength</h3>
+<div class="vs">
+  <div><div class="vh">Overclaiming</div><div class="vb"><p>&ldquo;Built production AI agents in Python.&rdquo; You did not, and the first technical question exposes it. It also makes your genuine experience look inflated.</p></div></div>
+  <div><div class="vh">Accurate and strong</div><div class="vb"><p>&ldquo;Four years connecting enterprise systems: APIs, auth, retries, data mapping, audit trails. Now applying that to AI systems, with two public Python projects that show it.&rdquo;</p></div></div>
+</div>
+<div class="tw"><table>
+<thead><tr><th>Dimension</th><th>Overclaiming</th><th>Accurate and strong</th></tr></thead>
+<tbody>
+<tr><td>Interview risk</td><td>Exposed at the first depth question</td><td>Questions are ones you have rehearsed</td></tr>
+<tr><td>Trust</td><td>Everything else is doubted too</td><td>Honest gaps make the rest credible</td></tr>
+<tr><td>Consequence</td><td>Possible offer withdrawal or dismissal later</td><td>None</td></tr>
+</tbody></table></div>
+<p>Pick the accurate one every time. Your integration background is the reason a hiring manager may prefer you to a candidate with more model knowledge and no experience of messy systems.</p>
+
+<h3 id="res-linkedin">LinkedIn</h3>
+<p>Match the r&eacute;sum&eacute;. Use a headline that states the direction and the evidence (for example &ldquo;Integration engineer moving into applied AI | Python projects on GitHub&rdquo;), a clear photo if you wish, the same
+project links, and the location and work-eligibility settings you actually mean. Review your visibility and privacy settings on the platform yourself. Do not list skills you cannot discuss; endorsements are not evidence.</p>
+
+<div class="res">
+  <div class="rh">Watch &mdash; r&eacute;sum&eacute;</div>
+  <a class="r" href="https://www.youtube.com/watch?v=kArOk8tudoM" target="_blank" rel="noopener"><span>Jean Lee &mdash; Resume to Land Software Engineer Interviews<i>Orientation for a software-engineer r&eacute;sum&eacute;. Judge its advice against the principles above; it is one author&rsquo;s view.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=012UjJeZY2k" target="_blank" rel="noopener"><span>Greg Langstaff &mdash; FREE ATS-Friendly Resume Template (and instructions on how to use it)<i>An example of ATS-friendly formatting. Optional; use it as a layout reference, not as a script.</i></span><span class="dur">video</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="portfolio">Portfolio presentation</h2>
+<p class="sub">A stranger gives your repository about two minutes. Make those two minutes show a working project, honestly described.</p>
+
+<ul>
+  <li><b>Pin your best four repositories</b> on your GitHub profile, in the order you want them read. Pin projects with tests and a README, not forks you never changed.</li>
+  <li><b>README structure:</b> what it is (one sentence), a 30-second demo (transcript or screenshot), how to run it, how to test it, how it works, <b>limitations</b>, and what you would do next.</li>
+  <li><b>A demo transcript</b> is a text file of one real run: input, output, and the failure case. It proves the project works without making the reader install anything.</li>
+  <li><b>Clean history:</b> small commits with messages that say why. No secrets, no <code>.env</code>, no employer files; check history, because deleting a file does not remove it.</li>
+  <li><b>An honest profile README:</b> two lines on what you are working on, links to the pinned projects, and how to reach you.</li>
+</ul>
+
+<div class="res">
+  <div class="rh">Official reading &mdash; portfolio</div>
+  <a class="r" href="https://docs.github.com/en/account-and-profile/how-tos/profile-customization/pinning-items-to-your-profile" target="_blank" rel="noopener"><span>GitHub Docs &mdash; Pinning items to your profile<i>Exactly how to choose and order your pinned repositories.</i></span><span class="dur">5 min</span></a>
+  <a class="r" href="https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-readmes" target="_blank" rel="noopener"><span>GitHub Docs &mdash; About READMEs<i>Where GitHub shows a README and what it expects. Pair with the structure above.</i></span><span class="dur">10 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="apply">Applying as credible evidence appears (Gate 3) and a weekly cadence</h2>
+<p class="sub">The plan does not ask you to finish learning before you apply. It asks for credible evidence: one public project that runs, with tests and an honest
+README. From that point, learning and applying happen in parallel, because hiring takes weeks.</p>
+
+<h3 id="apply-gate">What &ldquo;credible&rdquo; means</h3>
+<div class="tw"><table>
+<thead><tr><th>Evidence</th><th>Apply when</th><th>Do not wait for</th></tr></thead>
+<tbody>
+<tr><td>Project 1 public, with README, tests, demo transcript and a limitations section</td><td>Gate 3: first five applications to roles that match the evidence</td><td>Project 2, a certificate, or every topic on the plan</td></tr>
+<tr><td>A second project, or a stronger one</td><td>Widen to the agentic and solutions roles that need it</td><td>Perfection</td></tr>
+<tr><td>Interview feedback exposing a gap</td><td>Keep applying; fix the gap in parallel</td><td>The gap to close fully</td></tr>
+</tbody></table></div>
+
+<div class="panel panel--why">
+  <span class="ph">Why this exists</span>
+  <p>A hiring process commonly takes several weeks from application to offer, and you cannot compress the waiting. If your first application goes out at the moment you feel
+  ready, your first offer arrives long after that. Applying also teaches you things no study plan can: which of your claims get questions, which words recruiters respond to,
+  and where your gaps are in practice.</p>
+</div>
+
+<h3 id="apply-cadence">A cadence you can keep</h3>
+<figure class="dwg">
+<svg viewBox="0 0 1200 360" role="img" aria-label="A weekly cadence across seven days from Sunday to Saturday. Sunday plan and pick five roles. Monday verify and apply. Tuesday three outreach messages. Wednesday interview preparation loop. Thursday apply and follow up. Friday build or polish evidence. Saturday weekly review and pause, shown in brass. A red band underneath says if a week has no applications, shrink the target rather than skip the review.">
+  <defs>
+    <marker id="s36-dc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s36-db" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s36-dr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+  <text class="mm" x="30" y="30">EXAMPLE WEEK &mdash; TUNE THE NUMBERS TO YOUR HOURS</text>
+
+  <rect class="box" x="30" y="50" width="150" height="150" rx="3"/>
+  <text class="t" x="44" y="76">Sun</text>
+  <text class="m" x="44" y="102">Plan</text><text class="m" x="44" y="120">Pick 5 roles</text><text class="m" x="44" y="138">from the log</text>
+  <rect class="box-c" x="194" y="50" width="150" height="150" rx="3"/>
+  <text class="t" x="208" y="76">Mon</text>
+  <text class="m" x="208" y="102">Verify</text><text class="m" x="208" y="120">Apply to 2</text><text class="m" x="208" y="138">Log both</text>
+  <rect class="box" x="358" y="50" width="150" height="150" rx="3"/>
+  <text class="t" x="372" y="76">Tue</text>
+  <text class="m" x="372" y="102">Outreach</text><text class="m" x="372" y="120">3 personal</text><text class="m" x="372" y="138">messages</text>
+  <rect class="box" x="522" y="50" width="150" height="150" rx="3"/>
+  <text class="t" x="536" y="76">Wed</text>
+  <text class="m" x="536" y="102">Interview</text><text class="m" x="536" y="120">prep loop</text><text class="m" x="536" y="138">one topic</text>
+  <rect class="box-c" x="686" y="50" width="150" height="150" rx="3"/>
+  <text class="t" x="700" y="76">Thu</text>
+  <text class="m" x="700" y="102">Apply to 2</text><text class="m" x="700" y="120">Send due</text><text class="m" x="700" y="138">follow-ups</text>
+  <rect class="box" x="850" y="50" width="150" height="150" rx="3"/>
+  <text class="t" x="864" y="76">Fri</text>
+  <text class="m" x="864" y="102">Build or</text><text class="m" x="864" y="120">polish the</text><text class="m" x="864" y="138">evidence</text>
+  <rect class="box-a" x="1014" y="50" width="156" height="150" rx="3"/>
+  <text class="t b" x="1028" y="76">Sat</text>
+  <text class="m" x="1028" y="102">Weekly</text><text class="m" x="1028" y="120">review, then</text><text class="m" x="1028" y="138">a real pause</text>
+
+  <path class="flow-b dash" d="M1092,204 V226 H105 V206" marker-end="url(#s36-db)"/>
+  <text class="mm b" x="560" y="220" text-anchor="middle">THE REVIEW CHANGES NEXT WEEK&apos;S PLAN</text>
+
+  <rect class="box-r" x="30" y="262" width="1140" height="70" rx="3"/>
+  <text class="t r" x="48" y="286">If the week had no applications</text>
+  <text class="m" x="48" y="308">shrink the target for next week. Do not skip the Saturday review: the review is what keeps a bad week from becoming a bad month.</text>
+</svg>
+<figcaption>Drawing 36-D &mdash; an example weekly cadence. <b>Cyan</b> = applying days. <b>Brass</b> = the review and the pause. <b>Red</b> = the rule for a bad week.
+The counts are an example; set yours from your actual weekly hours.</figcaption>
+</figure>
+
+<h3 id="apply-pipeline">Tracking the pipeline and follow-up timing</h3>
+<ul>
+  <li><b>After applying:</b> wait about a week, then send one short follow-up if you have a named contact. A common range in career-centre guidance is seven to ten days; the posting&rsquo;s own timeline overrides it. The log&rsquo;s <code>next_follow_up</code> sets the date for you and moves weekend dates to Monday.</li>
+  <li><b>After an interview:</b> send a short thank-you within a day, referencing one specific thing discussed.</li>
+  <li><b>After a silence:</b> one polite check-in after your stated timeline; after that, mark it <code>ghosted</code> and move on. Repeated messages hurt more than they help.</li>
+  <li><b>Never leave a stage empty.</b> The plan asks that no stage of the pipeline has zero items. If screens are empty, the cause is upstream.</li>
+</ul>
+
+<div class="res">
+  <div class="rh">Read and watch &mdash; applying and follow-up</div>
+  <a class="r" href="https://www.unlv.edu/career-services-workforce-dev/student-alumni-resources/following-up" target="_blank" rel="noopener"><span>UNLV Career Services &mdash; Following Up<i>A university guide with concrete timings: 7&ndash;10 days after applying, 24 hours after an interview. US campus context; the etiquette travels.</i></span><span class="dur">5 min</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=8ap-E6MuR14" target="_blank" rel="noopener"><span>Sarah Doody &mdash; Send This Email to Follow Up After a Job Interview<i>One person&rsquo;s method for a short, specific follow-up. She works in UX; adapt the wording.</i></span><span class="dur">video</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="takehome">Take-home assignments: a policy</h2>
+<p class="sub">A take-home is a trade of your unpaid time for their evaluation. Decide your policy in advance so that you are not deciding it while anxious.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Situation</th><th>Reasonable response</th></tr></thead>
+<tbody>
+<tr><td>The brief states a time box of a few hours and a clear deliverable</td><td>Accept. Set a timer, stay inside it, and submit what you have with notes on what you would do next.</td></tr>
+<tr><td>The brief is open-ended with no time limit</td><td>Ask, in writing, how long they expect it to take and what they will evaluate. A real team can answer.</td></tr>
+<tr><td>It is days of work, or resembles the company&rsquo;s actual backlog</td><td>Decline politely and offer an alternative: a review of your existing repo, or a paid trial. You are allowed to say no.</td></tr>
+<tr><td>It comes before any conversation with a human</td><td>Ask for a short call first. Round zero homework from an unknown party is a poor trade.</td></tr>
+<tr><td>It involves their real data or production system</td><td>Do not accept without a written agreement. Do not use employer data or machines for it under any circumstances.</td></tr>
+</tbody></table></div>
+
+<h3 id="take-how">If you accept</h3>
+<ol>
+  <li>Read it twice. List deliverables, the deadline and ambiguities; email your clarifying questions early, in one message.</li>
+  <li>Write the README first: what you built, how to run it, how to test it, trade-offs, what you cut and why.</li>
+  <li>Build the smallest complete version before anything extra, commit as you go, and add tests for one normal case, the edges and one failure.</li>
+  <li>Stop at the time box. Submit with an honest limitations section and the time you spent.</li>
+  <li>Expect a follow-up conversation about it. Be ready to explain every line; do not submit code you cannot discuss.</li>
+</ol>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the assignment that does the company&rsquo;s work</span>
+  <p>If the &ldquo;assignment&rdquo; is a feature the company would otherwise build, and there is no time limit, no feedback and no conversation first, treat it as a red flag. Decline in writing
+  and politely. Also: using an AI assistant on a take-home is a question to settle <i>before</i> you start. Ask the recruiter whether it is allowed, and say in your README what you used it for.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Read and watch &mdash; take-homes</div>
+  <a class="r" href="https://geshan.com.np/blog/2020/09/take-home-coding-challenges-outshine-competition/" target="_blank" rel="noopener"><span>Geshan Manandhar &mdash; Take-home coding challenges: how to outshine your competition<i>README, tests and presentation for a submission. Written in 2020; the practices still hold.</i></span><span class="dur">10 min</span></a>
+  <a class="r" href="https://dev.to/canro91/want-to-ace-your-next-take-home-coding-exercises-follow-these-13-short-tips-5f56" target="_blank" rel="noopener"><span>canro91 &mdash; 13 short tips for take-home coding exercises<i>A short checklist to run before you submit.</i></span><span class="dur">8 min</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=sgmMqP9AYpY" target="_blank" rel="noopener"><span>SCALER &mdash; How to approach Take Home Assignments during Interviews (Arnav Gupta)<i>Time-boxing, priorities and repository hygiene. India-based audience.</i></span><span class="dur">video</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="interviews">Scheduling and the preparation loop</h2>
+<p class="sub">Interview content lives on its own sheet: <a href="ai-interview.html">the interview sheet</a>. This section is about the logistics around it and about learning from every loop.</p>
+
+<ul>
+  <li><b>Schedule with margin.</b> Do not stack three loops in a day. Leave an hour before and after for preparation and a written debrief.</li>
+  <li><b>Ask what each round is.</b> A recruiter can usually say who you meet, how long it runs and what it covers (coding, a project walkthrough, design). Prepare for exactly that.</li>
+  <li><b>Confirm the practicalities:</b> time zone, video platform, interviewer names, whether a laptop and IDE are expected. Test your setup on a personal device and a stable connection beforehand.</li>
+  <li><b>Never take an interview on employer time or equipment.</b> Use leave, early mornings, evenings or weekends where the process allows, and your personal laptop.</li>
+  <li><b>Debrief within an hour:</b> what was asked, what you answered well, what you missed, what you promised to send. This is the raw material for the next study block.</li>
+</ul>
+
+<div class="code" data-lang="text">
+<header><b>debrief template (copy per interview, keep on a personal device)</b></header>
+<pre><code>Company / role / round / date:
+Who I met (names and roles):
+Questions I was asked (one line each, no confidential detail from anyone):
+Answered well:
+Answered badly or not at all (the study list):
+What I promised to send, and by when:
+My follow-up message sent on:
+Next step they gave me, and its date:</code></pre>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">The loop</span>
+  <p>Interview &rarr; debrief &rarr; pick the two weakest topics &rarr; study them properly &rarr; test yourself cold &rarr; interview again. The plan asks for exactly this in the weeks when loops
+  are live. The preparation content itself (coding, system design, project deep dives, behavioural stories) is on <a href="ai-interview.html">the interview sheet</a>; this sheet only
+  makes sure the loop actually runs.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch &mdash; after the interview</div>
+  <a class="r" href="https://www.youtube.com/watch?v=N2EkWpCTJcE" target="_blank" rel="noopener"><span>Lissa Appiah &mdash; Rejected After Final Interview? Do This in 24 Hours<i>Turning a rejection into a list of things to fix. A career coach&rsquo;s view; keep what is practical.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://www.atlassian.com/team-playbook/plays/retrospective" target="_blank" rel="noopener"><span>Atlassian &mdash; Sprint Retrospective<i>A format for reviewing a period of work: what went well, what did not, what to change. Use the same shape for a debrief.</i></span><span class="dur">10 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="comp">Compensation: research, components, and what you can verify</h2>
+<p class="sub">This section teaches you how to find and read compensation information. It states no figures, because any number written here would be stale or
+wrong for your role and city. You supply the numbers, from sources you can name, on the day you need them.</p>
+
+<h3 id="comp-research">Researching ranges from public sources</h3>
+<ol>
+  <li><b>Advertised ranges</b> in postings (where legally or voluntarily published). They are the most direct signal, but a range is a range: the top is not a promise.</li>
+  <li><b>Self-reported data</b> on public sites (for example Levels.fyi and AmbitionBox) and communities. Useful for orientation; biased towards people who chose to report, and often towards larger employers. Check each site&rsquo;s current terms and what is free.</li>
+  <li><b>Government or professional-body surveys</b> where they exist for your country and occupation.</li>
+  <li><b>Your own network</b>, asked respectfully and generally (&ldquo;what range is typical for this scope?&rdquo;), never for a named person&rsquo;s salary.</li>
+</ol>
+<p>Write down three things on a personal device, with the source and date of each: <b>a floor</b> (the lowest you would accept given your situation), <b>a target</b>, and
+<b>the evidence behind both</b>. The plan has you do exactly this on a Saturday in week 20.</p>
+
+<h3 id="comp-vs">Advertised versus estimated</h3>
+<div class="vs">
+  <div><div class="vh">Advertised</div><div class="vb"><p>A figure or range the employer itself published in the posting or told you in writing. It is a statement from the party who will pay you. It can still be a stretch figure, may include variable pay, and may change at offer.</p></div></div>
+  <div><div class="vh">Estimated</div><div class="vb"><p>A figure from a site or a model that infers pay from reports or from similar roles. Its accuracy depends on data you cannot see. It is a starting guess, never a fact about this employer.</p></div></div>
+</div>
+<div class="tw"><table>
+<thead><tr><th>Dimension</th><th>Advertised</th><th>Estimated</th></tr></thead>
+<tbody>
+<tr><td>Who says it</td><td>The employer</td><td>A third party</td></tr>
+<tr><td>What it is based on</td><td>Their own pay bands</td><td>Self-reports, scraped data, models</td></tr>
+<tr><td>Typical error</td><td>Optimistic top of range; unclear what is included</td><td>Small samples; wrong level; stale data</td></tr>
+<tr><td>How to record it in the log</td><td>&ldquo;advertised, date, source&rdquo;</td><td>&ldquo;estimated, site, date&rdquo;; never in the same cell</td></tr>
+<tr><td>Weight in your negotiation</td><td>High: quote it back</td><td>Low: supporting context only</td></tr>
+</tbody></table></div>
+<p>Pick <b>advertised</b> for anything you will say aloud to the employer, and keep <b>estimated</b> for your own sanity checks. If you quote a number that came from a site, say that it did.</p>
+
+<h3 id="comp-ctc">CTC components in India (awareness only)</h3>
+<p>Cost to company (CTC) is the employer&rsquo;s total annual cost, not what reaches your bank account. Offers are often described in these parts. This is awareness depth: definitions,
+tax treatment and eligibility vary by employer, contract and law, and <b>you must verify every item against the offer letter and ask for the full breakup in writing</b>.</p>
+<div class="tw"><table>
+<thead><tr><th>Component</th><th>What it generally is</th><th>What to ask</th></tr></thead>
+<tbody>
+<tr><td>Fixed pay</td><td>The predictable part, often split into several line items (basic, allowances and others).</td><td>The full breakup, and the monthly take-home it implies after deductions.</td></tr>
+<tr><td>Employer contributions and benefits</td><td>Retirement-fund and insurance items an employer pays or provides, sometimes counted inside CTC.</td><td>Which benefits are inside CTC and which are on top; what each is worth to you.</td></tr>
+<tr><td>Variable pay</td><td>Pay that depends on company or individual performance.</td><td>Target versus typical payout, the payout schedule, and whether a past payout can be shown.</td></tr>
+<tr><td>Joining bonus</td><td>A one-time amount to offset leaving your current job; often tied to staying for a period.</td><td>Is it taxable, when is it paid, is there a repayment clause if you leave early.</td></tr>
+<tr><td>Retention bonus</td><td>Paid after a period of service.</td><td>When it vests, what conditions apply.</td></tr>
+<tr><td>ESOPs / equity</td><td>Options or shares that become yours over time if the company is still around.</td><td>Vesting schedule, strike price, what happens if you leave, whether the company is listed. Value can be zero.</td></tr>
+<tr><td>Notice-period buy-out</td><td>Paying, or the new employer paying, to shorten your notice with your current employer.</td><td>Whether your contract allows it, the formula, and who pays.</td></tr>
+</tbody></table></div>
+
+<p>The script below is a small comparison tool. It uses abstract units (100 units = whatever your own fixed pay is), so the numbers carry no market meaning. Its value is the
+habit: separate what is <b>guaranteed</b> from what depends on performance, on staying, or on a company that may not exist in four years.</p>
+
+<div class="code" data-lang="python">
+<header><b>offer_breakdown.py</b></header>
+<pre><code>"""Compare two INVENTED offers by what you can count on, not by the headline number.
+
+Units are abstract (100 units = whatever your own annual fixed pay is in the offer you hold).
+These numbers are not market data and imply nothing about real pay. Every term below
+(variable payout, bonus clawback, buy-out) differs by employer: the offer letter and the
+employment contract decide, not this script.
+"""
+
+
+def breakdown(fixed, variable_target=0.0, expected_payout=0.0, joining_bonus=0.0,
+              retention_bonus=0.0, esop_you_would_count=0.0):
+    """Return the numbers worth comparing for one offer, all per year, in the same units.
+
+    guaranteed    fixed pay only
+    steady        fixed + variable_target * expected_payout (expected_payout is 0..1, YOUR guess)
+    year_one      steady + joining bonus + retention bonus (if you stay long enough to receive them)
+    with_equity   year_one + the value of equity you personally choose to count (default 0)
+    """
+    if not 0 &lt;= expected_payout &lt;= 1:
+        raise ValueError("expected_payout must be between 0 and 1")
+    steady = fixed + variable_target * expected_payout
+    year_one = steady + joining_bonus + retention_bonus
+    return {"guaranteed": round(fixed, 1), "steady": round(steady, 1),
+            "year_one": round(year_one, 1), "with_equity": round(year_one + esop_you_would_count, 1)}
+
+
+def buyout_example(fixed, days_to_buy_out):
+    """A ROUGH illustration only: fixed pay per day times the days you would not serve.
+
+    Real notice-period buy-outs follow your contract and the new employer's policy; some are
+    fixed formulas, some are negotiated, some are not offered. Read your own contract.
+    """
+    return round(fixed / 365 * days_to_buy_out, 1)
+
+
+offer_a = breakdown(fixed=100, variable_target=10, expected_payout=0.8)
+offer_b = breakdown(fixed=90, variable_target=30, expected_payout=0.5, joining_bonus=10,
+                    retention_bonus=10, esop_you_would_count=0)
+for name, o in (("Offer A", offer_a), ("Offer B", offer_b)):
+    print(name, o)
+
+print("buy-out illustration for 30 days:", buyout_example(100, 30), "units")
+print("Offer B headline looks bigger in year one, but only", offer_b["guaranteed"],
+      "is guaranteed, and the bonuses assume you stay and the business performs.")
+</code></pre>
+</div>
+<div class="code" data-lang="text">
+<header><b>what that printed (real output of the run)</b></header>
+<pre><code>Offer A {'guaranteed': 100, 'steady': 108.0, 'year_one': 108.0, 'with_equity': 108.0}
+Offer B {'guaranteed': 90, 'steady': 105.0, 'year_one': 125.0, 'with_equity': 125.0}
+buy-out illustration for 30 days: 8.2 units
+Offer B headline looks bigger in year one, but only 90 is guaranteed, and the bonuses assume you stay and the business performs.</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; comparing headlines</span>
+  <p>A bigger CTC can be a smaller guaranteed income. Equity you cannot sell is a lottery ticket, not salary; count it at zero unless you have a reason and a source. Variable pay is not owed
+  until it is paid, and a joining bonus with a repayment clause is a loan if you leave. <b>Verify every component against the offer letter, not against the recruiter&rsquo;s call.</b></p>
+</div>
+
+<div class="res">
+  <div class="rh">Read &mdash; compensation research</div>
+  <a class="r" href="https://www.levels.fyi/" target="_blank" rel="noopener"><span>Levels.fyi<i>Self-reported compensation. Estimated, not advertised: use for orientation. Check the site&rsquo;s current terms.</i></span><span class="dur">site</span></a>
+  <a class="r" href="https://www.ambitionbox.com/" target="_blank" rel="noopener"><span>AmbitionBox<i>An India-focused site for salaries and company reviews, user-reported. Same caution: self-reported and unverified.</i></span><span class="dur">site</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="negotiate">Negotiation principles</h2>
+<p class="sub">Negotiation is a calm conversation about a problem you are solving together: a role that is worth what it costs to fill. It is a skill, so rehearse it aloud
+before you need it. The plan has you do that on day 146.</p>
+
+<ol>
+  <li><b>Anchor on researched ranges.</b> Name your source: &ldquo;the advertised range for this role was X to Y; given my scope and evidence I am looking for Z.&rdquo; Do not invent a number.</li>
+  <li><b>Ask, do not demand.</b> &ldquo;Is there flexibility on the fixed component?&rdquo; works better than an ultimatum, and costs you nothing.</li>
+  <li><b>Think in total compensation:</b> fixed, variable, joining and retention terms, equity, start date, remote terms, learning budget, title. Sometimes the part they can move is not the part you first asked about.</li>
+  <li><b>Never accept or decline on the first call.</b> Say thank you, say you are excited, and ask for the offer in writing and a day or two to review. This is normal and respected.</li>
+  <li><b>Get it in writing.</b> A verbal figure is not an offer. Do not resign, give notice or turn down other processes until you hold a written offer you have read.</li>
+  <li><b>Do not lie.</b> Do not invent a competing offer. If you do have a deadline from another process, say so truthfully.</li>
+  <li><b>Know your floor and your walk-away</b> before the conversation, and what you would trade for what.</li>
+</ol>
+
+<div class="code" data-lang="text">
+<header><b>phrases to rehearse aloud</b></header>
+<pre><code>Receiving the offer:
+  "Thank you, I am glad to have this. Could you send the details in writing? I would like to
+   review the full breakup and come back to you by [day]."
+
+Asking about flexibility:
+  "Based on the advertised range and the scope we discussed, I was hoping for [figure].
+   Is there flexibility on the fixed component?"
+
+If the answer is no:
+  "Understood. Is there flexibility on [joining bonus / start date / review timing / title]?"
+
+Closing:
+  "Thank you for working through this. If we can confirm [agreed terms] in the written offer, I am happy to accept."</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p><b>&ldquo;What are your salary expectations?&rdquo;</b> Early in the process, ask about the budgeted range for the role first. If pressed, give a range anchored on the advertised or researched
+  figures and say it depends on the total package and scope. Do not lie about your current pay or reveal confidential details of it where you can decline. In India, asking for current CTC is common; you may politely
+  say you prefer to talk about the role&rsquo;s range. Follow-up: &ldquo;what is your current CTC?&rdquo; Decide beforehand how you will answer truthfully and what you will not volunteer.</p>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; negotiating before you understand the offer</span>
+  <p>Do not counter until you have the whole offer in writing and understand each component. Countering a number you have misread, or accepting verbally and then raising extra requests, damages trust. Never signal that you
+  will accept before you have decided.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Read and watch &mdash; negotiation</div>
+  <a class="r" href="https://capd.mit.edu/channels/negotiate-job-offers/" target="_blank" rel="noopener"><span>MIT CAPD &mdash; Negotiate job offers<i>A university career office&rsquo;s step-by-step on responding to an offer, asking for time and what is typically negotiable. US-based; adapt to Indian practice.</i></span><span class="dur">10 min</span></a>
+  <a class="r" href="https://www.kalzumeus.com/2012/01/23/salary-negotiation/" target="_blank" rel="noopener"><span>Patrick McKenzie &mdash; Salary Negotiation: Make More Money, Be More Valued<i>A long, well-known essay aimed at engineers. US context, 2012; take the principles, not the numbers.</i></span><span class="dur">30 min</span></a>
+  <a class="r" href="https://www.freecodecamp.org/news/ten-rules-for-negotiating-a-job-offer-ee17cccbdab6" target="_blank" rel="noopener"><span>Haseeb Qureshi &mdash; Ten Rules for Negotiating a Job Offer<i>Principles from a software engineer&rsquo;s experience. US big-tech context; the numbers there are not yours.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=cbngWLr7BC4" target="_blank" rel="noopener"><span>The Pragmatic Engineer &mdash; How to Negotiate a Big Tech Offer as a Software Engineer<i>Both candidate and hiring-side views. Big-tech and US framing; treat any figures as not applicable to you.</i></span><span class="dur">video</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="offers">Evaluating offers: a decision matrix</h2>
+<p class="sub">An offer can feel exciting and be wrong, or feel disappointing and be right. A written matrix, filled from written facts, makes the comparison something you can
+argue with instead of a mood.</p>
+
+<h3 id="offers-matrix">Hard filters first, then weights</h3>
+<p>Before any scoring, confirm the hard filters. If any fails, the offer is out or paused until it is fixed: the <b>legal employer</b> is who you think it is, the <b>offer is in writing</b> and complete,
+the <b>location and remote terms</b> are explicit, and the <b>notice and start date</b> are workable. Then score each offer 1 to 5 on the criteria below, with weights you set before you look at the offers.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 430" role="img" aria-label="A decision matrix with six criteria in rows, role and scope, stack and learning, manager and team, stability, compensation as total, and terms. Columns show a weight, a rating for Offer A and a rating for Offer B, with an invented weighted total at the bottom of each. To the right, three notes: hard filters come first, ratings come from written facts, and if the totals are within a quarter point it is a close call.">
+  <defs>
+    <marker id="s36-ec" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s36-eb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s36-er" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+  <rect class="box" x="30" y="30" width="300" height="40" rx="3"/><text class="t" x="44" y="55">Criterion</text>
+  <rect class="box" x="330" y="30" width="110" height="40" rx="3"/><text class="t" x="385" y="55" text-anchor="middle">Weight</text>
+  <rect class="box-c" x="440" y="30" width="140" height="40" rx="3"/><text class="t" x="510" y="55" text-anchor="middle">Offer A</text>
+  <rect class="box-c" x="580" y="30" width="140" height="40" rx="3"/><text class="t" x="650" y="55" text-anchor="middle">Offer B</text>
+
+  <rect class="box" x="30" y="70" width="300" height="42" rx="3"/><text class="m" x="44" y="96">Role and scope</text>
+  <rect class="box" x="330" y="70" width="110" height="42" rx="3"/><text class="m" x="385" y="96" text-anchor="middle">3</text>
+  <rect class="box" x="440" y="70" width="140" height="42" rx="3"/><text class="m" x="510" y="96" text-anchor="middle">4</text>
+  <rect class="box" x="580" y="70" width="140" height="42" rx="3"/><text class="m" x="650" y="96" text-anchor="middle">3</text>
+
+  <rect class="box" x="30" y="112" width="300" height="42" rx="3"/><text class="m" x="44" y="138">Stack and learning</text>
+  <rect class="box" x="330" y="112" width="110" height="42" rx="3"/><text class="m" x="385" y="138" text-anchor="middle">2</text>
+  <rect class="box" x="440" y="112" width="140" height="42" rx="3"/><text class="m" x="510" y="138" text-anchor="middle">4</text>
+  <rect class="box" x="580" y="112" width="140" height="42" rx="3"/><text class="m" x="650" y="138" text-anchor="middle">3</text>
+
+  <rect class="box" x="30" y="154" width="300" height="42" rx="3"/><text class="m" x="44" y="180">Manager and team</text>
+  <rect class="box" x="330" y="154" width="110" height="42" rx="3"/><text class="m" x="385" y="180" text-anchor="middle">2</text>
+  <rect class="box" x="440" y="154" width="140" height="42" rx="3"/><text class="m" x="510" y="180" text-anchor="middle">4</text>
+  <rect class="box" x="580" y="154" width="140" height="42" rx="3"/><text class="m" x="650" y="180" text-anchor="middle">3</text>
+
+  <rect class="box" x="30" y="196" width="300" height="42" rx="3"/><text class="m" x="44" y="222">Stability</text>
+  <rect class="box" x="330" y="196" width="110" height="42" rx="3"/><text class="m" x="385" y="222" text-anchor="middle">2</text>
+  <rect class="box" x="440" y="196" width="140" height="42" rx="3"/><text class="m" x="510" y="222" text-anchor="middle">3</text>
+  <rect class="box" x="580" y="196" width="140" height="42" rx="3"/><text class="m" x="650" y="222" text-anchor="middle">4</text>
+
+  <rect class="box" x="30" y="238" width="300" height="42" rx="3"/><text class="m" x="44" y="264">Compensation, total</text>
+  <rect class="box" x="330" y="238" width="110" height="42" rx="3"/><text class="m" x="385" y="264" text-anchor="middle">2</text>
+  <rect class="box" x="440" y="238" width="140" height="42" rx="3"/><text class="m" x="510" y="264" text-anchor="middle">3</text>
+  <rect class="box" x="580" y="238" width="140" height="42" rx="3"/><text class="m" x="650" y="264" text-anchor="middle">5</text>
+
+  <rect class="box" x="30" y="280" width="300" height="42" rx="3"/><text class="m" x="44" y="306">Terms: location, notice</text>
+  <rect class="box" x="330" y="280" width="110" height="42" rx="3"/><text class="m" x="385" y="306" text-anchor="middle">1</text>
+  <rect class="box" x="440" y="280" width="140" height="42" rx="3"/><text class="m" x="510" y="306" text-anchor="middle">4</text>
+  <rect class="box" x="580" y="280" width="140" height="42" rx="3"/><text class="m" x="650" y="306" text-anchor="middle">3</text>
+
+  <rect class="box-a" x="30" y="332" width="300" height="46" rx="3"/><text class="t b" x="44" y="360">Weighted total</text>
+  <rect class="box-a" x="330" y="332" width="110" height="46" rx="3"/><text class="m" x="385" y="360" text-anchor="middle">12</text>
+  <rect class="box-a" x="440" y="332" width="140" height="46" rx="3"/><text class="t b" x="510" y="361" text-anchor="middle">3.67</text>
+  <rect class="box-a" x="580" y="332" width="140" height="46" rx="3"/><text class="t b" x="650" y="361" text-anchor="middle">3.50</text>
+
+  <rect class="box-r" x="780" y="30" width="390" height="100" rx="3"/>
+  <text class="t r" x="798" y="54">Hard filters come first</text>
+  <text class="m" x="798" y="76">Legal employer verified, offer in</text>
+  <text class="m" x="798" y="94">writing, location and notice terms</text>
+  <text class="m" x="798" y="112">explicit. A fail removes the offer.</text>
+  <rect class="box-c" x="780" y="148" width="390" height="100" rx="3"/>
+  <text class="t" x="798" y="172">Rate from written facts</text>
+  <text class="m" x="798" y="194">Not the recruiter call. Ratings you</text>
+  <text class="m" x="798" y="212">cannot back with a document are</text>
+  <text class="m" x="798" y="230">questions to ask, not scores.</text>
+  <rect class="box-a" x="780" y="266" width="390" height="112" rx="3"/>
+  <text class="t b" x="798" y="290">A 0.17 gap is a close call</text>
+  <text class="m" x="798" y="312">Within a quarter point, the matrix</text>
+  <text class="m" x="798" y="330">is not deciding. Ask more questions,</text>
+  <text class="m" x="798" y="348">talk to the manager again, then choose.</text>
+
+  <path class="flow-b dash" d="M724,355 H774" marker-end="url(#s36-eb)"/>
+  <text class="mm" x="30" y="408">INVENTED RATINGS. THE NUMBERS ILLUSTRATE THE METHOD, NOT ANY REAL OFFER.</text>
+</svg>
+<figcaption>Drawing 36-E &mdash; the offer decision matrix. <b>Red</b> = hard filters that remove an offer. <b>Cyan</b> = the offers being rated. <b>Brass</b> = the totals
+and what to do when they are close. Weights are decided before you see the offers.</figcaption>
+</figure>
+
+<p>The same <code>role_scorer.py</code> above computes this matrix: its last demo scores two invented offers with these exact criteria and weights and gets 3.67 and 3.5, which the script flags as a close call (a gap under 0.25).
+Use it, then do the part the arithmetic cannot do: talk to the people you would work with once more, and ask for anything unclear in writing.</p>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p><b>&ldquo;Why do you want to leave your current role?&rdquo;</b> Answer with what you are moving <i>towards</i> (a role where you build and ship AI systems on the integration foundation you have)
+  rather than complaints about your employer. Be truthful, brief and calm. Never disparage a current employer or share anything confidential. Follow-up: &ldquo;what would make you stay?&rdquo; Name one concrete, honest thing.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Read and watch &mdash; evaluating an offer</div>
+  <a class="r" href="https://career.cornell.edu/channels/negotiate-an-offer/" target="_blank" rel="noopener"><span>Cornell Career Services &mdash; negotiate an offer<i>Evaluating an offer beyond salary, from a university career office.</i></span><span class="dur">15 min</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=uX_XcnydbiA" target="_blank" rel="noopener"><span>UMD Career Center &mdash; How to Evaluate &amp; Negotiate Job Offers<i>A career centre&rsquo;s walk-through. Student-oriented; the method applies.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=Z8mmlfl58NA" target="_blank" rel="noopener"><span>The Welch Group &mdash; How to Evaluate a Job Offer: Beyond Salary<i>Benefits, hidden costs and long-term factors. A US financial-advice firm; the checklist is general.</i></span><span class="dur">video</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="notice">Notice periods and counter-offers</h2>
+<p class="sub">Awareness only. What applies to you is in <b>your own employment contract</b>. Read it before you start interviewing, not after you have an offer.</p>
+
+<ul>
+  <li><b>Read your contract</b> for the notice period, whether it is negotiable, any buy-out clause, garden-leave or non-compete terms, and what happens to unpaid variable pay or benefits. Do not assume it matches what colleagues say or what is typical.</li>
+  <li><b>Tell recruiters your notice period early and exactly.</b> A long notice period can affect which roles are practical. Ask whether the new employer would wait, or would consider a buy-out.</li>
+  <li><b>A buy-out is a negotiation, not a right</b>, and may be paid by you, by the new employer, or not offered. Get any agreement in writing from the party who pays.</li>
+  <li><b>Resign professionally.</b> Give written notice only after a signed written offer, hand over cleanly, return equipment, and do not take or forward any employer material.</li>
+</ul>
+
+<h3 id="notice-counter">Counter-offers</h3>
+<p>Your current employer may respond to your resignation with a counter-offer. Decide your position <b>before</b> you resign. Questions to ask yourself, in writing: why was I leaving in the first place? Does the counter-offer
+fix that reason, or only the number? Would the new role still be the better move on the matrix? Would a promise of change be in writing? There is no universal rule, and anyone who gives you one does not know your situation. Do not use a
+real offer as a bluff to extract a counter-offer, and do not assume a counter-offer is available.</p>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; resigning on a verbal offer</span>
+  <p>Resigning before you hold a signed written offer, with a verified legal entity and the terms you agreed, is the one irreversible mistake in this whole process. Offers have been delayed, changed or withdrawn. Keep your current job
+  until the paper is in your hands and, where relevant, background checks are complete.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="remote">International remote roles: what to check</h2>
+<p class="sub">&ldquo;Remote&rdquo; describes where you sit, not who may employ you. A company can be happy for you to work from home and still be unable, or unwilling, to hire in India.
+Check five things in writing before you invest in a loop.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 440" role="img" aria-label="A posting that says remote leads to five checks in a row: the location line, the employment type, payroll and tax, time-zone overlap, and the legal entity that will contract you. If any answer is unclear, a red box says to ask in writing before the interview loop. If all five are answered in writing, a brass box says proceed.">
+  <defs>
+    <marker id="s36-fc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s36-fb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s36-fr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+  <rect class="box" x="400" y="20" width="400" height="56" rx="3"/>
+  <text class="t mid" x="600" y="44" text-anchor="middle">Posting says &ldquo;remote&rdquo;</text>
+  <text class="mm mid" x="600" y="63" text-anchor="middle">THAT IS ONLY THE FIRST WORD</text>
+
+  <rect class="box-c" x="26" y="130" width="212" height="130" rx="3"/>
+  <text class="t" x="40" y="156">1 Location line</text>
+  <text class="m" x="40" y="182">India named, or</text><text class="m" x="40" y="200">APAC or worldwide?</text><text class="m" x="40" y="218">US-only means no.</text>
+  <rect class="box-c" x="260" y="130" width="212" height="130" rx="3"/>
+  <text class="t" x="274" y="156">2 Employment type</text>
+  <text class="m" x="274" y="182">Employee, contractor</text><text class="m" x="274" y="200">or via an agent</text><text class="m" x="274" y="218">(EOR)?</text>
+  <rect class="box-c" x="494" y="130" width="212" height="130" rx="3"/>
+  <text class="t" x="508" y="156">3 Payroll and tax</text>
+  <text class="m" x="508" y="182">Who pays you, in</text><text class="m" x="508" y="200">what currency, who</text><text class="m" x="508" y="218">withholds tax?</text>
+  <rect class="box-c" x="728" y="130" width="212" height="130" rx="3"/>
+  <text class="t" x="742" y="156">4 Time zone</text>
+  <text class="m" x="742" y="182">Hours you must be</text><text class="m" x="742" y="200">online, in IST, and</text><text class="m" x="742" y="218">how often at night.</text>
+  <rect class="box-c" x="962" y="130" width="212" height="130" rx="3"/>
+  <text class="t" x="976" y="156">5 Legal entity</text>
+  <text class="m" x="976" y="182">Which company signs</text><text class="m" x="976" y="200">your contract and is</text><text class="m" x="976" y="218">it verifiable?</text>
+
+  <path class="flow" d="M520,80 V104 H132 V124" marker-end="url(#s36-fc)"/>
+  <path class="flow" d="M560,80 V110 H366 V124" marker-end="url(#s36-fc)"/>
+  <path class="flow" d="M600,80 V124" marker-end="url(#s36-fc)"/>
+  <path class="flow" d="M640,80 V110 H834 V124" marker-end="url(#s36-fc)"/>
+  <path class="flow" d="M680,80 V104 H1068 V124" marker-end="url(#s36-fc)"/>
+
+  <rect class="box-r" x="26" y="330" width="560" height="86" rx="3"/>
+  <text class="t r" x="44" y="356">Any answer unclear or missing</text>
+  <text class="m" x="44" y="380">Ask the recruiter in writing, before the loop.</text>
+  <text class="m" x="44" y="398">A vague answer is an answer. Do not assume.</text>
+  <rect class="box-a" x="614" y="330" width="560" height="86" rx="3"/>
+  <text class="t b" x="632" y="356">All five answered in writing</text>
+  <text class="m" x="632" y="380">Proceed. Keep the messages; they are your</text>
+  <text class="m" x="632" y="398">record if terms change at offer stage.</text>
+
+  <path class="flow-r dash" d="M132,264 V300 H306 V324" marker-end="url(#s36-fr)"/>
+  <path class="flow-r dash" d="M366,264 V324" marker-end="url(#s36-fr)"/>
+  <path class="flow-b dash" d="M1068,264 V300 H894 V324" marker-end="url(#s36-fb)"/>
+  <path class="flow-b dash" d="M834,264 V324" marker-end="url(#s36-fb)"/>
+</svg>
+<figcaption>Drawing 36-F &mdash; remote-eligibility checks. <b>Cyan</b> = the five questions. <b>Red</b> = what to do when an answer is unclear. <b>Brass</b> = proceed,
+with the answers in writing.</figcaption>
+</figure>
+
+<h3 id="remote-types">Contractor or employee</h3>
+<div class="vs">
+  <div><div class="vh">Employee (direct or through an employer of record)</div><div class="vb"><p>A contract of employment. Pay usually runs through payroll with deductions handled by the employer or the agent. Benefits and leave follow the contract and local rules. An employer of record (EOR) is a third party that legally employs you on behalf of a foreign company; check that it is a registered, verifiable firm.</p></div></div>
+  <div><div class="vh">Contractor (independent)</div><div class="vb"><p>A services agreement. You invoice, you usually handle your own taxes and registrations, and benefits and leave are yours to arrange. Rules on what counts as a genuine contractor differ by country, and some arrangements described as contracting may be treated differently by law.</p></div></div>
+</div>
+<div class="tw"><table>
+<thead><tr><th>Dimension</th><th>Employee (direct or EOR)</th><th>Contractor</th></tr></thead>
+<tbody>
+<tr><td>Who handles tax and registrations</td><td>Largely the payroll provider</td><td>You, often with an accountant</td></tr>
+<tr><td>Benefits and paid leave</td><td>In the contract</td><td>Your responsibility; may be priced into the rate</td></tr>
+<tr><td>Stability</td><td>Notice and termination terms apply</td><td>Often shorter notice; check the agreement</td></tr>
+<tr><td>Questions to ask</td><td>Entity name, contract governing law, benefits</td><td>Rate basis, invoicing terms, payment currency and schedule, termination terms, IP clause</td></tr>
+</tbody></table></div>
+<p>Choose by reading the actual agreement. Neither is better in the abstract; what matters is the paper and your own tax position.</p>
+
+<h3 id="remote-money">Payments, fees and time zones</h3>
+<ul>
+  <li><b>Payment route:</b> ask how and when you are paid and in which currency. Bank transfers, payment platforms and payroll providers each have fees and exchange-rate margins. Get the total you will actually receive in rupees, not just the headline figure.</li>
+  <li><b>Time zones:</b> convert required overlap hours to Indian time and picture them on a normal Tuesday. A role that needs you on calls from late evening to early morning is a different job from one that overlaps your afternoon.</li>
+  <li><b>Equipment and data:</b> who supplies the laptop, and what security rules apply to your home network and devices.</li>
+</ul>
+
+<div class="panel panel--real">
+  <span class="ph">Tax: take professional advice</span>
+  <p>How income from a foreign employer or client is taxed in India, which registrations you need as a contractor, and what a foreign company must withhold are legal questions that depend on your
+  situation and on current rules. <b>Do not rely on this sheet, a recruiter or a forum for them.</b> Speak to a qualified tax professional before you sign a cross-border agreement.</p>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; &ldquo;remote&rdquo; in the headline, &ldquo;US residents only&rdquo; in the footer</span>
+  <p>Read to the bottom of the posting. Work-authorisation and location restrictions are often at the end or in a linked page, and a posting on a global board may be aimed at a single country.
+  If the text says nothing about India, ask. Spending three weeks in a loop for a role that cannot hire you is the most expensive way to learn that.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Read &mdash; remote work</div>
+  <a class="r" href="https://himalayas.app/" target="_blank" rel="noopener"><span>Himalayas<i>A remote-job board; use its location filters, then verify each posting using the five checks above. Check current terms.</i></span><span class="dur">site</span></a>
+  <a class="r" href="https://consumer.ftc.gov/articles/job-scams" target="_blank" rel="noopener"><span>FTC &mdash; Job Scams<i>Remote roles are a common cover for scams; the same patterns apply.</i></span><span class="dur">10 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="confidential">Protecting confidentiality</h2>
+<p class="sub">Your employer&rsquo;s information is not yours to bring into a job search. Breaking this rule can cost you an offer, your current job, or worse, and it is entirely avoidable.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Never</th><th>You can say instead</th></tr></thead>
+<tbody>
+<tr><td>Bring or show employer code, configs, screenshots, dashboards, tickets or documents</td><td>Describe the <i>type</i> of problem and your own approach in general terms</td></tr>
+<tr><td>Name clients, systems, internal tool names, volumes or revenue figures</td><td>&ldquo;A ticketing system integrated with cloud storage, with retries and an audit trail&rdquo;</td></tr>
+<tr><td>Use employer data, even &ldquo;anonymised&rdquo;, in a portfolio project</td><td>Build the same pattern on synthetic data you generated</td></tr>
+<tr><td>Quote internal metrics or incident details</td><td>Say what you learned: the failure mode, the fix, how you would prevent it</td></tr>
+<tr><td>Do the search on employer devices, accounts or time</td><td>Use a personal laptop, personal email and personal time</td></tr>
+<tr><td>Answer questions that probe confidential detail</td><td>&ldquo;I cannot share specifics, but here is the general design and what I would do again&rdquo;</td></tr>
+</tbody></table></div>
+
+<div class="code" data-lang="text">
+<header><b>what you can say about past work (invented wording)</b></header>
+<pre><code>Allowed:
+  "I integrated a ticketing system with cloud storage, with retries, idempotency and an audit log."
+  "I wrote the mapping layer and the tests; I cannot share the client or the data."
+  "The main failure mode was duplicate events after retries; I fixed it with idempotency keys."
+
+Not allowed:
+  Client or product names, internal system names, customer counts, revenue, configuration, screenshots, code.</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the demo that is secretly employer work</span>
+  <p>A portfolio project &ldquo;inspired by work&rdquo; that reproduces an employer&rsquo;s data model, naming or workflow is employer information, even if you rewrote every line. Start from a public problem and synthetic data.
+  If in doubt, read your contract&rsquo;s confidentiality and intellectual-property clauses, and ask a lawyer or HR in general terms rather than guessing.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Read &mdash; boundaries</div>
+  <a class="r" href="https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-readmes" target="_blank" rel="noopener"><span>GitHub Docs &mdash; About READMEs<i>Use the README to state plainly that the project uses synthetic data only.</i></span><span class="dur">10 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="pacing">Pacing, rejection and the weekly review</h2>
+<p class="sub">Rejection is the normal output of the funnel, not a measurement of your worth. A search you can sustain for months beats a sprint that ends in exhaustion.</p>
+
+<ul>
+  <li><b>Expect most applications to end in silence or a no.</b> The log makes that visible as a rate, not a personal event.</li>
+  <li><b>Work set hours.</b> A fixed number of search hours each week, with a clear start and stop, protects your current job, your sleep and your learning.</li>
+  <li><b>Keep one full pause per week.</b> The plan makes Saturday the review and the pause day for this reason.</li>
+  <li><b>Change one thing at a time.</b> If five weeks of applications produced silence, change the targeting or the r&eacute;sum&eacute; and watch the next batch. Changing everything teaches you nothing.</li>
+  <li><b>Tell someone.</b> A friend or mentor who asks &ldquo;what did the log say this week?&rdquo; keeps you honest. If stress becomes persistent low mood, poor sleep or hopelessness, speak to a doctor or a counsellor; that is a health matter, not a productivity one.</li>
+</ul>
+
+<h3 id="pacing-review">Weekly job-search review template</h3>
+<div class="code" data-lang="text">
+<header><b>weekly_review.txt (copy each Saturday; personal device)</b></header>
+<pre><code>Week of: ____            Hours spent on the search: ____ (planned ____)
+
+NUMBERS (from the log)
+  Saved: __   Verified: __   Applied: __   Replies: __   Screens: __   Interviews: __   Offers: __
+  Follow-ups due: __ sent: __     Response rate this week: __   cumulative: __
+
+WHAT HAPPENED
+  Best signal this week (a reply, a good question, a fixed gap):
+  Worst moment, and what it taught me:
+
+EVIDENCE
+  One thing I built or improved that I can link to:
+  One gap that came up (a question I could not answer):
+
+CHANGE ONE THING
+  Next week I will change: ____
+  Because the log says: ____
+
+PROTECTION
+  Did I use employer time, devices or information for the search? (should be: no)
+  Did I rest for one full day? ____</code></pre>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">In production</span>
+  <p>This is the same discipline as an on-call weekly review at work: look at the numbers, find one thing that changed them, make one change. The search is a system with inputs and outputs, and you improve it the way you improve any system.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Read and watch &mdash; stress and rejection</div>
+  <a class="r" href="https://www.nimh.nih.gov/health/topics/caring-for-your-mental-health" target="_blank" rel="noopener"><span>NIMH &mdash; Caring for Your Mental Health<i>Sleep, movement and routine from a US public health institute. General guidance, not treatment.</i></span><span class="dur">10 min</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=hwcVxKWJisc" target="_blank" rel="noopener"><span>Life Work Balance &mdash; Why Job Rejections Feel Personal &amp; How to Move On<i>Separating a rejection from your worth. A coaching channel; keep what helps, ignore any pitch.</i></span><span class="dur">video</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="qa">Interview-style Q&amp;A: walk me through your transition</h2>
+<p class="sub">This is the question that opens most first calls. Prepare it, say it aloud, and make every sentence one you can defend.</p>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p><b>&ldquo;Walk me through your transition from enterprise integration into applied AI.&rdquo;</b> A defensible shape, in about 90 seconds: <b>(1)</b> What I did: four years connecting enterprise
+  systems, APIs, auth, retries, data mapping, audit. <b>(2)</b> What I saw: the hard part of AI in organisations is the integration, permissions and reliability around the model. <b>(3)</b> What I did about it: a structured
+  programme of Python, then two public projects you can open (one sentence each, with the honest limit of each). <b>(4)</b> What I am looking for: a role where I build and ship AI systems and keep learning, and what I
+  bring that a model-only candidate may not. <b>(5)</b> Close with a question about the team. Follow-ups to prepare: &ldquo;how much Python do you have, honestly?&rdquo; (months of focused work, here are the repos); &ldquo;what did an AI assistant write
+  versus you?&rdquo; (answer from your ownership lines); &ldquo;why leave now?&rdquo; (towards, not away from).</p>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the rehearsed story that grows</span>
+  <p>Every retelling tempts you to round up: a month becomes a quarter, &ldquo;contributed&rdquo; becomes &ldquo;led&rdquo;. Write the 90-second version once, keep it on a personal device, and tell that version every time. Consistency across five
+  interviewers is the best evidence you are not embellishing.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="connect">How the pieces connect</h2>
+<p class="sub">Each artefact on this sheet feeds the next, and the weekly review feeds them all. By the end of week 22 you have either an offer, interviews in progress, or a precise, evidenced list of what to change.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Artefact</th><th>Made by</th><th>Feeds</th></tr></thead>
+<tbody>
+<tr><td>Evidence file (<code>term | link</code>)</td><td>Your projects, <a href="ai-python.html">Python sheet</a> and later project sheets</td><td>Matching helper, r&eacute;sum&eacute;, outreach</td></tr>
+<tr><td>Matching report</td><td><code>keyword_match.py</code> + your own reading</td><td>Go or no-go, and the gap line in your application</td></tr>
+<tr><td>Posting log</td><td><code>posting_log.py</code></td><td>Follow-ups, weekly review numbers</td></tr>
+<tr><td>Role scores</td><td><code>role_scorer.py</code></td><td>Which five postings to apply to this week</td></tr>
+<tr><td>Debrief notes</td><td>Each interview, <a href="ai-interview.html">interview sheet</a></td><td>Study blocks, evidence file</td></tr>
+<tr><td>Offer matrix</td><td><code>role_scorer.py</code> with offer criteria</td><td>Accept, negotiate, or continue (plan days 145&ndash;150)</td></tr>
+<tr><td>Weekly review</td><td>Saturday, template above</td><td>Next week&rsquo;s plan; progress on the <a href="ai-tracker.html">skills tracker</a></td></tr>
+</tbody></table></div>
+
+<div class="panel panel--real">
+  <span class="ph">What you ship from this sheet</span>
+  <p>A <code>jobs.csv</code> with every posting you have considered, an evidence file with real links, a weekly review for each Saturday, a written compensation floor and target with sources, and a filled decision matrix when
+  you hold an offer. Where this sits in the calendar is on <a href="ai-plan.html">the plan</a>, including Gate 3 and the final days.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="drill">Drill book</h2>
+<p class="sub">Answer aloud first, then open the answer.</p>
+
+<div class="drill">
+  <div class="dh">Drill &mdash; job search method</div>
+  <details><summary>You meet seven of ten listed requirements. Do you apply?</summary>
+    <div class="ans"><p>It depends on which three you miss, not on the count. Separate required from nice-to-have, and check whether the missing ones are core to the responsibilities. If the gaps are secondary, learnable and you can state them plainly, apply. If a core requirement is missing and you cannot evidence it, log the gap and skip or build the evidence first. The percentage from a keyword matcher does not decide this.</p></div></details>
+  <details><summary>Why does the keyword matcher separate &ldquo;unevidenced&rdquo; from &ldquo;gaps&rdquo;?</summary>
+    <div class="ans"><p>A term you list without a link is a claim, not evidence, so it must not raise your coverage. Showing it separately reminds you either to produce the link or to remove the claim from your r&eacute;sum&eacute;. Follow-up: &ldquo;what does the helper miss?&rdquo; Skills not in the vocabulary, required versus preferred, and depth.</p></div></details>
+  <details><summary>How do you check that a job posting is real and still open?</summary>
+    <div class="ans"><p>Find it on the company&rsquo;s own careers page by typing the domain myself, check the recruiter&rsquo;s identity and email domain, look at the posting date and company activity, search for duplicates and complaints, and ask for a video call before sharing anything sensitive. Any request for a fee, early ID or bank details, or a move to an off-platform chat stops the process.</p></div></details>
+  <details><summary>A role says &ldquo;remote&rdquo;. What do you check before applying from India?</summary>
+    <div class="ans"><p>The location line, the employment type (employee, contractor, EOR), payroll and tax handling, the required time-zone overlap in IST, and the legal entity that would sign the contract. If any is unclear I ask in writing before the loop, and I take professional tax advice before signing a cross-border agreement.</p></div></details>
+  <details><summary>Advertised versus estimated compensation: which do you quote, and why?</summary>
+    <div class="ans"><p>I quote advertised figures, since the employer itself stated them. Estimated figures from sites rely on self-reports and models, so I use them only for private orientation and say so if I mention them. In the log I record the type, source and date in separate fields so they are never mixed.</p></div></details>
+  <details><summary>An offer has a large joining bonus and a high variable component. Why is the headline a poor comparison?</summary>
+    <div class="ans"><p>Only the fixed pay is guaranteed. Variable pay depends on performance and company results, and a joining bonus often has a repayment clause if you leave early. Compare guaranteed, expected steady-state, and year-one-if-I-stay separately, count equity at zero unless I have a reason, and verify every component against the offer letter.</p></div></details>
+  <details><summary>The recruiter phones with a verbal offer and wants an answer today. What do you do?</summary>
+    <div class="ans"><p>Thank them, say I am keen, and ask for the full offer in writing and a day or two to review. I do not accept, decline or resign on the call. A real employer expects this; pressure to answer immediately is itself a warning sign.</p></div></details>
+  <details><summary>When do you decline a take-home?</summary>
+    <div class="ans"><p>When it is days of work, has no time limit, resembles the company&rsquo;s real backlog, comes before any human conversation, or uses their real data without an agreement. I ask first about expected time and evaluation criteria and offer an alternative such as a review of my existing repository.</p></div></details>
+  <details><summary>How do you describe enterprise integration experience without overclaiming?</summary>
+    <div class="ans"><p>I state exactly what I did (APIs, auth, retries, mapping, audit), what I did not (production AI systems in Python), and what I built since, with links. I add an ownership line to each project saying what I wrote, what an AI tool drafted and what I can explain, and I never include client names, data or code.</p></div></details>
+  <details><summary>Your employer counters your resignation. How do you decide?</summary>
+    <div class="ans"><p>I decide before resigning. I ask why I was leaving, whether the counter addresses that reason or only the number, whether promises are in writing, and whether the new role still wins on my matrix. I check my contract and do not assume a counter will be offered or that it is better. I never bluff with a fake offer.</p></div></details>
+  <details><summary>Five weeks of applications produced almost no replies. What do you change first?</summary>
+    <div class="ans"><p>Use the log to find where the funnel leaks. Silence before screens points at targeting or the r&eacute;sum&eacute;; so I check role fit, eligibility and whether the top third of the r&eacute;sum&eacute; shows linked evidence. I change one thing, apply a fresh batch and compare response rates, rather than changing everything at once.</p></div></details>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="signoff">Sign-off</h2>
+<p class="sub">Tick a box only when the artefact exists on your personal device, or you did the thing, not when you understood it.</p>
+
+<div class="signoff">
+  <div class="sh"><span>Weeks 13&ndash;22</span><span>Sheet 36</span></div>
+  <label><input type="checkbox"><span>I wrote the role family (from the taxonomy) next to every posting in my log, chosen by the verbs in its responsibilities.</span></label>
+  <label><input type="checkbox"><span>I keep an evidence file where every skill line has a link I can open, and I removed the lines I could not link.</span></label>
+  <label><input type="checkbox"><span>I ran the keyword matcher on a real posting I chose, read its gaps myself and wrote the gap and plan columns by hand.</span></label>
+  <label><input type="checkbox"><span>My <code>jobs.csv</code> has at least ten rows, uses only the fixed statuses, and has follow-up dates for everything I applied to.</span></label>
+  <label><input type="checkbox"><span>I set my own weights in the role scorer, ranked my shortlist, and checked whether a one-point weight change flips the order.</span></label>
+  <label><input type="checkbox"><span>For each application I verified the posting on the company&rsquo;s own site and checked the recruiter&rsquo;s identity, and I can say which scam pattern I would stop at.</span></label>
+  <label><input type="checkbox"><span>My r&eacute;sum&eacute; leads with linked projects, each has an honest-ownership line, and it contains no employer client, system name, data or code.</span></label>
+  <label><input type="checkbox"><span>My GitHub profile has pinned repositories with a README that includes limitations and a demo transcript, and no secrets in history.</span></label>
+  <label><input type="checkbox"><span>I sent my first applications at Gate 3 on credible evidence, without waiting for Project 2.</span></label>
+  <label><input type="checkbox"><span>I wrote my take-home policy and my floor and target compensation, each with its sources and dates, on a personal device.</span></label>
+  <label><input type="checkbox"><span>I said the negotiation phrases aloud, and I read my own contract&rsquo;s notice-period, buy-out and confidentiality clauses.</span></label>
+  <label><input type="checkbox"><span>I can recite my 90-second transition story and answer &ldquo;how much Python, honestly?&rdquo; without rounding up.</span></label>
+  <label><input type="checkbox"><span>I completed a weekly review every Saturday for at least four weeks and made one change per review.</span></label>
+</div>
+
+</div><!-- /sheetbody -->
+</main>
+
+<aside class="toc" aria-label="Contents"></aside>
+</div>
+
+<script src="assets/js/nav-data.js"></script>
+<script src="assets/js/sheet.js"></script>
+</body>
+</html>

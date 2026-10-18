@@ -59,7 +59,10 @@ for (const { no, f } of expected) {
     const bad = c[1].match(/<(?!\/?(span|br)\b)/g);
     if (bad) fail(f, `code block #${i + 1} has ${bad.length} unescaped "<" (use &lt;)`);
   });
-  if (!codes.length && no !== '00') fail(f, 'no code blocks at all');
+  // Interactive pages (planner, tracker) are drawn by scripts and mark themselves data-kind="app";
+  // the content-sheet rules (code, drills, sign-off, diagrams) do not apply to them.
+  const app = /data-kind="app"/.test(src);
+  if (!codes.length && no !== '00' && !app) fail(f, 'no code blocks at all');
  
   // --- code blocks need a language ---------------------------------------
   const noLang = (src.match(/<div class="code">/g) || []).length;
@@ -71,11 +74,11 @@ for (const { no, f } of expected) {
   }
  
   // --- required sections --------------------------------------------------
-  if (no !== '00') {
+  if (no !== '00' && !app) {
     if (!/id="connect"/.test(src)) warn(f, 'no "How the subtopics connect" section');
     if (!/id="drill"/.test(src) && no !== '14') warn(f, 'no drill book');
   }
-  if (!/class="signoff"/.test(src)) fail(f, 'no sign-off block');
+  if (!/class="signoff"/.test(src) && !app) fail(f, 'no sign-off block');
  
   // --- tag balance (rough) -----------------------------------------------
   for (const tag of ['div', 'figure', 'table', 'svg', 'details', 'section']) {
@@ -91,7 +94,7 @@ for (const { no, f } of expected) {
   const drills = (src.match(/<details>/g) || []).length;
   const boxes = (src.match(/type="checkbox"/g) || []).length;
   const res = (src.match(/class="res"/g) || []).length;
-  if (dwgs < 3 && no !== '00') warn(f, `only ${dwgs} diagrams`);
+  if (dwgs < 3 && no !== '00' && !app) warn(f, `only ${dwgs} diagrams`);
   report.push(`  ok    ${f.padEnd(20)} ${String(lines).padStart(5)} lines · ${String(dwgs).padStart(2)} drawings · ${String(h2.length).padStart(2)} sections · ${String(drills).padStart(2)} drills · ${String(boxes).padStart(2)} sign-offs · ${res} resource lists`);
 }
  

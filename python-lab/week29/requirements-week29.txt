@@ -1,0 +1,5 @@
+pytest>=8
+hypothesis>=6
+# Used only by blocks on the Testing and Evaluation sheet (sections 7 and 9), not by the lab tests:
+httpx>=0.27
+fastapi>=0.110

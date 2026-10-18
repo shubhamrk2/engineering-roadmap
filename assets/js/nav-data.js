@@ -1,5 +1,27 @@
 /* Single source of truth for the drawing set. Every page reads this. */
 window.SHEETS = [
+  { g: 'Applied AI track', no: '20', t: 'The Plan',          f: 'ai-plan.html',        w: 'W01–22', kw: 'plan roadmap 151 days gates applied ai forward deployed schedule honest deadline' },
+  { g: 'Applied AI track', no: '21', t: 'Daily Planner',     f: 'ai-daily.html',       w: 'D001–151', kw: 'daily day by day planner schedule today milestones november march resources' },
+  { g: 'Applied AI track', no: '22', t: 'Skills Tracker',    f: 'ai-tracker.html',     w: 'Weekly', kw: 'skills tracker levels evidence weekly review progress' },
+
+  { g: 'Foundations', no: '23', t: 'Python from Zero',      f: 'ai-python.html',      w: 'W01–04', kw: 'python beginner basics lists dict functions pytest git debugging lab c++' },
+  { g: 'Foundations', no: '24', t: 'HTTP and API Clients',  f: 'ai-http.html',        w: 'W05',    kw: 'http curl httpx timeout retry backoff jitter pagination rate limit auth api key' },
+  { g: 'Foundations', no: '25', t: 'FastAPI and Pydantic',  f: 'ai-fastapi.html',     w: 'W06',    kw: 'fastapi pydantic validation dependencies testclient openapi uvicorn settings' },
+  { g: 'Foundations', no: '26', t: 'SQL and PostgreSQL',    f: 'ai-sql.html',         w: 'W07–08', kw: 'sql postgresql joins group by cte window index explain transaction psycopg injection' },
+  { g: 'Foundations', no: '27', t: 'Docker, Compose, CI',   f: 'ai-docker.html',      w: 'W08',    kw: 'docker dockerfile compose healthcheck github actions ci config 12-factor' },
+  { g: 'Foundations', no: '28', t: 'Reliability and Security', f: 'ai-reliability.html', w: 'W09', kw: 'oauth jwt secrets encryption hmac idempotency webhook circuit breaker outbox audit owasp' },
+  { g: 'Foundations', no: '29', t: 'Testing and Evaluation', f: 'ai-testing.html',    w: 'W04–18', kw: 'pytest fixtures mock fake contract hypothesis coverage eval recall mrr llm judge observability' },
+
+  { g: 'AI engineering', no: '30', t: 'LLM Engineering',    f: 'ai-llm.html',         w: 'W10',    kw: 'llm tokens prompt structured output hallucination injection guardrails ollama local model' },
+  { g: 'AI engineering', no: '31', t: 'Embeddings and RAG', f: 'ai-rag.html',         w: 'W11–12', kw: 'embeddings rag chunking pgvector hybrid bm25 rerank citations refusal evaluation' },
+  { g: 'AI engineering', no: '32', t: 'Agents and LangGraph', f: 'ai-agents.html',    w: 'W14–15', kw: 'agent tool calling function calling workflow approval state langgraph loop' },
+  { g: 'AI engineering', no: '33', t: 'MCP',                f: 'ai-mcp.html',         w: 'W16',    kw: 'mcp model context protocol tools resources prompts json-rpc stdio transport security' },
+
+  { g: 'Projects and interviews', no: '37', t: 'Portfolio Projects', f: 'ai-projects.html', w: 'W13, 17–18', kw: 'project knowledge assistant operations assistant architecture readme demo tradeoffs portfolio' },
+  { g: 'Projects and interviews', no: '34', t: 'DSA in Python',  f: 'ai-dsa.html',         w: 'W05–22', kw: 'dsa complexity hash map two pointers sliding window binary search tree graph dp heap python' },
+  { g: 'Projects and interviews', no: '35', t: 'Interview Prep', f: 'ai-interview.html',   w: 'W19–20', kw: 'interview system design behavioural star honest framing live coding sql rag agents' },
+  { g: 'Projects and interviews', no: '36', t: 'Job Search Method', f: 'ai-jobsearch.html', w: 'W21–22', kw: 'job search resume linkedin referral offer negotiation remote india verify posting' },
+ 
   { g: 'Preflight', no: '00', t: 'The Plan',          f: 'index.html',       w: 'W00',     kw: 'roadmap schedule 12 week plan how to use progress' },
   { g: 'Preflight', no: '01', t: 'Machine Setup',     f: 'setup.html',       w: 'W00',     kw: 'install wsl node python java docker vscode corporate laptop proxy no admin' },
  

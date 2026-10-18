@@ -1,0 +1,51 @@
+{ "days": {
+  "141": {
+    "text":  [ { "t": "How to spot a job scam (FTC)", "u": "https://consumer.ftc.gov/consumer-alerts/2025/09/how-spot-job-scam", "why": "Verify every recruiter and interviewer before you share anything." } ],
+    "video": [ { "t": "Send This Email to Follow Up After a Job Interview (& why it matters)", "u": "https://www.youtube.com/watch?v=8ap-E6MuR14", "by": "Sarah Doody", "why": "A short, specific thank-you after each loop." } ]
+  },
+  "142": {
+    "text":  [ { "t": "Sprint Retrospective: How to Hold an Effective Meeting (Atlassian)", "u": "https://www.atlassian.com/team-playbook/plays/retrospective", "why": "Use the same went-well, went-badly, change format on each interview." } ],
+    "video": [ { "t": "Rejected After Final Interview? Do This in 24 Hours", "u": "https://www.youtube.com/watch?v=N2EkWpCTJcE", "by": "Lissa Appiah | Career Strategist", "why": "Turn a rejection into a written list of gaps." } ]
+  },
+  "143": {
+    "text":  [ { "t": "Following Up (UNLV Career Services)", "u": "https://www.unlv.edu/career-services-workforce-dev/student-alumni-resources/following-up", "why": "Concrete follow-up timings: 7-10 days after applying, 24 hours after an interview." } ],
+    "video": [ { "t": "Unemployed in Tech in 2026: My Job Application Tracking Method to Stay Organized (with Template)", "u": "https://www.youtube.com/watch?v=gtsgGSQu5Yc", "by": "nikitisza", "why": "One way to run a pipeline tracker; compare with your CSV." } ]
+  },
+  "144": {
+    "text":  [ { "t": "Take-home coding challenges: how to outshine your competition", "u": "https://geshan.com.np/blog/2020/09/take-home-coding-challenges-outshine-competition/", "why": "README, tests and scope for a take-home." },
+                { "t": "Want to Ace Your Next Take-Home Coding Exercises? Follow These 13 Short Tips", "u": "https://dev.to/canro91/want-to-ace-your-next-take-home-coding-exercises-follow-these-13-short-tips-5f56", "why": "Short checklist to run before you submit." } ],
+    "video": [ { "t": "How to approach Take Home Assignments during Interviews? | Arnav Gupta - Refactor Ep #06", "u": "https://www.youtube.com/watch?v=sgmMqP9AYpY", "by": "SCALER", "why": "Timeboxing, priorities and repo hygiene for take-homes." } ]
+  },
+  "145": {
+    "text":  [ { "t": "Evaluate and negotiate an offer (Cornell Career Services)", "u": "https://career.cornell.edu/channels/negotiate-an-offer/", "why": "Compare offers beyond salary; a university guide, not US-specific in method." } ],
+    "video": [ { "t": "How to Evaluate & Negotiate Job Offers", "u": "https://www.youtube.com/watch?v=uX_XcnydbiA", "by": "UMDCareerCenter", "why": "A career centre's walk-through of evaluating and timing." } ]
+  },
+  "146": {
+    "text":  [ { "t": "Negotiate job offers (MIT CAPD)", "u": "https://capd.mit.edu/channels/negotiate-job-offers/", "why": "Ask for time, then negotiate in steps; what is negotiable." },
+                { "t": "Salary Negotiation: Make More Money, Be More Valued (Kalzumeus)", "u": "https://www.kalzumeus.com/2012/01/23/salary-negotiation/", "why": "Classic engineer-focused essay; check it against Indian practice." },
+                { "t": "Ten Rules for Negotiating a Job Offer (freeCodeCamp)", "u": "https://www.freecodecamp.org/news/ten-rules-for-negotiating-a-job-offer-ee17cccbdab6", "why": "Principles to rehearse aloud; written for US tech." } ],
+    "video": [ { "t": "How to Negotiate a Big Tech Offer as a Software Engineer - with @RahulPandeyrkp", "u": "https://www.youtube.com/watch?v=cbngWLr7BC4", "by": "The Pragmatic Engineer", "why": "Both sides of a negotiation; treat figures as US big-tech only." } ]
+  },
+  "147": {
+    "text":  [ { "t": "Caring for Your Mental Health (NIMH)", "u": "https://www.nimh.nih.gov/health/topics/caring-for-your-mental-health", "why": "Sleep, movement and routine; a pause day is part of the plan." } ],
+    "video": [ { "t": "Why Job Rejections Feel Personal & How to Move On", "u": "https://www.youtube.com/watch?v=hwcVxKWJisc", "by": "Life Work Balance", "why": "Separating a rejection from your worth." } ]
+  },
+  "148": {
+    "text":  [ { "t": "Pinning items to your profile (GitHub Docs)", "u": "https://docs.github.com/en/account-and-profile/how-tos/profile-customization/pinning-items-to-your-profile", "why": "Make your best verified evidence the first thing visible." } ],
+    "video": [ { "t": "How to Read a Job Description (According to a Real Recruiter)", "u": "https://www.youtube.com/watch?v=fhZ2QNNd2k4", "by": "Teal", "why": "Re-read postings against what your tracker can truly evidence." } ]
+  },
+  "149": {
+    "text":  [ { "t": "Following Up (UNLV Career Services)", "u": "https://www.unlv.edu/career-services-workforce-dev/student-alumni-resources/following-up", "why": "Give every open item a dated, polite next step." },
+                { "t": "Job Scams (FTC)", "u": "https://consumer.ftc.gov/articles/job-scams", "why": "Re-check any new contact before you schedule or share documents." } ],
+    "video": [ { "t": "LinkedIn Cold Msg for SDE Referral: Right and Wrong way of sending referral msg for SDE job", "u": "https://www.youtube.com/watch?v=ahqFp9Ly9zs", "by": "Concept && Coding - by Shrayansh", "why": "Write a short, specific referral message for a stalled item." } ]
+  },
+  "150": {
+    "text":  [ { "t": "Evaluate and negotiate an offer (Cornell Career Services)", "u": "https://career.cornell.edu/channels/negotiate-an-offer/", "why": "Write the decision with reasons, not a feeling." },
+                { "t": "Negotiate job offers (MIT CAPD)", "u": "https://capd.mit.edu/channels/negotiate-job-offers/", "why": "Do not accept or decline on the first call; get terms in writing." } ],
+    "video": [ { "t": "How to Evaluate a Job Offer: Beyond Salary", "u": "https://www.youtube.com/watch?v=Z8mmlfl58NA", "by": "The Welch Group", "why": "Benefits, hidden costs and long-term factors in one view." } ]
+  },
+  "151": {
+    "text":  [ { "t": "Sprint Retrospective: How to Hold an Effective Meeting (Atlassian)", "u": "https://www.atlassian.com/team-playbook/plays/retrospective", "why": "A format for your own retrospective and next-90-days plan." } ],
+    "video": [ { "t": "How to run an effective retrospective", "u": "https://www.youtube.com/watch?v=9HWHgKAqXuw", "by": "Scrum Alliance", "why": "Concrete steps; run it on yourself and write the actions." } ]
+  }
+} }

@@ -1,3 +1,50 @@
+# Engineering roadmap
+
+This repository holds two things that share one design system and one runtime:
+
+1. **The Applied AI track** (sheets 20 to 23, `ai-*.html`, glass theme): a day-by-day plan from 1 Nov 2026 to 31 Mar 2027 for
+   moving into Applied AI / Forward Deployed engineering roles, with Python-from-zero material and a tested practice lab.
+2. **BadgeDesk** (sheets 00 to 15): the earlier 12-week general full-stack drawing set. Still here as optional reference.
+
+## Applied AI track
+
+Open `ai-plan.html` first.
+
+| Sheet | File | What it is |
+|---|---|---|
+| 20 | `ai-plan.html` | The plan: five phases, four gates, the honest view of the deadline, the week-by-week table |
+| 21 | `ai-daily.html` | The daily planner: 151 days, each with what to learn, what to do, a pass/fail "done when", and verified text and video resources |
+| 22 | `ai-tracker.html` | Fourteen skills on six levels. Levels 4 and 5 are locked until you write evidence. Weekly review form |
+| 23 | `ai-python.html` | Python from zero, weeks 1 to 4 |
+| 24 | `ai-http.html` | HTTP, curl, httpx, timeouts, retries, auth, pagination, rate limits (week 5) |
+| 25 | `ai-fastapi.html` | FastAPI and Pydantic v2 (week 6) |
+| 26 | `ai-sql.html` | SQL and PostgreSQL, psycopg, transactions (weeks 7 to 8) |
+| 27 | `ai-docker.html` | Docker, Compose, config, CI basics (week 8) |
+| 28 | `ai-reliability.html` | Auth, secrets, encryption, idempotency, webhooks, circuit breakers, audit (week 9) |
+| 29 | `ai-testing.html` | pytest in depth, test doubles, evaluating LLM apps |
+| 30 | `ai-llm.html` | LLM engineering: tokens, prompting, structured output, injection (week 10) |
+| 31 | `ai-rag.html` | Embeddings, chunking, retrieval, hybrid search, RAG (weeks 11 to 12) |
+| 32 | `ai-agents.html` | Tool calling, agent loop, workflows, approvals, LangGraph (weeks 14 to 15) |
+| 33 | `ai-mcp.html` | Model Context Protocol (week 16) |
+| 37 | `ai-projects.html` | Build guides for Project 1 and Project 2 (weeks 13, 17, 18) |
+| 34 | `ai-dsa.html` | DSA in Python, daily from week 5 |
+| 35 | `ai-interview.html` | Interview preparation for Applied AI roles (weeks 19 to 20) |
+| 36 | `ai-jobsearch.html` | Job search method, offers, negotiation principles (weeks 21 to 22) |
+
+`python-lab/` has the exercises: 924 tests across 19 lab folders. Every stub starts failing; your code turns the tests green. See `python-lab/README.md`.
+
+**Where the plan lives.** All day-level content is data in `assets/js/daily-plan.js` (one source for the planner and the plan table). Per-day resources are
+merged by `node tools/merge-resources.mjs` from `tools/resources/*.json` into `assets/js/day-resources.js`; verify any resource file with
+`node tools/verify-resources.mjs <file>` and execute a sheet's code with `python tools/run-python-blocks.py <sheet.html>`.
+`assets/js/planner.js` draws it and stores ticks and notes in the browser's `localStorage`. `assets/js/tracker.js` does the same for the skills tracker.
+Use **Export progress** on sheet 21 to back up; clearing browser data erases progress.
+
+**Theme.** `assets/css/glass.css` is an opt-in glassmorphism theme, active only on `<body class="glass">`. It falls back to solid surfaces
+where `backdrop-filter` is unsupported or reduced transparency is requested. The BadgeDesk sheets are unchanged.
+
+**Privacy.** Keep portfolio work, job-search notes and compensation research on a personal machine, not an employer-managed one.
+This repository currently sits in an employer OneDrive folder; copy it to a personal machine before using it.
+
 # BadgeDesk — a 12-week engineering drawing set
 
 A study site covering Python, JavaScript, TypeScript, Java, React, Next.js, FastAPI, Node/Express,

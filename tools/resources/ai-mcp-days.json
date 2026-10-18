@@ -1,0 +1,88 @@
+{
+  "days": {
+    "106": {
+      "text": [
+        { "t": "MCP docs: Architecture overview", "u": "https://modelcontextprotocol.io/docs/2026-07-28/learn/architecture", "why": "Host, client, server and the per-request example, current revision" },
+        { "t": "MCP spec 2026-07-28: Overview (base protocol)", "u": "https://modelcontextprotocol.io/specification/2026-07-28/basic/index", "why": "Request, response, notification shapes, ids, error codes, _meta" },
+        { "t": "MCP spec 2026-07-28: Transports overview", "u": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/index", "why": "stdio and Streamable HTTP as bindings of the same messages" },
+        { "t": "MCP spec 2025-11-25: Lifecycle (initialize handshake)", "u": "https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle", "why": "The handshake most deployed servers still speak" }
+      ],
+      "video": [
+        { "t": "MCP Architecture Explained - Hosts, Clients, Servers & JSON-RPC", "u": "https://www.youtube.com/watch?v=7KlapF6BfNU", "by": "Learn with Manoj", "why": "Short orientation; March 2026, predates the stateless 2026-07-28 revision" },
+        { "t": "MCP Went Stateless: the 2026-07-28 Spec Explained (what changed, what breaks)", "u": "https://www.youtube.com/watch?v=RrrdPnL8Gq4", "by": "Kamran Code", "why": "October 2026 walk-through of the revision the sheet teaches" }
+      ]
+    },
+    "107": {
+      "text": [
+        { "t": "MCP docs: Build an MCP server", "u": "https://modelcontextprotocol.io/docs/2026-07-28/develop/build-server", "why": "Official build-a-server walkthrough, current revision" },
+        { "t": "MCP Python SDK repository and README", "u": "https://github.com/modelcontextprotocol/python-sdk", "why": "Source of truth for the SDK API; check your installed version" },
+        { "t": "MCP Python SDK v2 migration guide", "u": "https://py.sdk.modelcontextprotocol.io/v2/migration/", "why": "FastMCP renamed to MCPServer; read before copying old tutorials" },
+        { "t": "MCP docs: MCP Inspector", "u": "https://modelcontextprotocol.io/docs/2026-07-28/tools/inspector", "why": "The visual client for poking a server without a model" }
+      ],
+      "video": [
+        { "t": "Build an MCP Server in Python (SDK v2) – Full Beginner Tutorial", "u": "https://www.youtube.com/watch?v=zX3pMXmRaPE", "by": "Back To Code", "why": "October 2026, uses SDK v2 as installed in the sheet" },
+        { "t": "MCP Server Tutorial: Build Your First Python Server With SDK v2", "u": "https://www.youtube.com/watch?v=81w5N3oM-Io", "by": "AISLabs AI", "why": "Four-minute second view of the same first server" }
+      ]
+    },
+    "108": {
+      "text": [
+        { "t": "MCP spec 2026-07-28: Resources", "u": "https://modelcontextprotocol.io/specification/2026-07-28/server/resources", "why": "URIs, templates, reading, and the not-found error code" },
+        { "t": "MCP spec 2026-07-28: Prompts", "u": "https://modelcontextprotocol.io/specification/2026-07-28/server/prompts", "why": "Prompt arguments and messages; user-controlled, not model-controlled" },
+        { "t": "MCP docs: Understanding MCP servers", "u": "https://modelcontextprotocol.io/docs/2026-07-28/learn/server-concepts", "why": "When each primitive is the right shape" }
+      ],
+      "video": [
+        { "t": "MCP Resources Tutorial | Fixed Resources & Resource Templates | MCP Masterclass #4", "u": "https://www.youtube.com/watch?v=KTkhYTQzOxg", "by": "Root Cause", "why": "September 2026; resources and URI templates in practice" },
+        { "t": "MCP Prompts Tutorial | Static & Dynamic Prompts | MCP Masterclass #5", "u": "https://www.youtube.com/watch?v=s7AivVRr-0A", "by": "Root Cause", "why": "October 2026; prompts, the third primitive" }
+      ]
+    },
+    "109": {
+      "text": [
+        { "t": "MCP docs: Security best practices", "u": "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices", "why": "Confused deputy, token passthrough, SSRF, scope minimisation" },
+        { "t": "MCP spec 2026-07-28: Authorization", "u": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/index", "why": "OAuth 2.1 flow, resource indicators, audience validation, scopes" },
+        { "t": "MCP docs: Local server security", "u": "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/local-server-security", "why": "What a stdio server inherits from the user" },
+        { "t": "OWASP: MCP Tool Poisoning", "u": "https://owasp.org/www-community/attacks/MCP_Tool_Poisoning", "why": "Malicious tool descriptions, rug pulls, and mitigations" }
+      ],
+      "video": [
+        { "t": "Your Agent Is a Lethal Trifecta (And What to Do About It) — Kim Maida, Keycard", "u": "https://www.youtube.com/watch?v=ws9XcGGPBDk", "by": "AI Engineer", "why": "October 2026 talk on private data, untrusted content, exfiltration" },
+        { "t": "MCP Security Course (CMCPSE): Tool Poisoning, Rug Pulls, and Prompt Injection Explained", "u": "https://www.youtube.com/watch?v=smGV3kPipCg", "by": "Practical DevSecOps", "why": "Attack walk-through; from a security training vendor, treat as awareness" },
+        { "t": "[Session] Intro to OAuth for MCP Servers with Aaron Parecki, Okta", "u": "https://www.youtube.com/watch?v=mYKMwZcGynw", "by": "Agentic AI Foundation", "why": "May 2025 OAuth design talk; predates Client ID Metadata Documents becoming preferred" }
+      ]
+    },
+    "110": {
+      "text": [
+        { "t": "MCP spec 2026-07-28: Tools (error handling, security)", "u": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools", "why": "isError versus protocol errors, structured output, MUST rules" },
+        { "t": "MCP docs: Debugging", "u": "https://modelcontextprotocol.io/docs/2026-07-28/tools/debugging", "why": "Logging to stderr and finding failures in a stdio server" },
+        { "t": "MCP spec 2026-07-28: Logging (deprecated)", "u": "https://modelcontextprotocol.io/specification/2026-07-28/server/utilities/logging", "why": "Protocol logging is deprecated; log to stderr or OpenTelemetry" },
+        { "t": "MCP Python SDK repository and README", "u": "https://github.com/modelcontextprotocol/python-sdk", "why": "In-memory client usage and testing notes for your version" }
+      ],
+      "video": [
+        { "t": "Testing MCP Servers With a Python MCP Client: Preparing & Structuring Your MCP Client", "u": "https://www.youtube.com/watch?v=Wct9d_Ijxx0", "by": "Real Python", "why": "July 2026; drive a server from Python without a model" },
+        { "t": "Test & Debug MCP Servers with MCP Inspector", "u": "https://www.youtube.com/watch?v=sFSfQIqE9x4", "by": "Yuval Ishay", "why": "September 2026 Inspector demo; awareness-level debugging" },
+        { "t": "Exploring Observability with MCP Servers - Tiffany Jernigan, Grafana Labs", "u": "https://www.youtube.com/watch?v=SIg81hkHZXQ", "by": "CNCF [Cloud Native Computing Foundation]", "why": "June 2026 talk on tracing and metrics for MCP servers" }
+      ]
+    },
+    "111": {
+      "text": [
+        { "t": "MCP docs: Connect to remote MCP servers", "u": "https://modelcontextprotocol.io/docs/2026-07-28/develop/connect-remote-servers", "why": "How a host reaches an HTTP server you might build" },
+        { "t": "MCP spec 2026-07-28: Pagination", "u": "https://modelcontextprotocol.io/specification/2026-07-28/server/utilities/pagination", "why": "Cursors for list results; mirror the idea for your REST API" },
+        { "t": "MCP spec 2026-07-28: Tools (stateful tools and handles)", "u": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools", "why": "Explicit handles replace sessions; relevant to idempotent writes" },
+        { "t": "OWASP API Security Top 10", "u": "https://owasp.org/API-Security/", "why": "The REST-side risks your wrapper inherits" }
+      ],
+      "video": [
+        { "t": "REST vs Function Calling vs MCP: What Changes When AI Touches Your Backend?", "u": "https://www.youtube.com/watch?v=VpHbxLo47QM", "by": "The Desi Architect", "why": "September 2026 comparison; use it to sharpen your own table" },
+        { "t": "Build an MCP Server from an Existing REST API | OpenAPI to ChatGPT", "u": "https://www.youtube.com/watch?v=_G6u3cR8VW8", "by": "MCPPlatform", "why": "Vendor-flavoured; note what auto-generation skips (idempotency, paging)" }
+      ]
+    },
+    "112": {
+      "text": [
+        { "t": "MCP spec 2026-07-28: Key Changes", "u": "https://modelcontextprotocol.io/specification/2026-07-28/changelog", "why": "What changed since 2025-11-25; the stateless revision" },
+        { "t": "MCP spec 2026-07-28: Deprecated features", "u": "https://modelcontextprotocol.io/specification/2026-07-28/deprecated", "why": "Roots, sampling, logging, HTTP+SSE, DCR and their migrations" },
+        { "t": "MCP docs: What is the Model Context Protocol", "u": "https://modelcontextprotocol.io/docs/2026-07-28/getting-started/intro", "why": "The 3-minute framing for your Gate 4 explanation" }
+      ],
+      "video": [
+        { "t": "MCP Explained Simply — What It Is and Why It Exists", "u": "https://www.youtube.com/watch?v=oblaHqULUHk", "by": "TechWorld with Nana", "why": "September 2026 plain-language version; compare with your own explanation" },
+        { "t": "MCP Spec 2026-07-28: What Changed for Agent Builders", "u": "https://www.youtube.com/watch?v=noB-Q_Uxqqw", "by": "Coding with Preet", "why": "Five-minute revision summary; check it against the changelog page" }
+      ]
+    }
+  }
+}

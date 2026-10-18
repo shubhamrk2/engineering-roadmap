@@ -1,0 +1,3230 @@
+{
+ "days": {
+  "29": {
+   "text": [
+    {
+     "t": "Big-O Cheat Sheet",
+     "u": "https://www.bigocheatsheet.com/",
+     "why": "Complexities of common structures and sorts at a glance."
+    },
+    {
+     "t": "Python TimeComplexity (Python wiki)",
+     "u": "https://wiki.python.org/moin/TimeComplexity",
+     "why": "Look up cost of list, dict, set, deque operations."
+    },
+    {
+     "t": "NeetCode: Contains Duplicate",
+     "u": "https://neetcode.io/problems/duplicate-integer",
+     "why": "Hash set: seen-before check in O(n)"
+    }
+   ],
+   "video": [
+    {
+     "t": "Time and Space Complexity explained in literally 5 minutes",
+     "u": "https://www.youtube.com/watch?v=jOMxKsUd6e0",
+     "by": "GeeksforGeeks",
+     "why": "Quick Big-O refresher for time and space."
+    },
+    {
+     "t": "Big-O Notation Explained: Time & Space Complexity in Programming",
+     "u": "https://www.youtube.com/watch?v=APGPA3nN5a4",
+     "by": "Geekific",
+     "why": "Longer Big-O walk-through with code examples."
+    },
+    {
+     "t": "Python Slicing Explained Simply",
+     "u": "https://www.youtube.com/watch?v=NQ6bIDnY5ww",
+     "by": "Tech Pulse Labs",
+     "why": "Slices copy; know when to avoid them in DSA."
+    }
+   ]
+  },
+  "30": {
+   "text": [
+    {
+     "t": "NeetCode: Two Sum",
+     "u": "https://neetcode.io/problems/two-integer-sum",
+     "why": "Hash map: map value to index, look up the complement"
+    },
+    {
+     "t": "Mapping types: dict (Python docs)",
+     "u": "https://docs.python.org/3/library/stdtypes.html#mapping-types-dict",
+     "why": "dict operations that power every hash map solution."
+    },
+    {
+     "t": "collections: Counter, defaultdict, deque (Python docs)",
+     "u": "https://docs.python.org/3/library/collections.html",
+     "why": "Counter, defaultdict and deque cover most patterns."
+    }
+   ],
+   "video": [
+    {
+     "t": "Two Sum - Leetcode 1 - Python - Hashmap",
+     "u": "https://www.youtube.com/watch?v=GHMw8gSRzg0",
+     "by": "Jan Meppe",
+     "why": "Hash map complement trick, written in Python."
+    },
+    {
+     "t": "Two Sum - Leetcode 1 - HashMap - Python- Explain",
+     "u": "https://www.youtube.com/watch?v=z9bC-OZjqTU",
+     "by": "Kim Kim Tech",
+     "why": "Second Python take on the two-sum pattern."
+    }
+   ]
+  },
+  "31": {
+   "text": [
+    {
+     "t": "NeetCode: Valid Anagram",
+     "u": "https://neetcode.io/problems/is-anagram",
+     "why": "Hash map counting: count characters in both strings"
+    },
+    {
+     "t": "NeetCode: Valid Palindrome",
+     "u": "https://neetcode.io/problems/is-palindrome",
+     "why": "Two pointers: pointers from both ends of the string"
+    },
+    {
+     "t": "Text sequence type: str (Python docs)",
+     "u": "https://docs.python.org/3/library/stdtypes.html#text-sequence-type-str",
+     "why": "String methods, indexing and immutability."
+    }
+   ],
+   "video": [
+    {
+     "t": "Valid Anagram (Leetcode 242) | Easy Java & Python",
+     "u": "https://www.youtube.com/watch?v=xK9fp7c5VO4",
+     "by": "Kevin Carr",
+     "why": "Anagram check: sort versus counting characters."
+    },
+    {
+     "t": "VALID PALINDROME - SOLUTION EXPLAINED [PYTHON] | LEETCODE 125",
+     "u": "https://www.youtube.com/watch?v=O2W-z-sVFTQ",
+     "by": "Cracking FAANG",
+     "why": "Two-pointer palindrome check in Python."
+    }
+   ]
+  },
+  "32": {
+   "text": [
+    {
+     "t": "NeetCode: Two Sum II (sorted input)",
+     "u": "https://neetcode.io/problems/two-integer-sum-ii",
+     "why": "Two pointers: move the pointer that fixes the sum"
+    },
+    {
+     "t": "Python tutorial: Data Structures",
+     "u": "https://docs.python.org/3/tutorial/datastructures.html",
+     "why": "Lists, dicts, sets, and comprehensions in one reference."
+    }
+   ],
+   "video": [
+    {
+     "t": "167. Two Sum II - Input Array Is Sorted",
+     "u": "https://www.youtube.com/watch?v=Nu_z_sM5-sQ",
+     "by": "TechWithSaumya",
+     "why": "Two pointers closing in on a sorted array."
+    },
+    {
+     "t": "Two Sum II in O(n) Using Two Pointers",
+     "u": "https://www.youtube.com/watch?v=p0GdTJBWswU",
+     "by": "StackMint",
+     "why": "Why sortedness lets two pointers work."
+    }
+   ]
+  },
+  "33": {
+   "text": [
+    {
+     "t": "NeetCode: Longest Substring Without Repeating Characters",
+     "u": "https://neetcode.io/problems/longest-substring-without-duplicates",
+     "why": "Sliding window: grow right, shrink left on duplicates"
+    },
+    {
+     "t": "NeetCode: Best Time to Buy and Sell Stock",
+     "u": "https://neetcode.io/problems/buy-and-sell-crypto",
+     "why": "Sliding window: track running minimum while scanning"
+    }
+   ],
+   "video": [
+    {
+     "t": "Longest Substring Without Repeating Characters - Leetcode 3 - Python",
+     "u": "https://www.youtube.com/watch?v=wiGpQwVHdE0",
+     "by": "NeetCode",
+     "why": "Sliding window with a set, in Python."
+    },
+    {
+     "t": "L3. Longest Substring Without Repeating Characters",
+     "u": "https://www.youtube.com/watch?v=-zSxTJkcdAo",
+     "by": "take U forward",
+     "why": "Window expand and shrink, explained step by step."
+    },
+    {
+     "t": "Best Time to Buy and Sell Stock - Leetcode 121 (Python)",
+     "u": "https://www.youtube.com/watch?v=kJZrMGpyWpk",
+     "by": "Greg Hogg",
+     "why": "One-pass window over prices, in Python."
+    }
+   ]
+  },
+  "34": {
+   "text": [
+    {
+     "t": "NeetCode Roadmap",
+     "u": "https://neetcode.io/roadmap",
+     "why": "Pattern map: which topic leads to which, in order."
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview prep",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-prep/",
+     "why": "How to schedule practice and review problems."
+    },
+    {
+     "t": "NeetCode: Two Sum",
+     "u": "https://neetcode.io/problems/two-integer-sum",
+     "why": "Hash map: map value to index, look up the complement"
+    }
+   ],
+   "video": [
+    {
+     "t": "How to use Leetcode EFFECTIVELY and STOP grinding",
+     "u": "https://www.youtube.com/watch?v=GbyXxUDVeAo",
+     "by": "Byte by Byte",
+     "why": "Practise with intent instead of grinding."
+    },
+    {
+     "t": "Smarter LeetCode Prep with Obsidian Flashcards (Spaced Repetition)",
+     "u": "https://www.youtube.com/watch?v=s_W26_XttMM",
+     "by": "Big Head",
+     "why": "Spaced repetition applied to coding patterns."
+    }
+   ]
+  },
+  "36": {
+   "text": [
+    {
+     "t": "NeetCode: Valid Parentheses",
+     "u": "https://neetcode.io/problems/validate-parentheses",
+     "why": "Stack: push openers, match on closers"
+    },
+    {
+     "t": "Using lists as stacks and queues (Python tutorial)",
+     "u": "https://docs.python.org/3/tutorial/datastructures.html#using-lists-as-stacks",
+     "why": "List as stack; use deque for queues."
+    }
+   ],
+   "video": [
+    {
+     "t": "Valid Parentheses - Stack - Leetcode 20 - Python",
+     "u": "https://www.youtube.com/watch?v=WTzjTskDFMg",
+     "by": "NeetCode",
+     "why": "Stack matching for brackets, in Python."
+    }
+   ]
+  },
+  "37": {
+   "text": [
+    {
+     "t": "NeetCode: Sliding Window Maximum",
+     "u": "https://neetcode.io/problems/sliding-window-maximum",
+     "why": "Monotonic deque: the real use of a double-ended queue"
+    },
+    {
+     "t": "collections: Counter, defaultdict, deque (Python docs)",
+     "u": "https://docs.python.org/3/library/collections.html",
+     "why": "Counter, defaultdict and deque cover most patterns."
+    },
+    {
+     "t": "NeetCode: Binary Tree Level Order Traversal",
+     "u": "https://neetcode.io/problems/level-order-traversal-of-binary-tree",
+     "why": "Tree BFS: queue with a per-level loop"
+    }
+   ],
+   "video": [
+    {
+     "t": "Python Deque Explained in 5 Minutes",
+     "u": "https://www.youtube.com/watch?v=lOjpEAvj9Do",
+     "by": "LegendaryIT",
+     "why": "collections.deque append and popleft in Python."
+    },
+    {
+     "t": "L16. Sliding Window Maximum",
+     "u": "https://www.youtube.com/watch?v=NwBvene4Imo",
+     "by": "take U forward",
+     "why": "Monotonic deque idea behind sliding-window maximum."
+    }
+   ]
+  },
+  "38": {
+   "text": [
+    {
+     "t": "NeetCode: Binary Search",
+     "u": "https://neetcode.io/problems/binary-search",
+     "why": "Binary search: classic search on a sorted array"
+    },
+    {
+     "t": "Binary Search (Programiz)",
+     "u": "https://www.programiz.com/dsa/binary-search",
+     "why": "Binary search steps, iterative and recursive, with code."
+    },
+    {
+     "t": "bisect: array bisection (Python docs)",
+     "u": "https://docs.python.org/3/library/bisect.html",
+     "why": "bisect_left and bisect_right give first and last positions."
+    }
+   ],
+   "video": [
+    {
+     "t": "The Binary Search Technique You NEED to KNOW!",
+     "u": "https://www.youtube.com/watch?v=56nk4-7VdyY",
+     "by": "Greg Hogg",
+     "why": "Binary search template and its boundary traps."
+    },
+    {
+     "t": "LeetCode 704 | Binary Search | Python Solution Explained",
+     "u": "https://www.youtube.com/watch?v=vGZlLT0LAZI",
+     "by": "AlgoYogi",
+     "why": "Plain binary search on a sorted array, Python."
+    }
+   ]
+  },
+  "39": {
+   "text": [
+    {
+     "t": "NeetCode: Find First and Last Position of Element in Sorted Array",
+     "u": "https://neetcode.io/problems/find-first-and-last-position-of-element-in-sorted-array",
+     "why": "Binary search variants: lower-bound and upper-bound searches"
+    },
+    {
+     "t": "bisect: array bisection (Python docs)",
+     "u": "https://docs.python.org/3/library/bisect.html",
+     "why": "bisect_left and bisect_right give first and last positions."
+    },
+    {
+     "t": "NeetCode: Search Insert Position",
+     "u": "https://neetcode.io/problems/search-insert-position",
+     "why": "Binary search: return the insertion index on a miss"
+    }
+   ],
+   "video": [
+    {
+     "t": "Find First & Last Position of Element in Sorted Array | Leetcode 34",
+     "u": "https://www.youtube.com/watch?v=841sfnPb91M",
+     "by": "Coding with Minmer",
+     "why": "Left-bound and right-bound binary search variants."
+    },
+    {
+     "t": "The Binary Search Technique You NEED to KNOW!",
+     "u": "https://www.youtube.com/watch?v=56nk4-7VdyY",
+     "by": "Greg Hogg",
+     "why": "Binary search template and its boundary traps."
+    }
+   ]
+  },
+  "40": {
+   "text": [
+    {
+     "t": "Linked List Data Structure (Programiz)",
+     "u": "https://www.programiz.com/dsa/linked-list",
+     "why": "Node, head, traversal and insertion with Python code."
+    },
+    {
+     "t": "NeetCode: Merge Two Sorted Lists",
+     "u": "https://neetcode.io/problems/merge-two-sorted-linked-lists",
+     "why": "Linked list: dummy head and a tail pointer"
+    }
+   ],
+   "video": [
+    {
+     "t": "Linked List - Data Structures in Python #1",
+     "u": "https://www.youtube.com/watch?v=1iz9SRWdpX8",
+     "by": "NeuralNine",
+     "why": "Node class and traversal, built from scratch in Python."
+    },
+    {
+     "t": "Python: Linked Lists (fast)",
+     "u": "https://www.youtube.com/watch?v=Ast5sKQXxEU",
+     "by": "Programming and Math Tutorials",
+     "why": "Short animated linked list with Python code."
+    }
+   ]
+  },
+  "41": {
+   "text": [
+    {
+     "t": "NeetCode: Reverse Linked List",
+     "u": "https://neetcode.io/problems/reverse-a-linked-list",
+     "why": "Linked list: rewire next pointers with prev and curr"
+    },
+    {
+     "t": "NeetCode: Linked List Cycle",
+     "u": "https://neetcode.io/problems/linked-list-cycle-detection",
+     "why": "Fast and slow pointers: pointers meet if a cycle exists"
+    }
+   ],
+   "video": [
+    {
+     "t": "Reverse Linked List - Leetcode 206 - Linked Lists (Python)",
+     "u": "https://www.youtube.com/watch?v=KRxeMng7fBU",
+     "by": "Greg Hogg",
+     "why": "Pointer reversal walk-through in Python."
+    },
+    {
+     "t": "Linked List Cycle - Slow & Fast Pointers - LeetCode 141 (Python)",
+     "u": "https://www.youtube.com/watch?v=5Xc70xA-RC8",
+     "by": "Matt Guest",
+     "why": "Fast and slow pointer cycle detection in Python."
+    },
+    {
+     "t": "Leetcode - Linked List Cycle (Python)",
+     "u": "https://www.youtube.com/watch?v=ZmO1KI3RJjc",
+     "by": "Timothy H Chang",
+     "why": "Second Python take on cycle detection."
+    }
+   ]
+  },
+  "43": {
+   "text": [
+    {
+     "t": "sys.setrecursionlimit (Python docs)",
+     "u": "https://docs.python.org/3/library/sys.html#sys.setrecursionlimit",
+     "why": "Python caps recursion depth; know the limit and why."
+    },
+    {
+     "t": "NeetCode: Subsets",
+     "u": "https://neetcode.io/problems/subsets",
+     "why": "Backtracking: include or exclude each element"
+    },
+    {
+     "t": "Python TimeComplexity (Python wiki)",
+     "u": "https://wiki.python.org/moin/TimeComplexity",
+     "why": "Look up cost of list, dict, set, deque operations."
+    }
+   ],
+   "video": [
+    {
+     "t": "What is Recursion? Recursion Explained in Python (with a Fibonacci Example)",
+     "u": "https://www.youtube.com/watch?v=A3VQmxoWLHY",
+     "by": "Coding with Estefania",
+     "why": "Base case, recursive case, and the call stack."
+    },
+    {
+     "t": "RECURSION in Python - factorial and sum recursive function",
+     "u": "https://www.youtube.com/watch?v=Q9hg547tkMA",
+     "by": "Algovibes",
+     "why": "Factorial and list-sum recursion in Python."
+    },
+    {
+     "t": "Recursion in Python: Defining a Recursive Function",
+     "u": "https://www.youtube.com/watch?v=zbfRgC3kukk",
+     "by": "Real Python",
+     "why": "Recursion basics and Python recursion limits."
+    }
+   ]
+  },
+  "44": {
+   "text": [
+    {
+     "t": "functools: lru_cache and cache (Python docs)",
+     "u": "https://docs.python.org/3/library/functools.html",
+     "why": "One decorator gives recursive memoisation for free."
+    },
+    {
+     "t": "functools.cache and lru_cache (Python docs)",
+     "u": "https://docs.python.org/3/library/functools.html#functools.cache",
+     "why": "cache decorator: simplest memoisation for pure functions."
+    },
+    {
+     "t": "NeetCode: Climbing Stairs",
+     "u": "https://neetcode.io/problems/climbing-stairs",
+     "why": "Dynamic programming: dp[i] = dp[i-1] + dp[i-2]"
+    }
+   ],
+   "video": [
+    {
+     "t": "Recursion and Memoization Tutorial Python",
+     "u": "https://www.youtube.com/watch?v=sCecRPSQg6Y",
+     "by": "Tech With Tim",
+     "why": "Dictionary memoisation on recursive Fibonacci."
+    },
+    {
+     "t": "Optimize Fibonacci in Python with Memoization",
+     "u": "https://www.youtube.com/watch?v=qK2DODD_p4M",
+     "by": "Tech WHYS",
+     "why": "Slow Fibonacci versus the memoised version."
+    }
+   ]
+  },
+  "45": {
+   "text": [
+    {
+     "t": "sys.setrecursionlimit (Python docs)",
+     "u": "https://docs.python.org/3/library/sys.html#sys.setrecursionlimit",
+     "why": "Python caps recursion depth; know the limit and why."
+    },
+    {
+     "t": "NeetCode: Maximum Depth of Binary Tree",
+     "u": "https://neetcode.io/problems/depth-of-binary-tree",
+     "why": "Tree DFS: depth = 1 + max(left, right)"
+    }
+   ],
+   "video": [
+    {
+     "t": "Recursive Preorder, Inorder, Postorder Traversal",
+     "u": "https://www.youtube.com/watch?v=vLNax_8gAKU",
+     "by": "Algorithms Made Easy",
+     "why": "Three recursive DFS orders on one tree."
+    },
+    {
+     "t": "DFS Traversal: Preorder, Inorder & Postorder Explained with Stack Calls",
+     "u": "https://www.youtube.com/watch?v=bc-qEyh8eW8",
+     "by": "RisingBrain",
+     "why": "How recursion calls unfold during tree DFS."
+    },
+    {
+     "t": "Maximum Depth of Binary Tree - Leetcode 104 - Python 3 Easy Ways",
+     "u": "https://www.youtube.com/watch?v=E6n8Kql_EeM",
+     "by": "TECH_ED",
+     "why": "Max depth by recursion, BFS and iterative DFS."
+    }
+   ]
+  },
+  "46": {
+   "text": [
+    {
+     "t": "NeetCode: Binary Tree Level Order Traversal",
+     "u": "https://neetcode.io/problems/level-order-traversal-of-binary-tree",
+     "why": "Tree BFS: queue with a per-level loop"
+    },
+    {
+     "t": "collections: Counter, defaultdict, deque (Python docs)",
+     "u": "https://docs.python.org/3/library/collections.html",
+     "why": "Counter, defaultdict and deque cover most patterns."
+    }
+   ],
+   "video": [
+    {
+     "t": "Binary Tree Level Order Traversal - LeetCode 102 Python",
+     "u": "https://www.youtube.com/watch?v=MBZ-gBkjdMc",
+     "by": "Deepti Talesra",
+     "why": "Queue-based level order traversal in Python."
+    },
+    {
+     "t": "LeetCode 102: Binary Tree Level Order Traversal Made Easy - Python Tutorial",
+     "u": "https://www.youtube.com/watch?v=PAjmfyyHwzQ",
+     "by": "JameSparKing",
+     "why": "Beginner walk-through of per-level queue loop."
+    }
+   ]
+  },
+  "47": {
+   "text": [
+    {
+     "t": "NeetCode: Maximum Depth of Binary Tree",
+     "u": "https://neetcode.io/problems/depth-of-binary-tree",
+     "why": "Tree DFS: depth = 1 + max(left, right)"
+    },
+    {
+     "t": "NeetCode: Same Tree",
+     "u": "https://neetcode.io/problems/same-binary-tree",
+     "why": "Tree DFS: recurse on both trees in lockstep"
+    },
+    {
+     "t": "NeetCode: Invert Binary Tree",
+     "u": "https://neetcode.io/problems/invert-a-binary-tree",
+     "why": "Tree DFS: swap children recursively at each node"
+    }
+   ],
+   "video": [
+    {
+     "t": "Invert Binary Tree - Depth First Search - Leetcode 226",
+     "u": "https://www.youtube.com/watch?v=OnSn2XEQ4MY",
+     "by": "NeetCode",
+     "why": "Recursive tree inversion, three lines of logic."
+    },
+    {
+     "t": "Same Binary Tree - Leetcode 100 - Trees (Python)",
+     "u": "https://www.youtube.com/watch?v=jK6XXYezw2g",
+     "by": "Greg Hogg",
+     "why": "Recursive same-tree comparison in Python."
+    },
+    {
+     "t": "Maximum Depth of Binary Tree - Leetcode 104 - Python 3 Easy Ways",
+     "u": "https://www.youtube.com/watch?v=E6n8Kql_EeM",
+     "by": "TECH_ED",
+     "why": "Max depth by recursion, BFS and iterative DFS."
+    }
+   ]
+  },
+  "48": {
+   "text": [
+    {
+     "t": "NeetCode 150 problem list",
+     "u": "https://neetcode.io/practice/practice/neetcode150",
+     "why": "Choose the next problem from your weakest pattern."
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview prep",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-prep/",
+     "why": "How to schedule practice and review problems."
+    },
+    {
+     "t": "Spaced repetition for LeetCode (StudyCards AI)",
+     "u": "https://studycardsai.com/blog/spaced-repetition-for-leetcode",
+     "why": "Practical 1, 3, 7, 14 day re-solve schedule."
+    }
+   ],
+   "video": [
+    {
+     "t": "The unfair way I got good at Leetcode",
+     "u": "https://www.youtube.com/watch?v=GPIuPRqDGG8",
+     "by": "Dave Burji",
+     "why": "Why re-solving beats solving new problems."
+    },
+    {
+     "t": "Smarter LeetCode Prep with Obsidian Flashcards (Spaced Repetition)",
+     "u": "https://www.youtube.com/watch?v=s_W26_XttMM",
+     "by": "Big Head",
+     "why": "Spaced repetition applied to coding patterns."
+    },
+    {
+     "t": "How to use Leetcode EFFECTIVELY and STOP grinding",
+     "u": "https://www.youtube.com/watch?v=GbyXxUDVeAo",
+     "by": "Byte by Byte",
+     "why": "Practise with intent instead of grinding."
+    }
+   ]
+  },
+  "50": {
+   "text": [
+    {
+     "t": "heapq: heap queue algorithm (Python docs)",
+     "u": "https://docs.python.org/3/library/heapq.html",
+     "why": "heappush, heappop, nlargest; push negatives for max-heap."
+    },
+    {
+     "t": "Heap Data Structure (Programiz)",
+     "u": "https://www.programiz.com/dsa/heap-data-structure",
+     "why": "Min-heap and max-heap ideas behind heapq."
+    },
+    {
+     "t": "NeetCode: Kth Largest Element in a Stream",
+     "u": "https://neetcode.io/problems/kth-largest-integer-in-a-stream",
+     "why": "Min-heap of size k: keep the k largest in a min-heap"
+    }
+   ],
+   "video": [
+    {
+     "t": "Heaps & Priority Queues in Python",
+     "u": "https://www.youtube.com/watch?v=wGSQ486Y4sc",
+     "by": "NeuralNine",
+     "why": "heapq basics and priority queues in Python."
+    },
+    {
+     "t": "useful interview data structures: heapq (intermediate)",
+     "u": "https://www.youtube.com/watch?v=sRLuocdQfEw",
+     "by": "anthonywritescode",
+     "why": "heapq tricks useful for interview problems."
+    },
+    {
+     "t": "Top K Frequent Elements | Leetcode #347 | Heap | Hashmap",
+     "u": "https://www.youtube.com/watch?v=Wh3A29psE_Y",
+     "by": "Techdose",
+     "why": "Frequency counts plus a heap for top-k."
+    }
+   ]
+  },
+  "51": {
+   "text": [
+    {
+     "t": "Sorting Techniques (Python HOWTO)",
+     "u": "https://docs.python.org/3/howto/sorting.html",
+     "why": "sorted, key functions and stability for custom sorts."
+    },
+    {
+     "t": "NeetCode: Merge Intervals",
+     "u": "https://neetcode.io/problems/merge-intervals",
+     "why": "Sorting intervals: sort by start, extend or append"
+    }
+   ],
+   "video": [
+    {
+     "t": "Merge Intervals - Leetcode 56 - Arrays & Strings (Python)",
+     "u": "https://www.youtube.com/watch?v=HCbKvBOlMVI",
+     "by": "Greg Hogg",
+     "why": "Sort by start, then merge, in Python."
+    }
+   ]
+  },
+  "52": {
+   "text": [
+    {
+     "t": "NeetCode: Product of Array Except Self",
+     "u": "https://neetcode.io/problems/products-of-array-discluding-self",
+     "why": "Prefix products: prefix and suffix products, no division"
+    },
+    {
+     "t": "Python tutorial: Data Structures",
+     "u": "https://docs.python.org/3/tutorial/datastructures.html",
+     "why": "Lists, dicts, sets, and comprehensions in one reference."
+    }
+   ],
+   "video": [
+    {
+     "t": "Prefix Sums in Python - Range sum queries",
+     "u": "https://www.youtube.com/watch?v=0ThX2ck-e-Y",
+     "by": "CodeSavant",
+     "why": "Build a prefix array, answer range sums in O(1)."
+    },
+    {
+     "t": "Prefix Sum Array and Range Sum Queries",
+     "u": "https://www.youtube.com/watch?v=xbYr9JOC2Lk",
+     "by": "Profound Academy",
+     "why": "Prefix sum idea and the off-by-one details."
+    }
+   ]
+  },
+  "53": {
+   "text": [
+    {
+     "t": "NeetCode: Longest Consecutive Sequence",
+     "u": "https://neetcode.io/problems/longest-consecutive-sequence",
+     "why": "Hash set: set lookups find sequence starts"
+    },
+    {
+     "t": "NeetCode: 3Sum",
+     "u": "https://neetcode.io/problems/three-integer-sum",
+     "why": "Two pointers: sort, fix one value, two pointers on the rest"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview study plan",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-study-plan/",
+     "why": "What to study and re-practise, by time left."
+    }
+   ],
+   "video": [
+    {
+     "t": "How to Instantly Recognize Leetcode Patterns (500 problems later)",
+     "u": "https://www.youtube.com/watch?v=LAnEeffb5zI",
+     "by": "Bitflip",
+     "why": "Spot the pattern from the problem statement."
+    },
+    {
+     "t": "Two Sum - Leetcode 1 - Python - Hashmap",
+     "u": "https://www.youtube.com/watch?v=GHMw8gSRzg0",
+     "by": "Jan Meppe",
+     "why": "Hash map complement trick, written in Python."
+    }
+   ]
+  },
+  "54": {
+   "text": [
+    {
+     "t": "NeetCode: Daily Temperatures",
+     "u": "https://neetcode.io/problems/daily-temperatures",
+     "why": "Monotonic stack: stack of indices finds next warmer day"
+    },
+    {
+     "t": "NeetCode: Search a 2D Matrix",
+     "u": "https://neetcode.io/problems/search-2d-matrix",
+     "why": "Binary search: binary search over a flattened matrix"
+    },
+    {
+     "t": "Using lists as stacks and queues (Python tutorial)",
+     "u": "https://docs.python.org/3/tutorial/datastructures.html#using-lists-as-stacks",
+     "why": "List as stack; use deque for queues."
+    }
+   ],
+   "video": [
+    {
+     "t": "Valid Parentheses - Stack - Leetcode 20 - Python",
+     "u": "https://www.youtube.com/watch?v=WTzjTskDFMg",
+     "by": "NeetCode",
+     "why": "Stack matching for brackets, in Python."
+    },
+    {
+     "t": "The Binary Search Technique You NEED to KNOW!",
+     "u": "https://www.youtube.com/watch?v=56nk4-7VdyY",
+     "by": "Greg Hogg",
+     "why": "Binary search template and its boundary traps."
+    },
+    {
+     "t": "LeetCode Was Hard Until I Learned THESE 8 Patterns",
+     "u": "https://www.youtube.com/watch?v=RYT08CaYq6A",
+     "by": "AlgoMonster",
+     "why": "Eight core patterns, a review checklist."
+    }
+   ]
+  },
+  "55": {
+   "text": [
+    {
+     "t": "NeetCode: Valid Palindrome",
+     "u": "https://neetcode.io/problems/is-palindrome",
+     "why": "Two pointers: pointers from both ends of the string"
+    },
+    {
+     "t": "Spaced repetition (Wikipedia)",
+     "u": "https://en.wikipedia.org/wiki/Spaced_repetition",
+     "why": "Why reviewing at growing gaps beats cramming."
+    }
+   ],
+   "video": [
+    {
+     "t": "The unfair way I got good at Leetcode",
+     "u": "https://www.youtube.com/watch?v=GPIuPRqDGG8",
+     "by": "Dave Burji",
+     "why": "Why re-solving beats solving new problems."
+    }
+   ]
+  },
+  "57": {
+   "text": [
+    {
+     "t": "Built-in Types (Python docs)",
+     "u": "https://docs.python.org/3/library/stdtypes.html",
+     "why": "Reference for list, dict, set and str behaviour."
+    },
+    {
+     "t": "NeetCode: Clone Graph",
+     "u": "https://neetcode.io/problems/clone-graph",
+     "why": "Graph DFS: DFS plus a map from old node to copy"
+    },
+    {
+     "t": "collections: Counter, defaultdict, deque (Python docs)",
+     "u": "https://docs.python.org/3/library/collections.html",
+     "why": "Counter, defaultdict and deque cover most patterns."
+    }
+   ],
+   "video": [
+    {
+     "t": "Graph - 5: Breadth First Search (BFS) using Adjacency List",
+     "u": "https://www.youtube.com/watch?v=J5uSYfgO1uk",
+     "by": "Coding Simplified",
+     "why": "BFS with an adjacency list and visited set."
+    },
+    {
+     "t": "Breadth First Search BFS for a Graph with Python Implementation",
+     "u": "https://www.youtube.com/watch?v=CnECo0rUbzo",
+     "by": "Kindson The Genius",
+     "why": "BFS implemented in Python."
+    }
+   ]
+  },
+  "58": {
+   "text": [
+    {
+     "t": "NeetCode: Number of Connected Components in an Undirected Graph",
+     "u": "https://neetcode.io/problems/count-connected-components",
+     "why": "Graph DFS: DFS from each unvisited node"
+    },
+    {
+     "t": "NeetCode: Clone Graph",
+     "u": "https://neetcode.io/problems/clone-graph",
+     "why": "Graph DFS: DFS plus a map from old node to copy"
+    }
+   ],
+   "video": [
+    {
+     "t": "Graph - 4: Depth First Search (DFS) using Adjacency List",
+     "u": "https://www.youtube.com/watch?v=vRlaZ7Sh42Y",
+     "by": "Coding Simplified",
+     "why": "DFS and connected components on an adjacency list."
+    }
+   ]
+  },
+  "59": {
+   "text": [
+    {
+     "t": "NeetCode: Number of Islands",
+     "u": "https://neetcode.io/problems/count-number-of-islands",
+     "why": "Grid DFS/BFS: flood-fill each unvisited land cell"
+    },
+    {
+     "t": "NeetCode: Max Area of Island",
+     "u": "https://neetcode.io/problems/max-area-of-island",
+     "why": "Grid DFS: DFS returns the area of each island"
+    }
+   ],
+   "video": [
+    {
+     "t": "Number of Islands - Leetcode 200 - Graphs (Python)",
+     "u": "https://www.youtube.com/watch?v=gCswsDauXPc",
+     "by": "Greg Hogg",
+     "why": "Grid DFS flood fill for islands, in Python."
+    },
+    {
+     "t": "Number of Islands - Breadth-First Search (BFS) - Leetcode 200 (Python)",
+     "u": "https://www.youtube.com/watch?v=81qgDPMgxpo",
+     "by": "Matt Guest",
+     "why": "Grid BFS version of islands, in Python."
+    }
+   ]
+  },
+  "60": {
+   "text": [
+    {
+     "t": "NeetCode: Course Schedule",
+     "u": "https://neetcode.io/problems/course-schedule",
+     "why": "Cycle detection: directed cycle means courses cannot finish"
+    },
+    {
+     "t": "NeetCode: Course Schedule II",
+     "u": "https://neetcode.io/problems/course-schedule-ii",
+     "why": "Topological sort: output a valid order via topological sort"
+    }
+   ],
+   "video": [
+    {
+     "t": "Course Schedule: Detect Cycle in Directed Graph - LeetCode 207",
+     "u": "https://www.youtube.com/watch?v=K9XwnFqz3Tg",
+     "by": "CodeLucky",
+     "why": "Cycle detection with DFS and BFS (topological sort)."
+    },
+    {
+     "t": "Course Schedule - Python - LeetCode 207 - Kahn's Algorithm",
+     "u": "https://www.youtube.com/watch?v=Q84P2I1wQ2Y",
+     "by": "codegrind",
+     "why": "Kahn topological sort in Python."
+    }
+   ]
+  },
+  "61": {
+   "text": [
+    {
+     "t": "NeetCode: Rotting Oranges",
+     "u": "https://neetcode.io/problems/rotting-fruit",
+     "why": "Multi-source grid BFS: BFS from all rotten cells at once"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-cheatsheet/",
+     "why": "Steps and phrases for a live coding interview."
+    },
+    {
+     "t": "Tech Interview Handbook: Algorithms study cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/algorithms/study-cheatsheet/",
+     "why": "Per-structure checklist of what to know and say."
+    }
+   ],
+   "video": [
+    {
+     "t": "How to Solve ANY Coding Interview Question in 6 Steps",
+     "u": "https://www.youtube.com/watch?v=Q4C3ZRJLnac",
+     "by": "Anthony D. Mays",
+     "why": "Six-step routine: clarify, example, brute force, optimise."
+    },
+    {
+     "t": "Number of Islands - Breadth-First Search (BFS) - Leetcode 200 (Python)",
+     "u": "https://www.youtube.com/watch?v=81qgDPMgxpo",
+     "by": "Matt Guest",
+     "why": "Grid BFS version of islands, in Python."
+    }
+   ]
+  },
+  "62": {
+   "text": [
+    {
+     "t": "NeetCode: Group Anagrams",
+     "u": "https://neetcode.io/problems/anagram-groups",
+     "why": "Hash map grouping: group by sorted key or count tuple"
+    },
+    {
+     "t": "NeetCode: Merge Two Sorted Lists",
+     "u": "https://neetcode.io/problems/merge-two-sorted-linked-lists",
+     "why": "Linked list: dummy head and a tail pointer"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview study plan",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-study-plan/",
+     "why": "What to study and re-practise, by time left."
+    }
+   ],
+   "video": [
+    {
+     "t": "How to Instantly Recognize Leetcode Patterns (500 problems later)",
+     "u": "https://www.youtube.com/watch?v=LAnEeffb5zI",
+     "by": "Bitflip",
+     "why": "Spot the pattern from the problem statement."
+    },
+    {
+     "t": "Leetcode - Valid Anagram (Python)",
+     "u": "https://www.youtube.com/watch?v=UqjII0w8Xn0",
+     "by": "Timothy H Chang",
+     "why": "Python solution with a character counter."
+    }
+   ]
+  },
+  "64": {
+   "text": [
+    {
+     "t": "NeetCode: Climbing Stairs",
+     "u": "https://neetcode.io/problems/climbing-stairs",
+     "why": "Dynamic programming: dp[i] = dp[i-1] + dp[i-2]"
+    },
+    {
+     "t": "functools: lru_cache and cache (Python docs)",
+     "u": "https://docs.python.org/3/library/functools.html",
+     "why": "One decorator gives recursive memoisation for free."
+    }
+   ],
+   "video": [
+    {
+     "t": "LeetCode 70: Climbing Stairs - Dynamic Programming, Recursion, and Memoization - Python",
+     "u": "https://www.youtube.com/watch?v=izU-B1gfhws",
+     "by": "KNuggies",
+     "why": "Recursion to memo to bottom-up DP in Python."
+    },
+    {
+     "t": "Climbing Stairs - Leetcode 70 - Blind 75 Explained - Dynamic Programming - Python",
+     "u": "https://www.youtube.com/watch?v=2iHSYu2tQVE",
+     "by": "Off By One",
+     "why": "Climbing stairs as Fibonacci-style DP."
+    }
+   ]
+  },
+  "65": {
+   "text": [
+    {
+     "t": "NeetCode: House Robber",
+     "u": "https://neetcode.io/problems/house-robber",
+     "why": "1D DP: rob-or-skip recurrence"
+    }
+   ],
+   "video": [
+    {
+     "t": "(Remade) Leetcode 198 - House Robber",
+     "u": "https://www.youtube.com/watch?v=yvdIaP14x2o",
+     "by": "Nideesh Terapalli",
+     "why": "Rob-or-skip recurrence, built up step by step."
+    },
+    {
+     "t": "Climbing Stairs - Leetcode 70 - Blind 75 Explained - Dynamic Programming - Python",
+     "u": "https://www.youtube.com/watch?v=2iHSYu2tQVE",
+     "by": "Off By One",
+     "why": "Climbing stairs as Fibonacci-style DP."
+    }
+   ]
+  },
+  "66": {
+   "text": [
+    {
+     "t": "NeetCode: Coin Change",
+     "u": "https://neetcode.io/problems/coin-change",
+     "why": "DP: fewest coins per amount, bottom-up"
+    },
+    {
+     "t": "functools: lru_cache and cache (Python docs)",
+     "u": "https://docs.python.org/3/library/functools.html",
+     "why": "One decorator gives recursive memoisation for free."
+    }
+   ],
+   "video": [
+    {
+     "t": "Coin Change - LeetCode 322 - Python - Visually Explained",
+     "u": "https://www.youtube.com/watch?v=Z6fauIHQiUk",
+     "by": "Hello Byte",
+     "why": "Coin change DP table in Python."
+    },
+    {
+     "t": "Coin Change Problem | Dynamic Programming | Leetcode #322",
+     "u": "https://www.youtube.com/watch?v=ZI17bgz07EE",
+     "by": "Techdose",
+     "why": "Coin change as unbounded knapsack DP."
+    }
+   ]
+  },
+  "67": {
+   "text": [
+    {
+     "t": "NeetCode: Unique Paths",
+     "u": "https://neetcode.io/problems/count-paths",
+     "why": "2D grid DP: cell = paths from above plus from left"
+    },
+    {
+     "t": "Python tutorial: Data Structures",
+     "u": "https://docs.python.org/3/tutorial/datastructures.html",
+     "why": "Lists, dicts, sets, and comprehensions in one reference."
+    }
+   ],
+   "video": [
+    {
+     "t": "Unique Paths - Leetcode 62 - Dynamic Programming (Python)",
+     "u": "https://www.youtube.com/watch?v=3ZFvBlynmls",
+     "by": "Greg Hogg",
+     "why": "2D grid DP in Python."
+    },
+    {
+     "t": "LeetCode 70: Climbing Stairs - Dynamic Programming, Recursion, and Memoization - Python",
+     "u": "https://www.youtube.com/watch?v=izU-B1gfhws",
+     "by": "KNuggies",
+     "why": "Recursion to memo to bottom-up DP in Python."
+    }
+   ]
+  },
+  "68": {
+   "text": [
+    {
+     "t": "NeetCode: Min Cost Climbing Stairs",
+     "u": "https://neetcode.io/problems/min-cost-climbing-stairs",
+     "why": "1D DP: 1D DP over two previous states"
+    },
+    {
+     "t": "NeetCode: Top K Frequent Elements",
+     "u": "https://neetcode.io/problems/top-k-elements-in-list",
+     "why": "Heap / bucket: frequency map, then heap or buckets"
+    },
+    {
+     "t": "Spaced repetition for LeetCode (StudyCards AI)",
+     "u": "https://studycardsai.com/blog/spaced-repetition-for-leetcode",
+     "why": "Practical 1, 3, 7, 14 day re-solve schedule."
+    }
+   ],
+   "video": [
+    {
+     "t": "Smarter LeetCode Prep with Obsidian Flashcards (Spaced Repetition)",
+     "u": "https://www.youtube.com/watch?v=s_W26_XttMM",
+     "by": "Big Head",
+     "why": "Spaced repetition applied to coding patterns."
+    },
+    {
+     "t": "Climbing Stairs - Leetcode 70 - Blind 75 Explained - Dynamic Programming - Python",
+     "u": "https://www.youtube.com/watch?v=2iHSYu2tQVE",
+     "by": "Off By One",
+     "why": "Climbing stairs as Fibonacci-style DP."
+    }
+   ]
+  },
+  "69": {
+   "text": [
+    {
+     "t": "NeetCode: Graph Valid Tree",
+     "u": "https://neetcode.io/problems/valid-tree",
+     "why": "Graph cycle check: n-1 edges and fully connected"
+    },
+    {
+     "t": "NeetCode: Kth Largest Element in an Array",
+     "u": "https://neetcode.io/problems/kth-largest-element-in-an-array",
+     "why": "Heap: size-k min-heap or heapq.nlargest"
+    },
+    {
+     "t": "NeetCode 150 problem list",
+     "u": "https://neetcode.io/practice/practice/neetcode150",
+     "why": "Choose the next problem from your weakest pattern."
+    }
+   ],
+   "video": [
+    {
+     "t": "LeetCode Was Hard Until I Learned THESE 8 Patterns",
+     "u": "https://www.youtube.com/watch?v=RYT08CaYq6A",
+     "by": "AlgoMonster",
+     "why": "Eight core patterns, a review checklist."
+    },
+    {
+     "t": "Heaps & Priority Queues in Python",
+     "u": "https://www.youtube.com/watch?v=wGSQ486Y4sc",
+     "by": "NeuralNine",
+     "why": "heapq basics and priority queues in Python."
+    }
+   ]
+  },
+  "71": {
+   "text": [
+    {
+     "t": "NeetCode: Group Anagrams",
+     "u": "https://neetcode.io/problems/anagram-groups",
+     "why": "Hash map grouping: group by sorted key or count tuple"
+    },
+    {
+     "t": "NeetCode: Container With Most Water",
+     "u": "https://neetcode.io/problems/max-water-container",
+     "why": "Two pointers: move the shorter wall inward"
+    },
+    {
+     "t": "Spaced repetition for LeetCode (StudyCards AI)",
+     "u": "https://studycardsai.com/blog/spaced-repetition-for-leetcode",
+     "why": "Practical 1, 3, 7, 14 day re-solve schedule."
+    }
+   ],
+   "video": [
+    {
+     "t": "How to Instantly Recognize Leetcode Patterns (500 problems later)",
+     "u": "https://www.youtube.com/watch?v=LAnEeffb5zI",
+     "by": "Bitflip",
+     "why": "Spot the pattern from the problem statement."
+    },
+    {
+     "t": "167. Two Sum II - Input Array Is Sorted",
+     "u": "https://www.youtube.com/watch?v=Nu_z_sM5-sQ",
+     "by": "TechWithSaumya",
+     "why": "Two pointers closing in on a sorted array."
+    }
+   ]
+  },
+  "72": {
+   "text": [
+    {
+     "t": "NeetCode: Min Stack",
+     "u": "https://neetcode.io/problems/minimum-stack",
+     "why": "Stack: store running minimum with each value"
+    },
+    {
+     "t": "NeetCode: Koko Eating Bananas",
+     "u": "https://neetcode.io/problems/eating-bananas",
+     "why": "Binary search on answer: search the range of possible speeds"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview study plan",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-study-plan/",
+     "why": "What to study and re-practise, by time left."
+    }
+   ],
+   "video": [
+    {
+     "t": "LeetCode Was Hard Until I Learned THESE 8 Patterns",
+     "u": "https://www.youtube.com/watch?v=RYT08CaYq6A",
+     "by": "AlgoMonster",
+     "why": "Eight core patterns, a review checklist."
+    },
+    {
+     "t": "The Binary Search Technique You NEED to KNOW!",
+     "u": "https://www.youtube.com/watch?v=56nk4-7VdyY",
+     "by": "Greg Hogg",
+     "why": "Binary search template and its boundary traps."
+    }
+   ]
+  },
+  "73": {
+   "text": [
+    {
+     "t": "NeetCode: Reorder List",
+     "u": "https://neetcode.io/problems/reorder-linked-list",
+     "why": "Linked list: find middle, reverse second half, interleave"
+    },
+    {
+     "t": "NeetCode: Validate Binary Search Tree",
+     "u": "https://neetcode.io/problems/valid-binary-search-tree",
+     "why": "Tree DFS with bounds: pass min and max bounds down"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview prep",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-prep/",
+     "why": "How to schedule practice and review problems."
+    }
+   ],
+   "video": [
+    {
+     "t": "I Analyzed 3,800 LeetCode Problems. Only 8 Patterns Matter",
+     "u": "https://www.youtube.com/watch?v=jC-6SmUkKnw",
+     "by": "Nikhil Lohia",
+     "why": "Pattern frequency; which patterns to review first."
+    },
+    {
+     "t": "Recursive Preorder, Inorder, Postorder Traversal",
+     "u": "https://www.youtube.com/watch?v=vLNax_8gAKU",
+     "by": "Algorithms Made Easy",
+     "why": "Three recursive DFS orders on one tree."
+    }
+   ]
+  },
+  "74": {
+   "text": [
+    {
+     "t": "NeetCode: Course Schedule",
+     "u": "https://neetcode.io/problems/course-schedule",
+     "why": "Cycle detection: directed cycle means courses cannot finish"
+    },
+    {
+     "t": "NeetCode: House Robber II",
+     "u": "https://neetcode.io/problems/house-robber-ii",
+     "why": "1D DP: run house robber twice around the circle"
+    },
+    {
+     "t": "Tech Interview Handbook: Algorithms study cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/algorithms/study-cheatsheet/",
+     "why": "Per-structure checklist of what to know and say."
+    }
+   ],
+   "video": [
+    {
+     "t": "How to use Leetcode EFFECTIVELY and STOP grinding",
+     "u": "https://www.youtube.com/watch?v=GbyXxUDVeAo",
+     "by": "Byte by Byte",
+     "why": "Practise with intent instead of grinding."
+    },
+    {
+     "t": "Course Schedule: Detect Cycle in Directed Graph - LeetCode 207",
+     "u": "https://www.youtube.com/watch?v=K9XwnFqz3Tg",
+     "by": "CodeLucky",
+     "why": "Cycle detection with DFS and BFS (topological sort)."
+    }
+   ]
+  },
+  "75": {
+   "text": [
+    {
+     "t": "NeetCode: Longest Repeating Character Replacement",
+     "u": "https://neetcode.io/problems/longest-repeating-substring-with-replacement",
+     "why": "Sliding window: valid while length minus max count <= k"
+    },
+    {
+     "t": "NeetCode: Find Minimum in Rotated Sorted Array",
+     "u": "https://neetcode.io/problems/find-minimum-in-rotated-sorted-array",
+     "why": "Binary search: compare mid with the right end"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-cheatsheet/",
+     "why": "Steps and phrases for a live coding interview."
+    }
+   ],
+   "video": [
+    {
+     "t": "Longest Substring Without Repeating Characters - Leetcode 3 - Python",
+     "u": "https://www.youtube.com/watch?v=wiGpQwVHdE0",
+     "by": "NeetCode",
+     "why": "Sliding window with a set, in Python."
+    },
+    {
+     "t": "How to ACE Any Coding Interview with These 4 Steps",
+     "u": "https://www.youtube.com/watch?v=rd2arhRZxz8",
+     "by": "Educative",
+     "why": "Four-step framework for a timed problem."
+    },
+    {
+     "t": "How To Think Out Loud: A Guide for Coding Interviews",
+     "u": "https://www.youtube.com/watch?v=c1gjL47uH3w",
+     "by": "CodeLucky",
+     "why": "Narrate your reasoning while coding."
+    }
+   ]
+  },
+  "76": {
+   "text": [
+    {
+     "t": "NeetCode: Binary Tree Right Side View",
+     "u": "https://neetcode.io/problems/binary-tree-right-side-view",
+     "why": "Tree BFS: last node of each BFS level"
+    },
+    {
+     "t": "NeetCode: Coin Change",
+     "u": "https://neetcode.io/problems/coin-change",
+     "why": "DP: fewest coins per amount, bottom-up"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-cheatsheet/",
+     "why": "Steps and phrases for a live coding interview."
+    }
+   ],
+   "video": [
+    {
+     "t": "Binary Tree Level Order Traversal - LeetCode 102 Python",
+     "u": "https://www.youtube.com/watch?v=MBZ-gBkjdMc",
+     "by": "Deepti Talesra",
+     "why": "Queue-based level order traversal in Python."
+    },
+    {
+     "t": "Whiteboard Coding Interviews: 6 Steps to Solve Any Problem",
+     "u": "https://www.youtube.com/watch?v=DIR_rxusO8Q",
+     "by": "Fullstack Academy",
+     "why": "Structured approach to any live coding problem."
+    },
+    {
+     "t": "What successful coding interviews are REALLY like (FULL MOCK INTERVIEW)",
+     "u": "https://www.youtube.com/watch?v=3yQ4Jaumw3g",
+     "by": "Byte by Byte",
+     "why": "Watch a full mock interview, then copy the pacing."
+    }
+   ]
+  },
+  "78": {
+   "text": [
+    {
+     "t": "NeetCode: Product of Array Except Self",
+     "u": "https://neetcode.io/problems/products-of-array-discluding-self",
+     "why": "Prefix products: prefix and suffix products, no division"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview prep",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-prep/",
+     "why": "How to schedule practice and review problems."
+    }
+   ],
+   "video": [
+    {
+     "t": "Prefix Sums in Python - Range sum queries",
+     "u": "https://www.youtube.com/watch?v=0ThX2ck-e-Y",
+     "by": "CodeSavant",
+     "why": "Build a prefix array, answer range sums in O(1)."
+    },
+    {
+     "t": "How to use Leetcode EFFECTIVELY and STOP grinding",
+     "u": "https://www.youtube.com/watch?v=GbyXxUDVeAo",
+     "by": "Byte by Byte",
+     "why": "Practise with intent instead of grinding."
+    }
+   ]
+  },
+  "79": {
+   "text": [
+    {
+     "t": "NeetCode: Group Anagrams",
+     "u": "https://neetcode.io/problems/anagram-groups",
+     "why": "Hash map grouping: group by sorted key or count tuple"
+    },
+    {
+     "t": "Spaced repetition for LeetCode (StudyCards AI)",
+     "u": "https://studycardsai.com/blog/spaced-repetition-for-leetcode",
+     "why": "Practical 1, 3, 7, 14 day re-solve schedule."
+    }
+   ],
+   "video": [
+    {
+     "t": "Leetcode - Valid Anagram (Python)",
+     "u": "https://www.youtube.com/watch?v=UqjII0w8Xn0",
+     "by": "Timothy H Chang",
+     "why": "Python solution with a character counter."
+    },
+    {
+     "t": "Smarter LeetCode Prep with Obsidian Flashcards (Spaced Repetition)",
+     "u": "https://www.youtube.com/watch?v=s_W26_XttMM",
+     "by": "Big Head",
+     "why": "Spaced repetition applied to coding patterns."
+    }
+   ]
+  },
+  "80": {
+   "text": [
+    {
+     "t": "NeetCode: Top K Frequent Elements",
+     "u": "https://neetcode.io/problems/top-k-elements-in-list",
+     "why": "Heap / bucket: frequency map, then heap or buckets"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview study plan",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-study-plan/",
+     "why": "What to study and re-practise, by time left."
+    }
+   ],
+   "video": [
+    {
+     "t": "Top K Frequent Elements | Leetcode #347 | Heap | Hashmap",
+     "u": "https://www.youtube.com/watch?v=Wh3A29psE_Y",
+     "by": "Techdose",
+     "why": "Frequency counts plus a heap for top-k."
+    },
+    {
+     "t": "The unfair way I got good at Leetcode",
+     "u": "https://www.youtube.com/watch?v=GPIuPRqDGG8",
+     "by": "Dave Burji",
+     "why": "Why re-solving beats solving new problems."
+    }
+   ]
+  },
+  "81": {
+   "text": [
+    {
+     "t": "NeetCode: 3Sum",
+     "u": "https://neetcode.io/problems/three-integer-sum",
+     "why": "Two pointers: sort, fix one value, two pointers on the rest"
+    },
+    {
+     "t": "NeetCode: Blind 75 list",
+     "u": "https://neetcode.io/practice/practice/blind75",
+     "why": "Pick a problem by pattern from the classic list."
+    }
+   ],
+   "video": [
+    {
+     "t": "Two Sum II in O(n) Using Two Pointers",
+     "u": "https://www.youtube.com/watch?v=p0GdTJBWswU",
+     "by": "StackMint",
+     "why": "Why sortedness lets two pointers work."
+    },
+    {
+     "t": "How to Instantly Recognize Leetcode Patterns (500 problems later)",
+     "u": "https://www.youtube.com/watch?v=LAnEeffb5zI",
+     "by": "Bitflip",
+     "why": "Spot the pattern from the problem statement."
+    }
+   ]
+  },
+  "82": {
+   "text": [
+    {
+     "t": "NeetCode: Container With Most Water",
+     "u": "https://neetcode.io/problems/max-water-container",
+     "why": "Two pointers: move the shorter wall inward"
+    },
+    {
+     "t": "NeetCode 150 problem list",
+     "u": "https://neetcode.io/practice/practice/neetcode150",
+     "why": "Choose the next problem from your weakest pattern."
+    }
+   ],
+   "video": [
+    {
+     "t": "167. Two Sum II - Input Array Is Sorted",
+     "u": "https://www.youtube.com/watch?v=Nu_z_sM5-sQ",
+     "by": "TechWithSaumya",
+     "why": "Two pointers closing in on a sorted array."
+    },
+    {
+     "t": "LeetCode Was Hard Until I Learned THESE 8 Patterns",
+     "u": "https://www.youtube.com/watch?v=RYT08CaYq6A",
+     "by": "AlgoMonster",
+     "why": "Eight core patterns, a review checklist."
+    }
+   ]
+  },
+  "83": {
+   "text": [
+    {
+     "t": "NeetCode: Missing Number",
+     "u": "https://neetcode.io/problems/missing-number",
+     "why": "Math / hash set: sum formula or set difference"
+    },
+    {
+     "t": "Spaced repetition (Wikipedia)",
+     "u": "https://en.wikipedia.org/wiki/Spaced_repetition",
+     "why": "Why reviewing at growing gaps beats cramming."
+    }
+   ],
+   "video": [
+    {
+     "t": "Contains Duplicate - Python Solution [Leetcode 217]",
+     "u": "https://www.youtube.com/watch?v=M-ih-AbRuF8",
+     "by": "Anuj Syal",
+     "why": "Set-based duplicate check in Python."
+    },
+    {
+     "t": "How to Use LeetCode Effectively - 3 steps from beginner",
+     "u": "https://www.youtube.com/watch?v=bU_dXCOWHls",
+     "by": "CodingNinja",
+     "why": "Three-step practice loop for beginners."
+    }
+   ]
+  },
+  "85": {
+   "text": [
+    {
+     "t": "NeetCode: Best Time to Buy and Sell Stock",
+     "u": "https://neetcode.io/problems/buy-and-sell-crypto",
+     "why": "Sliding window: track running minimum while scanning"
+    },
+    {
+     "t": "NeetCode Roadmap",
+     "u": "https://neetcode.io/roadmap",
+     "why": "Pattern map: which topic leads to which, in order."
+    }
+   ],
+   "video": [
+    {
+     "t": "Best Time to Buy and Sell Stock - Leetcode 121 (Python)",
+     "u": "https://www.youtube.com/watch?v=kJZrMGpyWpk",
+     "by": "Greg Hogg",
+     "why": "One-pass window over prices, in Python."
+    },
+    {
+     "t": "I Analyzed 3,800 LeetCode Problems. Only 8 Patterns Matter",
+     "u": "https://www.youtube.com/watch?v=jC-6SmUkKnw",
+     "by": "Nikhil Lohia",
+     "why": "Pattern frequency; which patterns to review first."
+    }
+   ]
+  },
+  "86": {
+   "text": [
+    {
+     "t": "NeetCode: Longest Repeating Character Replacement",
+     "u": "https://neetcode.io/problems/longest-repeating-substring-with-replacement",
+     "why": "Sliding window: valid while length minus max count <= k"
+    },
+    {
+     "t": "Tech Interview Handbook: Algorithms study cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/algorithms/study-cheatsheet/",
+     "why": "Per-structure checklist of what to know and say."
+    }
+   ],
+   "video": [
+    {
+     "t": "Longest Substring Without Repeating Characters - Leetcode 3 - Python",
+     "u": "https://www.youtube.com/watch?v=wiGpQwVHdE0",
+     "by": "NeetCode",
+     "why": "Sliding window with a set, in Python."
+    },
+    {
+     "t": "How to Use LeetCode Effectively - 3 steps from beginner",
+     "u": "https://www.youtube.com/watch?v=bU_dXCOWHls",
+     "by": "CodingNinja",
+     "why": "Three-step practice loop for beginners."
+    }
+   ]
+  },
+  "87": {
+   "text": [
+    {
+     "t": "NeetCode: Permutation in String",
+     "u": "https://neetcode.io/problems/permutation-string",
+     "why": "Sliding window: fixed window comparing character counts"
+    },
+    {
+     "t": "Spaced repetition (Wikipedia)",
+     "u": "https://en.wikipedia.org/wiki/Spaced_repetition",
+     "why": "Why reviewing at growing gaps beats cramming."
+    }
+   ],
+   "video": [
+    {
+     "t": "L3. Longest Substring Without Repeating Characters",
+     "u": "https://www.youtube.com/watch?v=-zSxTJkcdAo",
+     "by": "take U forward",
+     "why": "Window expand and shrink, explained step by step."
+    },
+    {
+     "t": "How to use Leetcode EFFECTIVELY and STOP grinding",
+     "u": "https://www.youtube.com/watch?v=GbyXxUDVeAo",
+     "by": "Byte by Byte",
+     "why": "Practise with intent instead of grinding."
+    }
+   ]
+  },
+  "88": {
+   "text": [
+    {
+     "t": "NeetCode: Min Stack",
+     "u": "https://neetcode.io/problems/minimum-stack",
+     "why": "Stack: store running minimum with each value"
+    },
+    {
+     "t": "Python TimeComplexity (Python wiki)",
+     "u": "https://wiki.python.org/moin/TimeComplexity",
+     "why": "Look up cost of list, dict, set, deque operations."
+    }
+   ],
+   "video": [
+    {
+     "t": "Valid Parentheses - Stack - Leetcode 20 - Python",
+     "u": "https://www.youtube.com/watch?v=WTzjTskDFMg",
+     "by": "NeetCode",
+     "why": "Stack matching for brackets, in Python."
+    },
+    {
+     "t": "Smarter LeetCode Prep with Obsidian Flashcards (Spaced Repetition)",
+     "u": "https://www.youtube.com/watch?v=s_W26_XttMM",
+     "by": "Big Head",
+     "why": "Spaced repetition applied to coding patterns."
+    }
+   ]
+  },
+  "89": {
+   "text": [
+    {
+     "t": "NeetCode: Daily Temperatures",
+     "u": "https://neetcode.io/problems/daily-temperatures",
+     "why": "Monotonic stack: stack of indices finds next warmer day"
+    },
+    {
+     "t": "collections: Counter, defaultdict, deque (Python docs)",
+     "u": "https://docs.python.org/3/library/collections.html",
+     "why": "Counter, defaultdict and deque cover most patterns."
+    }
+   ],
+   "video": [
+    {
+     "t": "Valid Parentheses - Stack - Leetcode 20 - Python",
+     "u": "https://www.youtube.com/watch?v=WTzjTskDFMg",
+     "by": "NeetCode",
+     "why": "Stack matching for brackets, in Python."
+    },
+    {
+     "t": "The unfair way I got good at Leetcode",
+     "u": "https://www.youtube.com/watch?v=GPIuPRqDGG8",
+     "by": "Dave Burji",
+     "why": "Why re-solving beats solving new problems."
+    }
+   ]
+  },
+  "90": {
+   "text": [
+    {
+     "t": "NeetCode: Search Insert Position",
+     "u": "https://neetcode.io/problems/search-insert-position",
+     "why": "Binary search: return the insertion index on a miss"
+    },
+    {
+     "t": "Spaced repetition (Wikipedia)",
+     "u": "https://en.wikipedia.org/wiki/Spaced_repetition",
+     "why": "Why reviewing at growing gaps beats cramming."
+    }
+   ],
+   "video": [
+    {
+     "t": "The Binary Search Technique You NEED to KNOW!",
+     "u": "https://www.youtube.com/watch?v=56nk4-7VdyY",
+     "by": "Greg Hogg",
+     "why": "Binary search template and its boundary traps."
+    },
+    {
+     "t": "How to Use LeetCode Effectively - 3 steps from beginner",
+     "u": "https://www.youtube.com/watch?v=bU_dXCOWHls",
+     "by": "CodingNinja",
+     "why": "Three-step practice loop for beginners."
+    }
+   ]
+  },
+  "92": {
+   "text": [
+    {
+     "t": "NeetCode: Koko Eating Bananas",
+     "u": "https://neetcode.io/problems/eating-bananas",
+     "why": "Binary search on answer: search the range of possible speeds"
+    },
+    {
+     "t": "heapq: heap queue algorithm (Python docs)",
+     "u": "https://docs.python.org/3/library/heapq.html",
+     "why": "heappush, heappop, nlargest; push negatives for max-heap."
+    }
+   ],
+   "video": [
+    {
+     "t": "The Binary Search Technique You NEED to KNOW!",
+     "u": "https://www.youtube.com/watch?v=56nk4-7VdyY",
+     "by": "Greg Hogg",
+     "why": "Binary search template and its boundary traps."
+    },
+    {
+     "t": "How to Instantly Recognize Leetcode Patterns (500 problems later)",
+     "u": "https://www.youtube.com/watch?v=LAnEeffb5zI",
+     "by": "Bitflip",
+     "why": "Spot the pattern from the problem statement."
+    }
+   ]
+  },
+  "93": {
+   "text": [
+    {
+     "t": "NeetCode: Find Minimum in Rotated Sorted Array",
+     "u": "https://neetcode.io/problems/find-minimum-in-rotated-sorted-array",
+     "why": "Binary search: compare mid with the right end"
+    },
+    {
+     "t": "bisect: array bisection (Python docs)",
+     "u": "https://docs.python.org/3/library/bisect.html",
+     "why": "bisect_left and bisect_right give first and last positions."
+    }
+   ],
+   "video": [
+    {
+     "t": "LeetCode 704 | Binary Search | Python Solution Explained",
+     "u": "https://www.youtube.com/watch?v=vGZlLT0LAZI",
+     "by": "AlgoYogi",
+     "why": "Plain binary search on a sorted array, Python."
+    },
+    {
+     "t": "LeetCode Was Hard Until I Learned THESE 8 Patterns",
+     "u": "https://www.youtube.com/watch?v=RYT08CaYq6A",
+     "by": "AlgoMonster",
+     "why": "Eight core patterns, a review checklist."
+    }
+   ]
+  },
+  "94": {
+   "text": [
+    {
+     "t": "NeetCode: Merge Two Sorted Lists",
+     "u": "https://neetcode.io/problems/merge-two-sorted-linked-lists",
+     "why": "Linked list: dummy head and a tail pointer"
+    },
+    {
+     "t": "functools: lru_cache and cache (Python docs)",
+     "u": "https://docs.python.org/3/library/functools.html",
+     "why": "One decorator gives recursive memoisation for free."
+    }
+   ],
+   "video": [
+    {
+     "t": "Linked List - Data Structures in Python #1",
+     "u": "https://www.youtube.com/watch?v=1iz9SRWdpX8",
+     "by": "NeuralNine",
+     "why": "Node class and traversal, built from scratch in Python."
+    },
+    {
+     "t": "I Analyzed 3,800 LeetCode Problems. Only 8 Patterns Matter",
+     "u": "https://www.youtube.com/watch?v=jC-6SmUkKnw",
+     "by": "Nikhil Lohia",
+     "why": "Pattern frequency; which patterns to review first."
+    }
+   ]
+  },
+  "95": {
+   "text": [
+    {
+     "t": "NeetCode: Remove Nth Node From End of List",
+     "u": "https://neetcode.io/problems/remove-node-from-end-of-linked-list",
+     "why": "Linked list two pointers: keep a gap of n between pointers"
+    },
+    {
+     "t": "Sorting Techniques (Python HOWTO)",
+     "u": "https://docs.python.org/3/howto/sorting.html",
+     "why": "sorted, key functions and stability for custom sorts."
+    }
+   ],
+   "video": [
+    {
+     "t": "Python: Linked Lists (fast)",
+     "u": "https://www.youtube.com/watch?v=Ast5sKQXxEU",
+     "by": "Programming and Math Tutorials",
+     "why": "Short animated linked list with Python code."
+    },
+    {
+     "t": "How to Use LeetCode Effectively - 3 steps from beginner",
+     "u": "https://www.youtube.com/watch?v=bU_dXCOWHls",
+     "by": "CodingNinja",
+     "why": "Three-step practice loop for beginners."
+    }
+   ]
+  },
+  "96": {
+   "text": [
+    {
+     "t": "NeetCode: Reorder List",
+     "u": "https://neetcode.io/problems/reorder-linked-list",
+     "why": "Linked list: find middle, reverse second half, interleave"
+    },
+    {
+     "t": "Big-O Cheat Sheet",
+     "u": "https://www.bigocheatsheet.com/",
+     "why": "Complexities of common structures and sorts at a glance."
+    }
+   ],
+   "video": [
+    {
+     "t": "Reverse Linked List - Leetcode 206 - Linked Lists (Python)",
+     "u": "https://www.youtube.com/watch?v=KRxeMng7fBU",
+     "by": "Greg Hogg",
+     "why": "Pointer reversal walk-through in Python."
+    },
+    {
+     "t": "How to use Leetcode EFFECTIVELY and STOP grinding",
+     "u": "https://www.youtube.com/watch?v=GbyXxUDVeAo",
+     "by": "Byte by Byte",
+     "why": "Practise with intent instead of grinding."
+    }
+   ]
+  },
+  "97": {
+   "text": [
+    {
+     "t": "NeetCode: Reverse String",
+     "u": "https://neetcode.io/problems/reverse-string",
+     "why": "Two pointers: swap from both ends in place"
+    },
+    {
+     "t": "Spaced repetition (Wikipedia)",
+     "u": "https://en.wikipedia.org/wiki/Spaced_repetition",
+     "why": "Why reviewing at growing gaps beats cramming."
+    }
+   ],
+   "video": [
+    {
+     "t": "VALID PALINDROME - SOLUTION EXPLAINED [PYTHON] | LEETCODE 125",
+     "u": "https://www.youtube.com/watch?v=O2W-z-sVFTQ",
+     "by": "Cracking FAANG",
+     "why": "Two-pointer palindrome check in Python."
+    },
+    {
+     "t": "How to Use LeetCode Effectively - 3 steps from beginner",
+     "u": "https://www.youtube.com/watch?v=bU_dXCOWHls",
+     "by": "CodingNinja",
+     "why": "Three-step practice loop for beginners."
+    }
+   ]
+  },
+  "99": {
+   "text": [
+    {
+     "t": "NeetCode: Binary Tree Right Side View",
+     "u": "https://neetcode.io/problems/binary-tree-right-side-view",
+     "why": "Tree BFS: last node of each BFS level"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-cheatsheet/",
+     "why": "Steps and phrases for a live coding interview."
+    }
+   ],
+   "video": [
+    {
+     "t": "LeetCode 102: Binary Tree Level Order Traversal Made Easy - Python Tutorial",
+     "u": "https://www.youtube.com/watch?v=PAjmfyyHwzQ",
+     "by": "JameSparKing",
+     "why": "Beginner walk-through of per-level queue loop."
+    },
+    {
+     "t": "Smarter LeetCode Prep with Obsidian Flashcards (Spaced Repetition)",
+     "u": "https://www.youtube.com/watch?v=s_W26_XttMM",
+     "by": "Big Head",
+     "why": "Spaced repetition applied to coding patterns."
+    }
+   ]
+  },
+  "100": {
+   "text": [
+    {
+     "t": "NeetCode: Validate Binary Search Tree",
+     "u": "https://neetcode.io/problems/valid-binary-search-tree",
+     "why": "Tree DFS with bounds: pass min and max bounds down"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview prep",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-prep/",
+     "why": "How to schedule practice and review problems."
+    }
+   ],
+   "video": [
+    {
+     "t": "Recursive Preorder, Inorder, Postorder Traversal",
+     "u": "https://www.youtube.com/watch?v=vLNax_8gAKU",
+     "by": "Algorithms Made Easy",
+     "why": "Three recursive DFS orders on one tree."
+    },
+    {
+     "t": "The unfair way I got good at Leetcode",
+     "u": "https://www.youtube.com/watch?v=GPIuPRqDGG8",
+     "by": "Dave Burji",
+     "why": "Why re-solving beats solving new problems."
+    }
+   ]
+  },
+  "101": {
+   "text": [
+    {
+     "t": "NeetCode: Kth Smallest Element in a BST",
+     "u": "https://neetcode.io/problems/kth-smallest-integer-in-bst",
+     "why": "Inorder traversal: inorder of a BST is sorted"
+    },
+    {
+     "t": "Spaced repetition for LeetCode (StudyCards AI)",
+     "u": "https://studycardsai.com/blog/spaced-repetition-for-leetcode",
+     "why": "Practical 1, 3, 7, 14 day re-solve schedule."
+    }
+   ],
+   "video": [
+    {
+     "t": "DFS Traversal: Preorder, Inorder & Postorder Explained with Stack Calls",
+     "u": "https://www.youtube.com/watch?v=bc-qEyh8eW8",
+     "by": "RisingBrain",
+     "why": "How recursion calls unfold during tree DFS."
+    },
+    {
+     "t": "How to Instantly Recognize Leetcode Patterns (500 problems later)",
+     "u": "https://www.youtube.com/watch?v=LAnEeffb5zI",
+     "by": "Bitflip",
+     "why": "Spot the pattern from the problem statement."
+    }
+   ]
+  },
+  "102": {
+   "text": [
+    {
+     "t": "NeetCode: Lowest Common Ancestor of a BST",
+     "u": "https://neetcode.io/problems/lowest-common-ancestor-in-binary-search-tree",
+     "why": "BST property: walk down using BST ordering"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview study plan",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-study-plan/",
+     "why": "What to study and re-practise, by time left."
+    }
+   ],
+   "video": [
+    {
+     "t": "Recursive Preorder, Inorder, Postorder Traversal",
+     "u": "https://www.youtube.com/watch?v=vLNax_8gAKU",
+     "by": "Algorithms Made Easy",
+     "why": "Three recursive DFS orders on one tree."
+    },
+    {
+     "t": "LeetCode Was Hard Until I Learned THESE 8 Patterns",
+     "u": "https://www.youtube.com/watch?v=RYT08CaYq6A",
+     "by": "AlgoMonster",
+     "why": "Eight core patterns, a review checklist."
+    }
+   ]
+  },
+  "103": {
+   "text": [
+    {
+     "t": "NeetCode: Count Good Nodes in Binary Tree",
+     "u": "https://neetcode.io/problems/count-good-nodes-in-binary-tree",
+     "why": "Tree DFS: carry the max value seen on the path"
+    },
+    {
+     "t": "NeetCode: Blind 75 list",
+     "u": "https://neetcode.io/practice/practice/blind75",
+     "why": "Pick a problem by pattern from the classic list."
+    }
+   ],
+   "video": [
+    {
+     "t": "DFS Traversal: Preorder, Inorder & Postorder Explained with Stack Calls",
+     "u": "https://www.youtube.com/watch?v=bc-qEyh8eW8",
+     "by": "RisingBrain",
+     "why": "How recursion calls unfold during tree DFS."
+    },
+    {
+     "t": "I Analyzed 3,800 LeetCode Problems. Only 8 Patterns Matter",
+     "u": "https://www.youtube.com/watch?v=jC-6SmUkKnw",
+     "by": "Nikhil Lohia",
+     "why": "Pattern frequency; which patterns to review first."
+    }
+   ]
+  },
+  "104": {
+   "text": [
+    {
+     "t": "NeetCode: Same Tree",
+     "u": "https://neetcode.io/problems/same-binary-tree",
+     "why": "Tree DFS: recurse on both trees in lockstep"
+    },
+    {
+     "t": "Spaced repetition (Wikipedia)",
+     "u": "https://en.wikipedia.org/wiki/Spaced_repetition",
+     "why": "Why reviewing at growing gaps beats cramming."
+    }
+   ],
+   "video": [
+    {
+     "t": "Invert Binary Tree - Depth First Search - Leetcode 226",
+     "u": "https://www.youtube.com/watch?v=OnSn2XEQ4MY",
+     "by": "NeetCode",
+     "why": "Recursive tree inversion, three lines of logic."
+    },
+    {
+     "t": "How to Use LeetCode Effectively - 3 steps from beginner",
+     "u": "https://www.youtube.com/watch?v=bU_dXCOWHls",
+     "by": "CodingNinja",
+     "why": "Three-step practice loop for beginners."
+    }
+   ]
+  },
+  "106": {
+   "text": [
+    {
+     "t": "NeetCode: Last Stone Weight",
+     "u": "https://neetcode.io/problems/last-stone-weight",
+     "why": "Max-heap: negate values for a max-heap in heapq"
+    },
+    {
+     "t": "NeetCode 150 problem list",
+     "u": "https://neetcode.io/practice/practice/neetcode150",
+     "why": "Choose the next problem from your weakest pattern."
+    }
+   ],
+   "video": [
+    {
+     "t": "Heaps & Priority Queues in Python",
+     "u": "https://www.youtube.com/watch?v=wGSQ486Y4sc",
+     "by": "NeuralNine",
+     "why": "heapq basics and priority queues in Python."
+    },
+    {
+     "t": "How to Use LeetCode Effectively - 3 steps from beginner",
+     "u": "https://www.youtube.com/watch?v=bU_dXCOWHls",
+     "by": "CodingNinja",
+     "why": "Three-step practice loop for beginners."
+    }
+   ]
+  },
+  "107": {
+   "text": [
+    {
+     "t": "NeetCode: K Closest Points to Origin",
+     "u": "https://neetcode.io/problems/k-closest-points-to-origin",
+     "why": "Heap: heap keyed by squared distance"
+    },
+    {
+     "t": "NeetCode Roadmap",
+     "u": "https://neetcode.io/roadmap",
+     "why": "Pattern map: which topic leads to which, in order."
+    }
+   ],
+   "video": [
+    {
+     "t": "useful interview data structures: heapq (intermediate)",
+     "u": "https://www.youtube.com/watch?v=sRLuocdQfEw",
+     "by": "anthonywritescode",
+     "why": "heapq tricks useful for interview problems."
+    },
+    {
+     "t": "How to use Leetcode EFFECTIVELY and STOP grinding",
+     "u": "https://www.youtube.com/watch?v=GbyXxUDVeAo",
+     "by": "Byte by Byte",
+     "why": "Practise with intent instead of grinding."
+    }
+   ]
+  },
+  "108": {
+   "text": [
+    {
+     "t": "NeetCode: Kth Largest Element in an Array",
+     "u": "https://neetcode.io/problems/kth-largest-element-in-an-array",
+     "why": "Heap: size-k min-heap or heapq.nlargest"
+    },
+    {
+     "t": "Tech Interview Handbook: Algorithms study cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/algorithms/study-cheatsheet/",
+     "why": "Per-structure checklist of what to know and say."
+    }
+   ],
+   "video": [
+    {
+     "t": "Heaps & Priority Queues in Python",
+     "u": "https://www.youtube.com/watch?v=wGSQ486Y4sc",
+     "by": "NeuralNine",
+     "why": "heapq basics and priority queues in Python."
+    },
+    {
+     "t": "Smarter LeetCode Prep with Obsidian Flashcards (Spaced Repetition)",
+     "u": "https://www.youtube.com/watch?v=s_W26_XttMM",
+     "by": "Big Head",
+     "why": "Spaced repetition applied to coding patterns."
+    }
+   ]
+  },
+  "109": {
+   "text": [
+    {
+     "t": "NeetCode: Max Area of Island",
+     "u": "https://neetcode.io/problems/max-area-of-island",
+     "why": "Grid DFS: DFS returns the area of each island"
+    },
+    {
+     "t": "Spaced repetition (Wikipedia)",
+     "u": "https://en.wikipedia.org/wiki/Spaced_repetition",
+     "why": "Why reviewing at growing gaps beats cramming."
+    }
+   ],
+   "video": [
+    {
+     "t": "Number of Islands - Breadth-First Search (BFS) - Leetcode 200 (Python)",
+     "u": "https://www.youtube.com/watch?v=81qgDPMgxpo",
+     "by": "Matt Guest",
+     "why": "Grid BFS version of islands, in Python."
+    },
+    {
+     "t": "The unfair way I got good at Leetcode",
+     "u": "https://www.youtube.com/watch?v=GPIuPRqDGG8",
+     "by": "Dave Burji",
+     "why": "Why re-solving beats solving new problems."
+    }
+   ]
+  },
+  "110": {
+   "text": [
+    {
+     "t": "NeetCode: Clone Graph",
+     "u": "https://neetcode.io/problems/clone-graph",
+     "why": "Graph DFS: DFS plus a map from old node to copy"
+    },
+    {
+     "t": "Python TimeComplexity (Python wiki)",
+     "u": "https://wiki.python.org/moin/TimeComplexity",
+     "why": "Look up cost of list, dict, set, deque operations."
+    }
+   ],
+   "video": [
+    {
+     "t": "Graph - 4: Depth First Search (DFS) using Adjacency List",
+     "u": "https://www.youtube.com/watch?v=vRlaZ7Sh42Y",
+     "by": "Coding Simplified",
+     "why": "DFS and connected components on an adjacency list."
+    },
+    {
+     "t": "How to Instantly Recognize Leetcode Patterns (500 problems later)",
+     "u": "https://www.youtube.com/watch?v=LAnEeffb5zI",
+     "by": "Bitflip",
+     "why": "Spot the pattern from the problem statement."
+    }
+   ]
+  },
+  "111": {
+   "text": [
+    {
+     "t": "NeetCode: Kth Largest Element in a Stream",
+     "u": "https://neetcode.io/problems/kth-largest-integer-in-a-stream",
+     "why": "Min-heap of size k: keep the k largest in a min-heap"
+    },
+    {
+     "t": "Spaced repetition (Wikipedia)",
+     "u": "https://en.wikipedia.org/wiki/Spaced_repetition",
+     "why": "Why reviewing at growing gaps beats cramming."
+    }
+   ],
+   "video": [
+    {
+     "t": "Heaps & Priority Queues in Python",
+     "u": "https://www.youtube.com/watch?v=wGSQ486Y4sc",
+     "by": "NeuralNine",
+     "why": "heapq basics and priority queues in Python."
+    },
+    {
+     "t": "How to Use LeetCode Effectively - 3 steps from beginner",
+     "u": "https://www.youtube.com/watch?v=bU_dXCOWHls",
+     "by": "CodingNinja",
+     "why": "Three-step practice loop for beginners."
+    }
+   ]
+  },
+  "113": {
+   "text": [
+    {
+     "t": "NeetCode: Rotting Oranges",
+     "u": "https://neetcode.io/problems/rotting-fruit",
+     "why": "Multi-source grid BFS: BFS from all rotten cells at once"
+    },
+    {
+     "t": "collections: Counter, defaultdict, deque (Python docs)",
+     "u": "https://docs.python.org/3/library/collections.html",
+     "why": "Counter, defaultdict and deque cover most patterns."
+    }
+   ],
+   "video": [
+    {
+     "t": "Number of Islands - Breadth-First Search (BFS) - Leetcode 200 (Python)",
+     "u": "https://www.youtube.com/watch?v=81qgDPMgxpo",
+     "by": "Matt Guest",
+     "why": "Grid BFS version of islands, in Python."
+    },
+    {
+     "t": "LeetCode Was Hard Until I Learned THESE 8 Patterns",
+     "u": "https://www.youtube.com/watch?v=RYT08CaYq6A",
+     "by": "AlgoMonster",
+     "why": "Eight core patterns, a review checklist."
+    }
+   ]
+  },
+  "114": {
+   "text": [
+    {
+     "t": "NeetCode: Islands and Treasure",
+     "u": "https://neetcode.io/problems/islands-and-treasure",
+     "why": "Multi-source grid BFS: multi-source BFS gives shortest distances"
+    },
+    {
+     "t": "heapq: heap queue algorithm (Python docs)",
+     "u": "https://docs.python.org/3/library/heapq.html",
+     "why": "heappush, heappop, nlargest; push negatives for max-heap."
+    }
+   ],
+   "video": [
+    {
+     "t": "Number of Islands - Leetcode 200 - Graphs (Python)",
+     "u": "https://www.youtube.com/watch?v=gCswsDauXPc",
+     "by": "Greg Hogg",
+     "why": "Grid DFS flood fill for islands, in Python."
+    },
+    {
+     "t": "I Analyzed 3,800 LeetCode Problems. Only 8 Patterns Matter",
+     "u": "https://www.youtube.com/watch?v=jC-6SmUkKnw",
+     "by": "Nikhil Lohia",
+     "why": "Pattern frequency; which patterns to review first."
+    }
+   ]
+  },
+  "115": {
+   "text": [
+    {
+     "t": "NeetCode: Course Schedule II",
+     "u": "https://neetcode.io/problems/course-schedule-ii",
+     "why": "Topological sort: output a valid order via topological sort"
+    },
+    {
+     "t": "bisect: array bisection (Python docs)",
+     "u": "https://docs.python.org/3/library/bisect.html",
+     "why": "bisect_left and bisect_right give first and last positions."
+    }
+   ],
+   "video": [
+    {
+     "t": "Course Schedule - Python - LeetCode 207 - Kahn's Algorithm",
+     "u": "https://www.youtube.com/watch?v=Q84P2I1wQ2Y",
+     "by": "codegrind",
+     "why": "Kahn topological sort in Python."
+    },
+    {
+     "t": "How to Use LeetCode Effectively - 3 steps from beginner",
+     "u": "https://www.youtube.com/watch?v=bU_dXCOWHls",
+     "by": "CodingNinja",
+     "why": "Three-step practice loop for beginners."
+    }
+   ]
+  },
+  "116": {
+   "text": [
+    {
+     "t": "NeetCode: Min Cost Climbing Stairs",
+     "u": "https://neetcode.io/problems/min-cost-climbing-stairs",
+     "why": "1D DP: 1D DP over two previous states"
+    },
+    {
+     "t": "functools: lru_cache and cache (Python docs)",
+     "u": "https://docs.python.org/3/library/functools.html",
+     "why": "One decorator gives recursive memoisation for free."
+    }
+   ],
+   "video": [
+    {
+     "t": "LeetCode 70: Climbing Stairs - Dynamic Programming, Recursion, and Memoization - Python",
+     "u": "https://www.youtube.com/watch?v=izU-B1gfhws",
+     "by": "KNuggies",
+     "why": "Recursion to memo to bottom-up DP in Python."
+    },
+    {
+     "t": "How to use Leetcode EFFECTIVELY and STOP grinding",
+     "u": "https://www.youtube.com/watch?v=GbyXxUDVeAo",
+     "by": "Byte by Byte",
+     "why": "Practise with intent instead of grinding."
+    }
+   ]
+  },
+  "117": {
+   "text": [
+    {
+     "t": "NeetCode: House Robber II",
+     "u": "https://neetcode.io/problems/house-robber-ii",
+     "why": "1D DP: run house robber twice around the circle"
+    },
+    {
+     "t": "Sorting Techniques (Python HOWTO)",
+     "u": "https://docs.python.org/3/howto/sorting.html",
+     "why": "sorted, key functions and stability for custom sorts."
+    }
+   ],
+   "video": [
+    {
+     "t": "(Remade) Leetcode 198 - House Robber",
+     "u": "https://www.youtube.com/watch?v=yvdIaP14x2o",
+     "by": "Nideesh Terapalli",
+     "why": "Rob-or-skip recurrence, built up step by step."
+    },
+    {
+     "t": "Smarter LeetCode Prep with Obsidian Flashcards (Spaced Repetition)",
+     "u": "https://www.youtube.com/watch?v=s_W26_XttMM",
+     "by": "Big Head",
+     "why": "Spaced repetition applied to coding patterns."
+    }
+   ]
+  },
+  "118": {
+   "text": [
+    {
+     "t": "NeetCode: Climbing Stairs",
+     "u": "https://neetcode.io/problems/climbing-stairs",
+     "why": "Dynamic programming: dp[i] = dp[i-1] + dp[i-2]"
+    },
+    {
+     "t": "Spaced repetition (Wikipedia)",
+     "u": "https://en.wikipedia.org/wiki/Spaced_repetition",
+     "why": "Why reviewing at growing gaps beats cramming."
+    }
+   ],
+   "video": [
+    {
+     "t": "LeetCode 70: Climbing Stairs - Dynamic Programming, Recursion, and Memoization - Python",
+     "u": "https://www.youtube.com/watch?v=izU-B1gfhws",
+     "by": "KNuggies",
+     "why": "Recursion to memo to bottom-up DP in Python."
+    },
+    {
+     "t": "How to Use LeetCode Effectively - 3 steps from beginner",
+     "u": "https://www.youtube.com/watch?v=bU_dXCOWHls",
+     "by": "CodingNinja",
+     "why": "Three-step practice loop for beginners."
+    }
+   ]
+  },
+  "120": {
+   "text": [
+    {
+     "t": "NeetCode: Longest Palindromic Substring",
+     "u": "https://neetcode.io/problems/longest-palindromic-substring",
+     "why": "Expand around center: expand from every center, odd and even"
+    },
+    {
+     "t": "Big-O Cheat Sheet",
+     "u": "https://www.bigocheatsheet.com/",
+     "why": "Complexities of common structures and sorts at a glance."
+    }
+   ],
+   "video": [
+    {
+     "t": "VALID PALINDROME - SOLUTION EXPLAINED [PYTHON] | LEETCODE 125",
+     "u": "https://www.youtube.com/watch?v=O2W-z-sVFTQ",
+     "by": "Cracking FAANG",
+     "why": "Two-pointer palindrome check in Python."
+    },
+    {
+     "t": "The unfair way I got good at Leetcode",
+     "u": "https://www.youtube.com/watch?v=GPIuPRqDGG8",
+     "by": "Dave Burji",
+     "why": "Why re-solving beats solving new problems."
+    }
+   ]
+  },
+  "121": {
+   "text": [
+    {
+     "t": "NeetCode: Word Break",
+     "u": "https://neetcode.io/problems/word-break",
+     "why": "DP on strings: dp[i] true if a word ends at i"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-cheatsheet/",
+     "why": "Steps and phrases for a live coding interview."
+    }
+   ],
+   "video": [
+    {
+     "t": "Coin Change Problem | Dynamic Programming | Leetcode #322",
+     "u": "https://www.youtube.com/watch?v=ZI17bgz07EE",
+     "by": "Techdose",
+     "why": "Coin change as unbounded knapsack DP."
+    },
+    {
+     "t": "How to Instantly Recognize Leetcode Patterns (500 problems later)",
+     "u": "https://www.youtube.com/watch?v=LAnEeffb5zI",
+     "by": "Bitflip",
+     "why": "Spot the pattern from the problem statement."
+    }
+   ]
+  },
+  "122": {
+   "text": [
+    {
+     "t": "NeetCode: Maximum Product Subarray",
+     "u": "https://neetcode.io/problems/maximum-product-subarray",
+     "why": "DP: track running max and min product"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview prep",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-prep/",
+     "why": "How to schedule practice and review problems."
+    }
+   ],
+   "video": [
+    {
+     "t": "(Remade) Leetcode 198 - House Robber",
+     "u": "https://www.youtube.com/watch?v=yvdIaP14x2o",
+     "by": "Nideesh Terapalli",
+     "why": "Rob-or-skip recurrence, built up step by step."
+    },
+    {
+     "t": "LeetCode Was Hard Until I Learned THESE 8 Patterns",
+     "u": "https://www.youtube.com/watch?v=RYT08CaYq6A",
+     "by": "AlgoMonster",
+     "why": "Eight core patterns, a review checklist."
+    }
+   ]
+  },
+  "123": {
+   "text": [
+    {
+     "t": "NeetCode: Longest Increasing Subsequence",
+     "u": "https://neetcode.io/problems/longest-increasing-subsequence",
+     "why": "DP: dp[i] from smaller earlier values"
+    },
+    {
+     "t": "Spaced repetition for LeetCode (StudyCards AI)",
+     "u": "https://studycardsai.com/blog/spaced-repetition-for-leetcode",
+     "why": "Practical 1, 3, 7, 14 day re-solve schedule."
+    }
+   ],
+   "video": [
+    {
+     "t": "Coin Change Problem | Dynamic Programming | Leetcode #322",
+     "u": "https://www.youtube.com/watch?v=ZI17bgz07EE",
+     "by": "Techdose",
+     "why": "Coin change as unbounded knapsack DP."
+    },
+    {
+     "t": "I Analyzed 3,800 LeetCode Problems. Only 8 Patterns Matter",
+     "u": "https://www.youtube.com/watch?v=jC-6SmUkKnw",
+     "by": "Nikhil Lohia",
+     "why": "Pattern frequency; which patterns to review first."
+    }
+   ]
+  },
+  "124": {
+   "text": [
+    {
+     "t": "NeetCode: Longest Common Subsequence",
+     "u": "https://neetcode.io/problems/longest-common-subsequence",
+     "why": "2D DP: two-string table, match or skip"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview study plan",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-study-plan/",
+     "why": "What to study and re-practise, by time left."
+    }
+   ],
+   "video": [
+    {
+     "t": "Unique Paths - Leetcode 62 - Dynamic Programming (Python)",
+     "u": "https://www.youtube.com/watch?v=3ZFvBlynmls",
+     "by": "Greg Hogg",
+     "why": "2D grid DP in Python."
+    },
+    {
+     "t": "How to Use LeetCode Effectively - 3 steps from beginner",
+     "u": "https://www.youtube.com/watch?v=bU_dXCOWHls",
+     "by": "CodingNinja",
+     "why": "Three-step practice loop for beginners."
+    }
+   ]
+  },
+  "125": {
+   "text": [
+    {
+     "t": "NeetCode: Maximum Subarray",
+     "u": "https://neetcode.io/problems/maximum-subarray",
+     "why": "Kadane / DP: extend the running sum or restart"
+    },
+    {
+     "t": "Spaced repetition (Wikipedia)",
+     "u": "https://en.wikipedia.org/wiki/Spaced_repetition",
+     "why": "Why reviewing at growing gaps beats cramming."
+    }
+   ],
+   "video": [
+    {
+     "t": "(Remade) Leetcode 198 - House Robber",
+     "u": "https://www.youtube.com/watch?v=yvdIaP14x2o",
+     "by": "Nideesh Terapalli",
+     "why": "Rob-or-skip recurrence, built up step by step."
+    },
+    {
+     "t": "How to Use LeetCode Effectively - 3 steps from beginner",
+     "u": "https://www.youtube.com/watch?v=bU_dXCOWHls",
+     "by": "CodingNinja",
+     "why": "Three-step practice loop for beginners."
+    }
+   ]
+  },
+  "127": {
+   "text": [
+    {
+     "t": "NeetCode: Group Anagrams",
+     "u": "https://neetcode.io/problems/anagram-groups",
+     "why": "Hash map grouping: group by sorted key or count tuple"
+    },
+    {
+     "t": "NeetCode: 3Sum",
+     "u": "https://neetcode.io/problems/three-integer-sum",
+     "why": "Two pointers: sort, fix one value, two pointers on the rest"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-cheatsheet/",
+     "why": "Steps and phrases for a live coding interview."
+    }
+   ],
+   "video": [
+    {
+     "t": "Leetcode - Valid Anagram (Python)",
+     "u": "https://www.youtube.com/watch?v=UqjII0w8Xn0",
+     "by": "Timothy H Chang",
+     "why": "Python solution with a character counter."
+    },
+    {
+     "t": "Two Sum II in O(n) Using Two Pointers",
+     "u": "https://www.youtube.com/watch?v=p0GdTJBWswU",
+     "by": "StackMint",
+     "why": "Why sortedness lets two pointers work."
+    },
+    {
+     "t": "How to Solve ANY Coding Interview Question in 6 Steps",
+     "u": "https://www.youtube.com/watch?v=Q4C3ZRJLnac",
+     "by": "Anthony D. Mays",
+     "why": "Six-step routine: clarify, example, brute force, optimise."
+    }
+   ]
+  },
+  "128": {
+   "text": [
+    {
+     "t": "NeetCode: Longest Substring Without Repeating Characters",
+     "u": "https://neetcode.io/problems/longest-substring-without-duplicates",
+     "why": "Sliding window: grow right, shrink left on duplicates"
+    },
+    {
+     "t": "NeetCode: Daily Temperatures",
+     "u": "https://neetcode.io/problems/daily-temperatures",
+     "why": "Monotonic stack: stack of indices finds next warmer day"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-cheatsheet/",
+     "why": "Steps and phrases for a live coding interview."
+    }
+   ],
+   "video": [
+    {
+     "t": "Longest Substring Without Repeating Characters - Leetcode 3 - Python",
+     "u": "https://www.youtube.com/watch?v=wiGpQwVHdE0",
+     "by": "NeetCode",
+     "why": "Sliding window with a set, in Python."
+    },
+    {
+     "t": "Valid Parentheses - Stack - Leetcode 20 - Python",
+     "u": "https://www.youtube.com/watch?v=WTzjTskDFMg",
+     "by": "NeetCode",
+     "why": "Stack matching for brackets, in Python."
+    },
+    {
+     "t": "How to ACE Any Coding Interview with These 4 Steps",
+     "u": "https://www.youtube.com/watch?v=rd2arhRZxz8",
+     "by": "Educative",
+     "why": "Four-step framework for a timed problem."
+    }
+   ]
+  },
+  "129": {
+   "text": [
+    {
+     "t": "NeetCode: Search a 2D Matrix",
+     "u": "https://neetcode.io/problems/search-2d-matrix",
+     "why": "Binary search: binary search over a flattened matrix"
+    },
+    {
+     "t": "NeetCode: Search in Rotated Sorted Array",
+     "u": "https://neetcode.io/problems/find-target-in-rotated-sorted-array",
+     "why": "Binary search: decide which half is sorted, then narrow"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-cheatsheet/",
+     "why": "Steps and phrases for a live coding interview."
+    }
+   ],
+   "video": [
+    {
+     "t": "LeetCode 704 | Binary Search | Python Solution Explained",
+     "u": "https://www.youtube.com/watch?v=vGZlLT0LAZI",
+     "by": "AlgoYogi",
+     "why": "Plain binary search on a sorted array, Python."
+    },
+    {
+     "t": "Whiteboard Coding Interviews: 6 Steps to Solve Any Problem",
+     "u": "https://www.youtube.com/watch?v=DIR_rxusO8Q",
+     "by": "Fullstack Academy",
+     "why": "Structured approach to any live coding problem."
+    }
+   ]
+  },
+  "130": {
+   "text": [
+    {
+     "t": "NeetCode: Validate Binary Search Tree",
+     "u": "https://neetcode.io/problems/valid-binary-search-tree",
+     "why": "Tree DFS with bounds: pass min and max bounds down"
+    },
+    {
+     "t": "NeetCode: Construct Binary Tree from Preorder and Inorder Traversal",
+     "u": "https://neetcode.io/problems/binary-tree-from-preorder-and-inorder-traversal",
+     "why": "Tree recursion: preorder gives root, inorder splits subtrees"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-cheatsheet/",
+     "why": "Steps and phrases for a live coding interview."
+    }
+   ],
+   "video": [
+    {
+     "t": "Recursive Preorder, Inorder, Postorder Traversal",
+     "u": "https://www.youtube.com/watch?v=vLNax_8gAKU",
+     "by": "Algorithms Made Easy",
+     "why": "Three recursive DFS orders on one tree."
+    },
+    {
+     "t": "How To Think Out Loud: A Guide for Coding Interviews",
+     "u": "https://www.youtube.com/watch?v=c1gjL47uH3w",
+     "by": "CodeLucky",
+     "why": "Narrate your reasoning while coding."
+    }
+   ]
+  },
+  "131": {
+   "text": [
+    {
+     "t": "NeetCode: Number of Islands",
+     "u": "https://neetcode.io/problems/count-number-of-islands",
+     "why": "Grid DFS/BFS: flood-fill each unvisited land cell"
+    },
+    {
+     "t": "NeetCode: Course Schedule",
+     "u": "https://neetcode.io/problems/course-schedule",
+     "why": "Cycle detection: directed cycle means courses cannot finish"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-cheatsheet/",
+     "why": "Steps and phrases for a live coding interview."
+    }
+   ],
+   "video": [
+    {
+     "t": "Number of Islands - Breadth-First Search (BFS) - Leetcode 200 (Python)",
+     "u": "https://www.youtube.com/watch?v=81qgDPMgxpo",
+     "by": "Matt Guest",
+     "why": "Grid BFS version of islands, in Python."
+    },
+    {
+     "t": "Course Schedule - Python - LeetCode 207 - Kahn's Algorithm",
+     "u": "https://www.youtube.com/watch?v=Q84P2I1wQ2Y",
+     "by": "codegrind",
+     "why": "Kahn topological sort in Python."
+    },
+    {
+     "t": "What successful coding interviews are REALLY like (FULL MOCK INTERVIEW)",
+     "u": "https://www.youtube.com/watch?v=3yQ4Jaumw3g",
+     "by": "Byte by Byte",
+     "why": "Watch a full mock interview, then copy the pacing."
+    }
+   ]
+  },
+  "132": {
+   "text": [
+    {
+     "t": "NeetCode: Coin Change",
+     "u": "https://neetcode.io/problems/coin-change",
+     "why": "DP: fewest coins per amount, bottom-up"
+    },
+    {
+     "t": "NeetCode: House Robber II",
+     "u": "https://neetcode.io/problems/house-robber-ii",
+     "why": "1D DP: run house robber twice around the circle"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-cheatsheet/",
+     "why": "Steps and phrases for a live coding interview."
+    }
+   ],
+   "video": [
+    {
+     "t": "Coin Change - LeetCode 322 - Python - Visually Explained",
+     "u": "https://www.youtube.com/watch?v=Z6fauIHQiUk",
+     "by": "Hello Byte",
+     "why": "Coin change DP table in Python."
+    },
+    {
+     "t": "(Remade) Leetcode 198 - House Robber",
+     "u": "https://www.youtube.com/watch?v=yvdIaP14x2o",
+     "by": "Nideesh Terapalli",
+     "why": "Rob-or-skip recurrence, built up step by step."
+    },
+    {
+     "t": "How to solve a Google coding interview question",
+     "u": "https://www.youtube.com/watch?v=Ti5vfu9arXQ",
+     "by": "Life at Google",
+     "why": "Interviewer-view of communicating a solution."
+    }
+   ]
+  },
+  "134": {
+   "text": [
+    {
+     "t": "NeetCode: Merge Intervals",
+     "u": "https://neetcode.io/problems/merge-intervals",
+     "why": "Sorting intervals: sort by start, extend or append"
+    },
+    {
+     "t": "NeetCode: Insert Interval",
+     "u": "https://neetcode.io/problems/insert-new-interval",
+     "why": "Intervals: before, overlapping, after phases"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-cheatsheet/",
+     "why": "Steps and phrases for a live coding interview."
+    }
+   ],
+   "video": [
+    {
+     "t": "Merge Intervals - Leetcode 56 - Arrays & Strings (Python)",
+     "u": "https://www.youtube.com/watch?v=HCbKvBOlMVI",
+     "by": "Greg Hogg",
+     "why": "Sort by start, then merge, in Python."
+    },
+    {
+     "t": "CODING INTERVIEW STEP BY STEP GUIDE",
+     "u": "https://www.youtube.com/watch?v=HG2tiAZWccg",
+     "by": "Cracking FAANG",
+     "why": "Step-by-step algorithm for a technical interview."
+    }
+   ]
+  },
+  "135": {
+   "text": [
+    {
+     "t": "NeetCode: K Closest Points to Origin",
+     "u": "https://neetcode.io/problems/k-closest-points-to-origin",
+     "why": "Heap: heap keyed by squared distance"
+    },
+    {
+     "t": "NeetCode: Task Scheduler",
+     "u": "https://neetcode.io/problems/task-scheduling",
+     "why": "Heap / greedy: most frequent first, with a cooldown queue"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-cheatsheet/",
+     "why": "Steps and phrases for a live coding interview."
+    }
+   ],
+   "video": [
+    {
+     "t": "useful interview data structures: heapq (intermediate)",
+     "u": "https://www.youtube.com/watch?v=sRLuocdQfEw",
+     "by": "anthonywritescode",
+     "why": "heapq tricks useful for interview problems."
+    },
+    {
+     "t": "How to Solve ANY Coding Interview Question in 6 Steps",
+     "u": "https://www.youtube.com/watch?v=Q4C3ZRJLnac",
+     "by": "Anthony D. Mays",
+     "why": "Six-step routine: clarify, example, brute force, optimise."
+    }
+   ]
+  },
+  "136": {
+   "text": [
+    {
+     "t": "NeetCode: Word Break",
+     "u": "https://neetcode.io/problems/word-break",
+     "why": "DP on strings: dp[i] true if a word ends at i"
+    },
+    {
+     "t": "NeetCode: Longest Increasing Subsequence",
+     "u": "https://neetcode.io/problems/longest-increasing-subsequence",
+     "why": "DP: dp[i] from smaller earlier values"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-cheatsheet/",
+     "why": "Steps and phrases for a live coding interview."
+    }
+   ],
+   "video": [
+    {
+     "t": "Coin Change - LeetCode 322 - Python - Visually Explained",
+     "u": "https://www.youtube.com/watch?v=Z6fauIHQiUk",
+     "by": "Hello Byte",
+     "why": "Coin change DP table in Python."
+    },
+    {
+     "t": "How to ACE Any Coding Interview with These 4 Steps",
+     "u": "https://www.youtube.com/watch?v=rd2arhRZxz8",
+     "by": "Educative",
+     "why": "Four-step framework for a timed problem."
+    }
+   ]
+  },
+  "137": {
+   "text": [
+    {
+     "t": "NeetCode: Pacific Atlantic Water Flow",
+     "u": "https://neetcode.io/problems/pacific-atlantic-water-flow",
+     "why": "Grid DFS: search inward from each ocean border"
+    },
+    {
+     "t": "NeetCode: Clone Graph",
+     "u": "https://neetcode.io/problems/clone-graph",
+     "why": "Graph DFS: DFS plus a map from old node to copy"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-cheatsheet/",
+     "why": "Steps and phrases for a live coding interview."
+    }
+   ],
+   "video": [
+    {
+     "t": "Number of Islands - Breadth-First Search (BFS) - Leetcode 200 (Python)",
+     "u": "https://www.youtube.com/watch?v=81qgDPMgxpo",
+     "by": "Matt Guest",
+     "why": "Grid BFS version of islands, in Python."
+    },
+    {
+     "t": "Graph - 4: Depth First Search (DFS) using Adjacency List",
+     "u": "https://www.youtube.com/watch?v=vRlaZ7Sh42Y",
+     "by": "Coding Simplified",
+     "why": "DFS and connected components on an adjacency list."
+    },
+    {
+     "t": "Whiteboard Coding Interviews: 6 Steps to Solve Any Problem",
+     "u": "https://www.youtube.com/watch?v=DIR_rxusO8Q",
+     "by": "Fullstack Academy",
+     "why": "Structured approach to any live coding problem."
+    }
+   ]
+  },
+  "138": {
+   "text": [
+    {
+     "t": "NeetCode: Subsets",
+     "u": "https://neetcode.io/problems/subsets",
+     "why": "Backtracking: include or exclude each element"
+    },
+    {
+     "t": "NeetCode: Combination Sum",
+     "u": "https://neetcode.io/problems/combination-target-sum",
+     "why": "Backtracking: recursive choices, shrinking target"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-cheatsheet/",
+     "why": "Steps and phrases for a live coding interview."
+    }
+   ],
+   "video": [
+    {
+     "t": "What is Recursion? Recursion Explained in Python (with a Fibonacci Example)",
+     "u": "https://www.youtube.com/watch?v=A3VQmxoWLHY",
+     "by": "Coding with Estefania",
+     "why": "Base case, recursive case, and the call stack."
+    },
+    {
+     "t": "How To Think Out Loud: A Guide for Coding Interviews",
+     "u": "https://www.youtube.com/watch?v=c1gjL47uH3w",
+     "by": "CodeLucky",
+     "why": "Narrate your reasoning while coding."
+    }
+   ]
+  },
+  "139": {
+   "text": [
+    {
+     "t": "NeetCode: Jump Game",
+     "u": "https://neetcode.io/problems/jump-game",
+     "why": "Greedy: track the farthest reachable index"
+    },
+    {
+     "t": "NeetCode: Gas Station",
+     "u": "https://neetcode.io/problems/gas-station",
+     "why": "Greedy: restart when the tank goes negative"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-cheatsheet/",
+     "why": "Steps and phrases for a live coding interview."
+    }
+   ],
+   "video": [
+    {
+     "t": "(Remade) Leetcode 198 - House Robber",
+     "u": "https://www.youtube.com/watch?v=yvdIaP14x2o",
+     "by": "Nideesh Terapalli",
+     "why": "Rob-or-skip recurrence, built up step by step."
+    },
+    {
+     "t": "Merge Intervals - Leetcode 56 - Arrays & Strings (Python)",
+     "u": "https://www.youtube.com/watch?v=HCbKvBOlMVI",
+     "by": "Greg Hogg",
+     "why": "Sort by start, then merge, in Python."
+    },
+    {
+     "t": "What successful coding interviews are REALLY like (FULL MOCK INTERVIEW)",
+     "u": "https://www.youtube.com/watch?v=3yQ4Jaumw3g",
+     "by": "Byte by Byte",
+     "why": "Watch a full mock interview, then copy the pacing."
+    }
+   ]
+  },
+  "141": {
+   "text": [
+    {
+     "t": "NeetCode: Longest Repeating Character Replacement",
+     "u": "https://neetcode.io/problems/longest-repeating-substring-with-replacement",
+     "why": "Sliding window: valid while length minus max count <= k"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-cheatsheet/",
+     "why": "Steps and phrases for a live coding interview."
+    }
+   ],
+   "video": [
+    {
+     "t": "L3. Longest Substring Without Repeating Characters",
+     "u": "https://www.youtube.com/watch?v=-zSxTJkcdAo",
+     "by": "take U forward",
+     "why": "Window expand and shrink, explained step by step."
+    },
+    {
+     "t": "How to solve a Google coding interview question",
+     "u": "https://www.youtube.com/watch?v=Ti5vfu9arXQ",
+     "by": "Life at Google",
+     "why": "Interviewer-view of communicating a solution."
+    }
+   ]
+  },
+  "142": {
+   "text": [
+    {
+     "t": "NeetCode: Course Schedule II",
+     "u": "https://neetcode.io/problems/course-schedule-ii",
+     "why": "Topological sort: output a valid order via topological sort"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-cheatsheet/",
+     "why": "Steps and phrases for a live coding interview."
+    }
+   ],
+   "video": [
+    {
+     "t": "Course Schedule: Detect Cycle in Directed Graph - LeetCode 207",
+     "u": "https://www.youtube.com/watch?v=K9XwnFqz3Tg",
+     "by": "CodeLucky",
+     "why": "Cycle detection with DFS and BFS (topological sort)."
+    },
+    {
+     "t": "CODING INTERVIEW STEP BY STEP GUIDE",
+     "u": "https://www.youtube.com/watch?v=HG2tiAZWccg",
+     "by": "Cracking FAANG",
+     "why": "Step-by-step algorithm for a technical interview."
+    }
+   ]
+  },
+  "143": {
+   "text": [
+    {
+     "t": "NeetCode: Decode Ways",
+     "u": "https://neetcode.io/problems/decode-ways",
+     "why": "1D DP: one-digit and two-digit decodes"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-cheatsheet/",
+     "why": "Steps and phrases for a live coding interview."
+    }
+   ],
+   "video": [
+    {
+     "t": "Climbing Stairs - Leetcode 70 - Blind 75 Explained - Dynamic Programming - Python",
+     "u": "https://www.youtube.com/watch?v=2iHSYu2tQVE",
+     "by": "Off By One",
+     "why": "Climbing stairs as Fibonacci-style DP."
+    },
+    {
+     "t": "How to Solve ANY Coding Interview Question in 6 Steps",
+     "u": "https://www.youtube.com/watch?v=Q4C3ZRJLnac",
+     "by": "Anthony D. Mays",
+     "why": "Six-step routine: clarify, example, brute force, optimise."
+    }
+   ]
+  },
+  "144": {
+   "text": [
+    {
+     "t": "NeetCode: Non-overlapping Intervals",
+     "u": "https://neetcode.io/problems/non-overlapping-intervals",
+     "why": "Intervals greedy: sort by end, keep earliest finisher"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-cheatsheet/",
+     "why": "Steps and phrases for a live coding interview."
+    }
+   ],
+   "video": [
+    {
+     "t": "Merge Intervals - Leetcode 56 - Arrays & Strings (Python)",
+     "u": "https://www.youtube.com/watch?v=HCbKvBOlMVI",
+     "by": "Greg Hogg",
+     "why": "Sort by start, then merge, in Python."
+    },
+    {
+     "t": "How to ACE Any Coding Interview with These 4 Steps",
+     "u": "https://www.youtube.com/watch?v=rd2arhRZxz8",
+     "by": "Educative",
+     "why": "Four-step framework for a timed problem."
+    }
+   ]
+  },
+  "145": {
+   "text": [
+    {
+     "t": "Spaced repetition (Wikipedia)",
+     "u": "https://en.wikipedia.org/wiki/Spaced_repetition",
+     "why": "Why reviewing at growing gaps beats cramming."
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview study plan",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-study-plan/",
+     "why": "What to study and re-practise, by time left."
+    }
+   ],
+   "video": [
+    {
+     "t": "How to use Leetcode EFFECTIVELY and STOP grinding",
+     "u": "https://www.youtube.com/watch?v=GbyXxUDVeAo",
+     "by": "Byte by Byte",
+     "why": "Practise with intent instead of grinding."
+    },
+    {
+     "t": "How to Instantly Recognize Leetcode Patterns (500 problems later)",
+     "u": "https://www.youtube.com/watch?v=LAnEeffb5zI",
+     "by": "Bitflip",
+     "why": "Spot the pattern from the problem statement."
+    }
+   ]
+  },
+  "146": {
+   "text": [
+    {
+     "t": "Tech Interview Handbook: Coding interview prep",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-prep/",
+     "why": "How to schedule practice and review problems."
+    },
+    {
+     "t": "Spaced repetition (Wikipedia)",
+     "u": "https://en.wikipedia.org/wiki/Spaced_repetition",
+     "why": "Why reviewing at growing gaps beats cramming."
+    }
+   ],
+   "video": [
+    {
+     "t": "Smarter LeetCode Prep with Obsidian Flashcards (Spaced Repetition)",
+     "u": "https://www.youtube.com/watch?v=s_W26_XttMM",
+     "by": "Big Head",
+     "why": "Spaced repetition applied to coding patterns."
+    },
+    {
+     "t": "LeetCode Was Hard Until I Learned THESE 8 Patterns",
+     "u": "https://www.youtube.com/watch?v=RYT08CaYq6A",
+     "by": "AlgoMonster",
+     "why": "Eight core patterns, a review checklist."
+    }
+   ]
+  },
+  "148": {
+   "text": [
+    {
+     "t": "NeetCode: Partition Equal Subset Sum",
+     "u": "https://neetcode.io/problems/partition-equal-subset-sum",
+     "why": "Subset-sum DP: reach half of the total"
+    },
+    {
+     "t": "Tech Interview Handbook: Coding interview cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-cheatsheet/",
+     "why": "Steps and phrases for a live coding interview."
+    }
+   ],
+   "video": [
+    {
+     "t": "Coin Change - LeetCode 322 - Python - Visually Explained",
+     "u": "https://www.youtube.com/watch?v=Z6fauIHQiUk",
+     "by": "Hello Byte",
+     "why": "Coin change DP table in Python."
+    },
+    {
+     "t": "Whiteboard Coding Interviews: 6 Steps to Solve Any Problem",
+     "u": "https://www.youtube.com/watch?v=DIR_rxusO8Q",
+     "by": "Fullstack Academy",
+     "why": "Structured approach to any live coding problem."
+    }
+   ]
+  },
+  "149": {
+   "text": [
+    {
+     "t": "Spaced repetition for LeetCode (StudyCards AI)",
+     "u": "https://studycardsai.com/blog/spaced-repetition-for-leetcode",
+     "why": "Practical 1, 3, 7, 14 day re-solve schedule."
+    },
+    {
+     "t": "Tech Interview Handbook: Algorithms study cheatsheet",
+     "u": "https://www.techinterviewhandbook.org/algorithms/study-cheatsheet/",
+     "why": "Per-structure checklist of what to know and say."
+    }
+   ],
+   "video": [
+    {
+     "t": "The unfair way I got good at Leetcode",
+     "u": "https://www.youtube.com/watch?v=GPIuPRqDGG8",
+     "by": "Dave Burji",
+     "why": "Why re-solving beats solving new problems."
+    },
+    {
+     "t": "I Analyzed 3,800 LeetCode Problems. Only 8 Patterns Matter",
+     "u": "https://www.youtube.com/watch?v=jC-6SmUkKnw",
+     "by": "Nikhil Lohia",
+     "why": "Pattern frequency; which patterns to review first."
+    }
+   ]
+  },
+  "150": {
+   "text": [
+    {
+     "t": "Spaced repetition (Wikipedia)",
+     "u": "https://en.wikipedia.org/wiki/Spaced_repetition",
+     "why": "Why reviewing at growing gaps beats cramming."
+    },
+    {
+     "t": "NeetCode 150 problem list",
+     "u": "https://neetcode.io/practice/practice/neetcode150",
+     "why": "Choose the next problem from your weakest pattern."
+    }
+   ],
+   "video": [
+    {
+     "t": "How to Instantly Recognize Leetcode Patterns (500 problems later)",
+     "u": "https://www.youtube.com/watch?v=LAnEeffb5zI",
+     "by": "Bitflip",
+     "why": "Spot the pattern from the problem statement."
+    },
+    {
+     "t": "How to Use LeetCode Effectively - 3 steps from beginner",
+     "u": "https://www.youtube.com/watch?v=bU_dXCOWHls",
+     "by": "CodingNinja",
+     "why": "Three-step practice loop for beginners."
+    }
+   ]
+  },
+  "151": {
+   "text": [
+    {
+     "t": "Tech Interview Handbook: Coding interview study plan",
+     "u": "https://www.techinterviewhandbook.org/coding-interview-study-plan/",
+     "why": "What to study and re-practise, by time left."
+    },
+    {
+     "t": "NeetCode Roadmap",
+     "u": "https://neetcode.io/roadmap",
+     "why": "Pattern map: which topic leads to which, in order."
+    }
+   ],
+   "video": [
+    {
+     "t": "LeetCode Was Hard Until I Learned THESE 8 Patterns",
+     "u": "https://www.youtube.com/watch?v=RYT08CaYq6A",
+     "by": "AlgoMonster",
+     "why": "Eight core patterns, a review checklist."
+    },
+    {
+     "t": "How to use Leetcode EFFECTIVELY and STOP grinding",
+     "u": "https://www.youtube.com/watch?v=GbyXxUDVeAo",
+     "by": "Byte by Byte",
+     "why": "Practise with intent instead of grinding."
+    }
+   ]
+  }
+ }
+}

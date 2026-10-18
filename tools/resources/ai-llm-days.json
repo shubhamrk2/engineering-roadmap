@@ -1,0 +1,68 @@
+{ "days": {
+  "64": {
+    "text": [
+      { "t": "Hugging Face: Summary of the tokenizers", "u": "https://huggingface.co/docs/transformers/tokenizer_summary", "why": "BPE and subword tokenisation explained with examples." },
+      { "t": "tiktoken (OpenAI tokenizer library)", "u": "https://github.com/openai/tiktoken", "why": "The library used for the real token count in the sheet." }
+    ],
+    "video": [
+      { "t": "[1hr Talk] Intro to Large Language Models", "u": "https://www.youtube.com/watch?v=zjkBMFhNj_g", "by": "Andrej Karpathy", "why": "Best single hour on what an LLM is; Nov 2023, so dated on tooling." },
+      { "t": "Large Language Models explained briefly", "u": "https://www.youtube.com/watch?v=LPZh9BOjkQs", "by": "3Blue1Brown", "why": "Eight-minute animated next-token picture." }
+    ]
+  },
+  "65": {
+    "text": [
+      { "t": "Ollama documentation: API", "u": "https://docs.ollama.com/api", "why": "The HTTP endpoints the LocalLLM adapter calls." },
+      { "t": "Ollama documentation: FAQ", "u": "https://docs.ollama.com/faq", "why": "Environment, GPU and memory behaviour; check current requirements." }
+    ],
+    "video": [
+      { "t": "Learn Ollama in 15 Minutes - Run LLM Models Locally for FREE", "u": "https://www.youtube.com/watch?v=UtSSMs6ObqY", "by": "Tech With Tim", "why": "Install, pull a model, HTTP API and Python; Jan 2025." }
+    ]
+  },
+  "66": {
+    "text": [
+      { "t": "Anthropic: Prompt engineering overview", "u": "https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview", "why": "Vendor guidance on clear instructions, examples, structure." },
+      { "t": "OpenAI: Prompt engineering guide", "u": "https://platform.openai.com/docs/guides/prompt-engineering", "why": "Second vendor view; message roles and few-shot patterns." }
+    ],
+    "video": [
+      { "t": "AI prompt engineering: A deep dive", "u": "https://www.youtube.com/watch?v=T9aRN5JkmL8", "by": "Anthropic", "why": "Practitioners on iteration and evals; Sep 2024, about 76 min." }
+    ]
+  },
+  "67": {
+    "text": [
+      { "t": "Pydantic: Models", "u": "https://docs.pydantic.dev/latest/concepts/models/", "why": "BaseModel, model_validate_json and ValidationError." },
+      { "t": "Pydantic: Validation errors", "u": "https://docs.pydantic.dev/latest/errors/validation_errors/", "why": "Error shapes you feed back to the model on retry." },
+      { "t": "OpenAI: Structured Outputs guide", "u": "https://platform.openai.com/docs/guides/structured-outputs", "why": "What schema-constrained output looks like at one provider." }
+    ],
+    "video": [
+      { "t": "Pydantic is all you need: Jason Liu", "u": "https://www.youtube.com/watch?v=yj-wSRJwrrc", "by": "AI Engineer", "why": "Pydantic as the contract for LLM output; 2023, early API style." }
+    ]
+  },
+  "68": {
+    "text": [
+      { "t": "OWASP: LLM01 Prompt Injection", "u": "https://genai.owasp.org/llmrisk/llm01-prompt-injection/", "why": "Definition, attack types and mitigations from OWASP." },
+      { "t": "Simon Willison: The lethal trifecta for AI agents", "u": "https://simonwillison.net/2025/Aug/9/bay-area-ai/", "why": "Private data, untrusted content, external comms: a risk checklist." }
+    ],
+    "video": [
+      { "t": "Generative AI's Greatest Flaw - Computerphile", "u": "https://www.youtube.com/watch?v=rAEqP9VEhe8", "by": "Computerphile", "why": "Indirect prompt injection explained in about 12 minutes." },
+      { "t": "Deep Dive into LLMs like ChatGPT", "u": "https://www.youtube.com/watch?v=7xTGNNLPyMI", "by": "Andrej Karpathy", "why": "Optional, 3.5 hours: hallucination and limits sections only." }
+    ]
+  },
+  "69": {
+    "text": [
+      { "t": "Pydantic: JSON Schema", "u": "https://docs.pydantic.dev/latest/concepts/json_schema/", "why": "Generate the schema to put in a prompt or provider request." },
+      { "t": "Ollama documentation: Structured outputs", "u": "https://docs.ollama.com/capabilities/structured-outputs", "why": "Schema-constrained output from a local model." }
+    ],
+    "video": [
+      { "t": "Pydantic is STILL all you need: Jason Liu", "u": "https://www.youtube.com/watch?v=pZ4DIH2BVqg", "by": "AI Engineer", "why": "Retries and validation around extraction; 2024." }
+    ]
+  },
+  "70": {
+    "text": [
+      { "t": "OpenAI: Safety best practices", "u": "https://platform.openai.com/docs/guides/safety-best-practices", "why": "Moderation, human review and adversarial testing checklist." },
+      { "t": "Ollama: model library", "u": "https://ollama.com/library", "why": "See real model sizes before choosing one for your RAM." }
+    ],
+    "video": [
+      { "t": "Let's build the GPT Tokenizer", "u": "https://www.youtube.com/watch?v=zduSFxRajkE", "by": "Andrej Karpathy", "why": "Optional 2h13m deep dive: tokenisation quirks behind many failures." }
+    ]
+  }
+} }

@@ -1,0 +1,45 @@
+{ "days": {
+  "53": {
+    "text": [
+      { "t": "Docker build cache", "u": "https://docs.docker.com/build/cache/", "why": "Why a changed layer rebuilds every layer after it." },
+      { "t": "Dockerfile reference", "u": "https://docs.docker.com/reference/dockerfile/", "why": "FROM, COPY, RUN, ENV, EXPOSE, CMD vs ENTRYPOINT, USER, HEALTHCHECK." },
+      { "t": "Docker: building best practices", "u": "https://docs.docker.com/build/building/best-practices/", "why": "Slim bases, multi-stage, .dockerignore, non-root." }
+    ],
+    "video": [
+      { "t": "Docker Tutorial for Beginners [FULL COURSE in 3 Hours]", "u": "https://www.youtube.com/watch?v=3c-iBn73dDE", "by": "TechWorld with Nana", "why": "Images vs containers, ports, volumes, Dockerfile. Watch chapters, not all 3 hours." },
+      { "t": "Docker Volumes explained in 6 minutes", "u": "https://www.youtube.com/watch?v=p2PH_YPCsis", "by": "TechWorld with Nana", "why": "Named volumes vs bind mounts, short." }
+    ]
+  },
+  "54": {
+    "text": [
+      { "t": "Control startup order in Compose", "u": "https://docs.docker.com/compose/how-tos/startup-order/", "why": "depends_on does not wait for readiness; service_healthy does." },
+      { "t": "Networking in Compose", "u": "https://docs.docker.com/compose/how-tos/networking/", "why": "Services reach each other by name; host port vs container port." },
+      { "t": "Using profiles with Compose", "u": "https://docs.docker.com/compose/how-tos/profiles/", "why": "Keep a test service out of the default up." }
+    ],
+    "video": [
+      { "t": "Ultimate Docker Compose Tutorial", "u": "https://www.youtube.com/watch?v=SXwC9fSwct8", "by": "TechWorld with Nana", "why": "Compose services, networks, volumes from scratch." },
+      { "t": "docker compose depends_on doesn't wait for your database", "u": "https://www.youtube.com/watch?v=jp9Rso0TsQM", "by": "Under The Hood Tech", "why": "The exact trap, and the healthcheck fix." }
+    ]
+  },
+  "55": {
+    "text": [
+      { "t": "Compose: variable interpolation and .env", "u": "https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/", "why": "${VAR:-default}, ${VAR:?error}, where .env is read." },
+      { "t": "GitHub Docs: Building and testing Python", "u": "https://docs.github.com/en/actions/tutorials/build-and-test-code/python", "why": "The official workflow that installs dependencies and runs pytest." },
+      { "t": "pgvector README (Docker and CREATE EXTENSION)", "u": "https://github.com/pgvector/pgvector", "why": "Pgvector Docker image name and the one-line enable." }
+    ],
+    "video": [
+      { "t": "Automated Testing in Python with pytest, tox, and GitHub Actions", "u": "https://www.youtube.com/watch?v=DhUpxWjOhME", "by": "mCoding", "why": "CI that runs pytest on every push." }
+    ]
+  },
+  "56": {
+    "text": [
+      { "t": "GitHub Docs: Using secrets in GitHub Actions", "u": "https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets", "why": "How to reference secrets and what never to print." },
+      { "t": "GitHub Docs: Workflow syntax for GitHub Actions", "u": "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax", "why": "Look up on, jobs, steps, permissions when your YAML fails." },
+      { "t": "Docker Desktop license agreement", "u": "https://docs.docker.com/subscription-billing/desktop-license/", "why": "Read the current terms for your situation before installing." }
+    ],
+    "video": [
+      { "t": "GitHub Actions (Branch Protection, Automated Testing) - Full Tutorial", "u": "https://www.youtube.com/watch?v=UEOtZvTCmDo", "by": "Tech With Tim", "why": "Run tests on pull requests; block merges on red." },
+      { "t": "How to Manage Secrets in GitHub Actions", "u": "https://www.youtube.com/watch?v=9PQmd_aoRWA", "by": "Infisical", "why": "Secrets in Actions; note the vendor sells a product." }
+    ]
+  }
+} }

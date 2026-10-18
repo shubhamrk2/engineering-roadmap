@@ -1,0 +1,76 @@
+{
+  "days": {
+    "29": {
+      "text": [
+        { "t": "MDN: Overview of HTTP", "u": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview", "why": "Request and response message format, in the standard reference." },
+        { "t": "MDN: HTTP request methods", "u": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods", "why": "Safe and idempotent, per method. Learn this table." },
+        { "t": "Everything curl", "u": "https://everything.curl.dev/", "why": "Free book for today's curl practice." }
+      ],
+      "video": [
+        { "t": "HTTP Crash Course & Exploration", "u": "https://www.youtube.com/watch?v=iYM2zFP3Zn0", "by": "Traversy Media", "why": "Request, response, status codes, headers and body." },
+        { "t": "How To Use curl (with lots of helpful examples)", "u": "https://www.youtube.com/watch?v=BuEYquQweGo", "by": "Tony Teaches Tech", "why": "GET and POST with curl; use curl.exe in PowerShell." }
+      ]
+    },
+    "30": {
+      "text": [
+        { "t": "HTTPX QuickStart", "u": "https://www.python-httpx.org/quickstart/", "why": "params, headers, json, status codes, timeouts: today's whole task." },
+        { "t": "HTTPX Timeouts", "u": "https://www.python-httpx.org/advanced/timeouts/", "why": "The four limits and why there is no total." }
+      ],
+      "video": [
+        { "t": "HTTPX Tutorial - A next-generation HTTP client for Python", "u": "https://www.youtube.com/watch?v=qAh5dDODJ5k", "by": "Patrick Loeber", "why": "Install, basic use and Client; older release, check docs." },
+        { "t": "HTTPX is the ASYNC Requests I was Looking For", "u": "https://www.youtube.com/watch?v=2FNcJKCfrzI", "by": "John Watson Rooney", "why": "Second voice on httpx; ignore the async parts today." }
+      ]
+    },
+    "31": {
+      "text": [
+        { "t": "Exponential Backoff And Jitter (AWS Architecture Blog)", "u": "https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/", "why": "Why full jitter beats plain backoff, with measurements." },
+        { "t": "MDN: Retry-After header", "u": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Retry-After", "why": "Seconds or HTTP date: the lab parses both." },
+        { "t": "Azure Architecture Center: Retry pattern", "u": "https://learn.microsoft.com/en-us/azure/architecture/patterns/retry", "why": "When retrying is wrong, including the idempotency caveat." }
+      ],
+      "video": [
+        { "t": "Timeouts | Retries | Backoff with Jitter | System Design | Distributed Systems", "u": "https://www.youtube.com/watch?v=HZdE1dNLX9s", "by": "MsDeep Singh", "why": "Where timeouts, retries and jitter fit together." },
+        { "t": "System Design: Mitigating Thundering Herds and Retry Storms", "u": "https://www.youtube.com/watch?v=RAyvEqtrjpE", "by": "Last Mile Developer", "why": "The synchronised-retry problem jitter exists to solve." }
+      ]
+    },
+    "32": {
+      "text": [
+        { "t": "OWASP API Security Top 10", "u": "https://owasp.org/API-Security/", "why": "Real API credential and authorisation failures; read the first three." },
+        { "t": "MDN: Authorization header", "u": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Authorization", "why": "Exact Basic and Bearer syntax and 401 behaviour." },
+        { "t": "The Twelve-Factor App: Config", "u": "https://12factor.net/config", "why": "Why secrets live in environment variables, not code." }
+      ],
+      "video": [
+        { "t": "OAuth 2 Explained In Simple Terms", "u": "https://www.youtube.com/watch?v=ZV5yTm4pT8g", "by": "ByteByteGo", "why": "Roles and flow; client credentials is the no-human case." },
+        { "t": "API Authentication Explained (Finally) - Basic Auth, Bearer & JWT", "u": "https://www.youtube.com/watch?v=I747kI_y9eQ", "by": "LearnThatStack", "why": "Basic versus bearer, matching today's auth table." }
+      ]
+    },
+    "33": {
+      "text": [
+        { "t": "GitHub Docs: Using pagination in the REST API", "u": "https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api", "why": "A real API's paging, to compare with your fetch_all." },
+        { "t": "GitHub Docs: Rate limits for the REST API", "u": "https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api", "why": "Real limit headers and the advice for 429 handling." },
+        { "t": "MDN: 429 Too Many Requests", "u": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/429", "why": "What 429 promises and what clients should do." }
+      ],
+      "video": [
+        { "t": "Web API Pagination | Offset-based vs Cursor-based", "u": "https://www.youtube.com/watch?v=WUICbOOtAic", "by": "Ambient Coder", "why": "Offset versus cursor, the day's main contrast." },
+        { "t": "API Rate Limiting Algorithms | Token Bucket, Leaky Bucket, Fixed Window, Sliding Window", "u": "https://www.youtube.com/watch?v=i8Rt18MU-EE", "by": "Code with GD", "why": "Token bucket explained alongside the alternatives." }
+      ]
+    },
+    "34": {
+      "text": [
+        { "t": "HTTPX Transports (MockTransport)", "u": "https://www.python-httpx.org/advanced/transports/", "why": "How to fake the network in every lab test." },
+        { "t": "pytest: How to monkeypatch/mock", "u": "https://docs.pytest.org/en/stable/how-to/monkeypatch.html", "why": "The alternative to injection; know both before choosing." }
+      ],
+      "video": [
+        { "t": "Python FastAPI Tutorial (Part 17): Testing the API - Pytest, Fixtures, and Mocking External Services", "u": "https://www.youtube.com/watch?v=SO7m7nod0ts", "by": "Corey Schafer", "why": "Faking an external service in tests; skip FastAPI specifics." }
+      ]
+    },
+    "35": {
+      "text": [
+        { "t": "Timeouts, retries, and backoff with jitter (Amazon Builders' Library)", "u": "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/", "why": "Model answer to the 30-second question, from a big operator." },
+        { "t": "HTTPX Timeouts", "u": "https://www.python-httpx.org/advanced/timeouts/", "why": "Check your spoken answer against the four limits." }
+      ],
+      "video": [
+        { "t": "Timeouts | Retries | Backoff with Jitter | System Design | Distributed Systems", "u": "https://www.youtube.com/watch?v=HZdE1dNLX9s", "by": "MsDeep Singh", "why": "Rehearse the timeout, retry and user-impact structure." }
+      ]
+    }
+  }
+}

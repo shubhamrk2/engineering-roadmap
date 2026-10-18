@@ -1,0 +1,5 @@
+pytest>=8
+pydantic>=2.5
+# Tested with pydantic 2.14.1, pytest 9.1.1 on Python 3.14.7 (18 Oct 2026).
+# The LangGraph example on Sheet 32 is separate and NOT needed for this lab:
+#   pip install langgraph        (tested with langgraph 1.2.16)

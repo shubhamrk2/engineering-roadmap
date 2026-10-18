@@ -1,0 +1,649 @@
+{
+ "days": {
+  "85": {
+   "text": [
+    {
+     "t": "Control startup and shutdown order in Compose",
+     "u": "https://docs.docker.com/compose/how-tos/startup-order/",
+     "why": "depends_on with service_healthy for Postgres readiness."
+    },
+    {
+     "t": "Dockerfile reference: HEALTHCHECK",
+     "u": "https://docs.docker.com/reference/dockerfile/#healthcheck",
+     "why": "Exact HEALTHCHECK options and exit codes."
+    },
+    {
+     "t": "Set environment variables within your container's environment",
+     "u": "https://docs.docker.com/compose/how-tos/environment-variables/set-environment-variables/",
+     "why": "Config through environment; env_file and interpolation."
+    }
+   ],
+   "video": [
+    {
+     "t": "Docker Compose Tutorial | Docker for Beginners",
+     "u": "https://www.youtube.com/watch?v=iOGEBj7Ozak",
+     "by": "KodeKloud",
+     "why": "Compose file basics: services, networks, volumes."
+    },
+    {
+     "t": "Docker Compose Step-by-Step: Deploy FastAPI, Postgres, Redis & Celery",
+     "u": "https://www.youtube.com/watch?v=IDrRtiGkTaI",
+     "by": "Code Goat",
+     "why": "FastAPI plus Postgres in Compose; add healthcheck and startup order yourself."
+    }
+   ]
+  },
+  "86": {
+   "text": [
+    {
+     "t": "About READMEs",
+     "u": "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-readmes",
+     "why": "What GitHub shows and where READMEs are picked up."
+    },
+    {
+     "t": "Make a README",
+     "u": "https://www.makeareadme.com/",
+     "why": "Checklist of sections a README needs."
+    },
+    {
+     "t": "Documentation best practices (Google)",
+     "u": "https://google.github.io/styleguide/docguide/best_practices.html",
+     "why": "Keep docs minimal, current and useful."
+    }
+   ],
+   "video": [
+    {
+     "t": "How to Write an Effective README File for Github Projects in 2026",
+     "u": "https://www.youtube.com/watch?v=nN59j4TELcE",
+     "by": "Oladimeji Ipaye | Tech & Data",
+     "why": "Practical README structure for a 2026 GitHub project."
+    },
+    {
+     "t": "How To Write A README People Actually Read",
+     "u": "https://www.youtube.com/watch?v=fDJNt67xdvQ",
+     "by": "OrcDev",
+     "why": "README that visitors actually read: structure and tone."
+    }
+   ]
+  },
+  "87": {
+   "text": [
+    {
+     "t": "The C4 model for visualising software architecture",
+     "u": "https://c4model.com/",
+     "why": "Context, container, component diagrams for your architecture."
+    },
+    {
+     "t": "C4 model: Container diagram",
+     "u": "https://c4model.com/diagrams/container",
+     "why": "Draw API, database and model as containers."
+    },
+    {
+     "t": "Architectural Decision Records",
+     "u": "https://adr.github.io/",
+     "why": "Template for recording decisions and alternatives."
+    }
+   ],
+   "video": [
+    {
+     "t": "Visualising software architecture with the C4 model",
+     "u": "https://www.youtube.com/watch?v=x2-rSnhpw0g",
+     "by": "Agile on the Beach",
+     "why": "Simon Brown introduces C4 diagrams from context to component."
+    },
+    {
+     "t": "The C4 model - beyond the basics",
+     "u": "https://www.youtube.com/watch?v=lrTbmFhjv-4",
+     "by": "NLJUG",
+     "why": "Practical C4 diagramming guidance for real systems."
+    }
+   ]
+  },
+  "88": {
+   "text": [
+    {
+     "t": "Behavioral interview: Tech Interview Handbook",
+     "u": "https://www.techinterviewhandbook.org/behavioral-interview/",
+     "why": "Structure stories about your project."
+    },
+    {
+     "t": "Documentation best practices (Google)",
+     "u": "https://google.github.io/styleguide/docguide/best_practices.html",
+     "why": "Keep docs minimal, current and useful."
+    }
+   ],
+   "video": [
+    {
+     "t": "How to Explain your Projects in Interviews? Step-by-Step Answer",
+     "u": "https://www.youtube.com/watch?v=tS4asIy-k_4",
+     "by": "Aishwarya Mahapatra",
+     "why": "Step-by-step structure for describing a project aloud."
+    },
+    {
+     "t": "How to explain a technical project during an interview",
+     "u": "https://www.youtube.com/watch?v=Twn1q82SKpE",
+     "by": "mthree",
+     "why": "Presenting a technical project clearly to an interviewer."
+    }
+   ]
+  },
+  "89": {
+   "text": [
+    {
+     "t": "OWASP Top 10 for LLM Applications",
+     "u": "https://genai.owasp.org/llm-top-10/",
+     "why": "Checklist source for your LLM security review."
+    },
+    {
+     "t": "OWASP API Security Top 10 (2023)",
+     "u": "https://owasp.org/API-Security/editions/2023/en/0x11-t10/",
+     "why": "Review your endpoints against the ten API risks."
+    },
+    {
+     "t": "Removing sensitive data from a repository",
+     "u": "https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository",
+     "why": "Steps if a secret reached git history."
+    }
+   ],
+   "video": [
+    {
+     "t": "OWASP Top 10 for LLMS 2025: LLM 01-Prompt Injection",
+     "u": "https://www.youtube.com/watch?v=0BOtLRIOMLc",
+     "by": "Rivia",
+     "why": "Prompt injection (LLM01, 2025 list); covers one risk, not the whole list."
+    },
+    {
+     "t": "Broken Object Level Authorization - 2023 OWASP Top 10 API Security Risks",
+     "u": "https://www.youtube.com/watch?v=nIWBp_nvzq4",
+     "by": "SmartBear",
+     "why": "BOLA, the top API risk, with examples."
+    },
+    {
+     "t": "Securing Your API: The OWASP Top 10",
+     "u": "https://www.youtube.com/watch?v=OKSP-akKuYs",
+     "by": "PHP UK Conference",
+     "why": "Conference overview of the API Top 10; check edition against 2023."
+    }
+   ]
+  },
+  "90": {
+   "text": [
+    {
+     "t": "Pinning items to your profile",
+     "u": "https://docs.github.com/en/account-and-profile/how-tos/profile-customization/pinning-items-to-your-profile",
+     "why": "Pin Project 1 where recruiters look first."
+    },
+    {
+     "t": "Choose a License",
+     "u": "https://choosealicense.com/",
+     "why": "Plain-language comparison of common open-source licences."
+    },
+    {
+     "t": "Resume guide: Tech Interview Handbook",
+     "u": "https://www.techinterviewhandbook.org/resume/",
+     "why": "Project and impact bullets for your CV."
+    }
+   ],
+   "video": [
+    {
+     "t": "How to Pin Items in Your Github Profile (Easy Guide)",
+     "u": "https://www.youtube.com/watch?v=1KZE1zsnqNU",
+     "by": "JOSHUA",
+     "why": "Short demonstration of pinning repositories."
+    },
+    {
+     "t": "The Projects That Got Me Into Google (tips for software engineering projects)",
+     "u": "https://www.youtube.com/watch?v=n4t_-NjY_Sg",
+     "by": "Clement Mihailescu",
+     "why": "Which projects impress recruiters and how to present them."
+    }
+   ]
+  },
+  "91": {
+   "text": [
+    {
+     "t": "About READMEs",
+     "u": "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-readmes",
+     "why": "What GitHub shows and where READMEs are picked up."
+    },
+    {
+     "t": "Choose a License",
+     "u": "https://choosealicense.com/",
+     "why": "Plain-language comparison of common open-source licences."
+    }
+   ],
+   "video": [
+    {
+     "t": "Turn Your GitHub into a Portfolio with README.md",
+     "u": "https://www.youtube.com/watch?v=OAxtpOtWQ2U",
+     "by": "Blacnova",
+     "why": "Present a repository as a portfolio piece."
+    },
+    {
+     "t": "The Only Github Profile Page Tutorial You Need 2025",
+     "u": "https://www.youtube.com/watch?v=onUx22pgiBM",
+     "by": "Tobi Mey",
+     "why": "Profile page setup, including README and pinned repositories."
+    }
+   ]
+  },
+  "113": {
+   "text": [
+    {
+     "t": "Building effective agents (Anthropic)",
+     "u": "https://www.anthropic.com/engineering/building-effective-agents",
+     "why": "Workflow versus agent: when each is justified."
+    },
+    {
+     "t": "Thinking in LangGraph",
+     "u": "https://docs.langchain.com/oss/python/langgraph/thinking-in-langgraph",
+     "why": "Break a process into nodes and shared state."
+    },
+    {
+     "t": "The C4 model for visualising software architecture",
+     "u": "https://c4model.com/",
+     "why": "Context, container, component diagrams for your architecture."
+    }
+   ],
+   "video": [
+    {
+     "t": "AI Agents vs. workflows, clearly explained with realistic examples",
+     "u": "https://www.youtube.com/watch?v=0jg2g3sNvgw",
+     "by": "Mastra",
+     "why": "When to use fixed workflows versus agents."
+    },
+    {
+     "t": "Building Effective Agents: Anthropic's Engineering Guide, Read and Highlighted",
+     "u": "https://www.youtube.com/watch?v=vGueJIZWLL8",
+     "by": "Standarity",
+     "why": "Reading of Anthropic's guide on workflows versus agents."
+    }
+   ]
+  },
+  "114": {
+   "text": [
+    {
+     "t": "Pydantic: Models",
+     "u": "https://docs.pydantic.dev/latest/concepts/models/",
+     "why": "Define and validate extraction and recommendation schemas."
+    },
+    {
+     "t": "Pydantic: Validators",
+     "u": "https://docs.pydantic.dev/latest/concepts/validators/",
+     "why": "Custom rules for vague or malformed fields."
+    }
+   ],
+   "video": [
+    {
+     "t": "Structured Data Extraction from Unstructured Text with LLMs, Ollama and Pydantic",
+     "u": "https://www.youtube.com/watch?v=dJsTkj9xCKA",
+     "by": "Make Data Useful",
+     "why": "Extracting structured fields from free text with a local model."
+    },
+    {
+     "t": "Taming LLMs with Pydantic Parsing, Validating, and Guarding output (PyBay 2025)",
+     "u": "https://www.youtube.com/watch?v=eIy2aBPIg2g",
+     "by": "SF Python",
+     "why": "Parsing and validating LLM output with Pydantic."
+    }
+   ]
+  },
+  "115": {
+   "text": [
+    {
+     "t": "pgvector: open-source vector similarity search for Postgres",
+     "u": "https://github.com/pgvector/pgvector",
+     "why": "Index types, distance operators and query examples."
+    }
+   ],
+   "video": [
+    {
+     "t": "RAG with PostgreSQL and pgvector: Using Postgres as Your Vector Database",
+     "u": "https://www.youtube.com/watch?v=_9WPh490T-A",
+     "by": "Shantanu Khond",
+     "why": "Postgres plus pgvector as a RAG store."
+    },
+    {
+     "t": "18 Months of Pgvector Learnings in 47 Minutes (Tutorial)",
+     "u": "https://www.youtube.com/watch?v=Ua6LDIOVN1s",
+     "by": "Tiger Data",
+     "why": "47-minute pgvector lessons: indexing and retrieval trade-offs."
+    }
+   ]
+  },
+  "116": {
+   "text": [
+    {
+     "t": "HTTPX: Timeouts",
+     "u": "https://www.python-httpx.org/advanced/timeouts/",
+     "why": "Connect, read and pool timeouts for tool calls."
+    },
+    {
+     "t": "FastAPI: Testing",
+     "u": "https://fastapi.tiangolo.com/tutorial/testing/",
+     "why": "TestClient and dependency overrides for fakes."
+    },
+    {
+     "t": "How to use fixtures (pytest)",
+     "u": "https://docs.pytest.org/en/stable/how-to/fixtures.html",
+     "why": "Reusable setup for tool and workflow tests."
+    }
+   ],
+   "video": [
+    {
+     "t": "Python FastAPI Tutorial (Part 17): Testing the API - Pytest, Fixtures, and Mocking External Services",
+     "u": "https://www.youtube.com/watch?v=SO7m7nod0ts",
+     "by": "Corey Schafer",
+     "why": "Pytest, fixtures and mocking external services in FastAPI."
+    },
+    {
+     "t": "Idempotency in APIs: How to Handle Retries Safely (Python Example)",
+     "u": "https://www.youtube.com/watch?v=yJUKwWl7klQ",
+     "by": "Jose Cruz (IT Architect)",
+     "why": "Idempotency keys so retries and duplicates stay safe."
+    }
+   ]
+  },
+  "117": {
+   "text": [
+    {
+     "t": "LangGraph: Workflows and agents",
+     "u": "https://docs.langchain.com/oss/python/langgraph/workflows-agents",
+     "why": "Patterns for wiring a workflow graph."
+    },
+    {
+     "t": "LangGraph: Persistence",
+     "u": "https://docs.langchain.com/oss/python/langgraph/persistence",
+     "why": "Checkpointers give persisted state per thread."
+    }
+   ],
+   "video": [
+    {
+     "t": "LangGraph Tutorial: Understanding Nodes, Edges, and State Management",
+     "u": "https://www.youtube.com/watch?v=FVuv5MPBzPI",
+     "by": "Analytics Vidhya",
+     "why": "Nodes, edges and state basics; check APIs against current docs."
+    },
+    {
+     "t": "LangGraph Checkpointing in Python: Pause, Resume, and Recover Agent Runs",
+     "u": "https://www.youtube.com/watch?v=Csse35APOao",
+     "by": "Professor Py: AI Engineering",
+     "why": "Checkpointing to pause, resume and recover runs."
+    }
+   ]
+  },
+  "118": {
+   "text": [
+    {
+     "t": "Timeouts, retries and backoff with jitter (Amazon Builders' Library)",
+     "u": "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/",
+     "why": "Safe retry and timeout design for failure scenarios."
+    },
+    {
+     "t": "Idempotent requests (Stripe API)",
+     "u": "https://docs.stripe.com/api/idempotent_requests",
+     "why": "Idempotency keys; handling duplicate requests."
+    },
+    {
+     "t": "How to monkeypatch/mock modules and environments (pytest)",
+     "u": "https://docs.pytest.org/en/stable/how-to/monkeypatch.html",
+     "why": "Patch backends and env vars in tests."
+    }
+   ],
+   "video": [
+    {
+     "t": "Idempotency in APIs: How to Handle Retries Safely (Python Example)",
+     "u": "https://www.youtube.com/watch?v=yJUKwWl7klQ",
+     "by": "Jose Cruz (IT Architect)",
+     "why": "Idempotency keys so retries and duplicates stay safe."
+    },
+    {
+     "t": "Python FastAPI Tutorial (Part 17): Testing the API - Pytest, Fixtures, and Mocking External Services",
+     "u": "https://www.youtube.com/watch?v=SO7m7nod0ts",
+     "by": "Corey Schafer",
+     "why": "Pytest, fixtures and mocking external services in FastAPI."
+    }
+   ]
+  },
+  "119": {
+   "text": [
+    {
+     "t": "Behavioral interview: Tech Interview Handbook",
+     "u": "https://www.techinterviewhandbook.org/behavioral-interview/",
+     "why": "Structure stories about your project."
+    }
+   ],
+   "video": [
+    {
+     "t": "How to Explain Projects in Your Job Interview in 5 MINUTES",
+     "u": "https://www.youtube.com/watch?v=VmsJVjKIWSg",
+     "by": "Learn with EngrWaqas",
+     "why": "Five-minute project walkthrough structure."
+    },
+    {
+     "t": "How to explain a technical project during an interview",
+     "u": "https://www.youtube.com/watch?v=Twn1q82SKpE",
+     "by": "mthree",
+     "why": "Presenting a technical project clearly to an interviewer."
+    }
+   ]
+  },
+  "120": {
+   "text": [
+    {
+     "t": "LangGraph: Interrupts",
+     "u": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+     "why": "Pause for human approval, then resume."
+    },
+    {
+     "t": "API5:2023 Broken Function Level Authorization",
+     "u": "https://owasp.org/API-Security/editions/2023/en/0xa5-broken-function-level-authorization/",
+     "why": "Role checks on privileged actions such as approval."
+    },
+    {
+     "t": "FastAPI: Dependencies",
+     "u": "https://fastapi.tiangolo.com/tutorial/dependencies/",
+     "why": "Dependencies for current-user and role checks."
+    }
+   ],
+   "video": [
+    {
+     "t": "LangGraph interrupt: Making it easier to build human-in-the-loop agents",
+     "u": "https://www.youtube.com/watch?v=6t7YJcEFUIY",
+     "by": "LangChain",
+     "why": "LangChain's interrupt walkthrough; pause for approval, resume."
+    },
+    {
+     "t": "LangGraph Agents - Human-In-The-Loop Breakpoints",
+     "u": "https://www.youtube.com/watch?v=Za8CrPqQxpA",
+     "by": "LangChain",
+     "why": "Breakpoints for human review; older API, prefer interrupt()."
+    },
+    {
+     "t": "Role-Based Access Control Using Dependency Injection - FastAPI Beyond CRUD (Part 13)",
+     "u": "https://www.youtube.com/watch?v=_k2M-LpxId8",
+     "by": "Ssali Jonathan",
+     "why": "Role checks via FastAPI dependencies."
+    }
+   ]
+  },
+  "121": {
+   "text": [
+    {
+     "t": "The Twelve-Factor App: Config",
+     "u": "https://12factor.net/config",
+     "why": "Why config and secrets belong in the environment."
+    },
+    {
+     "t": "Secrets Management Cheat Sheet (OWASP)",
+     "u": "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
+     "why": "Least privilege and handling of credentials."
+    },
+    {
+     "t": "Logging Cheat Sheet (OWASP)",
+     "u": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html",
+     "why": "What never to log; sensitive data in logs."
+    }
+   ],
+   "video": [
+    {
+     "t": "Stop putting secrets in .env",
+     "u": "https://www.youtube.com/watch?v=M5IkdUunf8g",
+     "by": "Syntax",
+     "why": "Why plain .env files are weak for secrets."
+    },
+    {
+     "t": "Stop Leaking Secrets! How to Use Gitleaks to Secure Your Git Repos",
+     "u": "https://www.youtube.com/watch?v=FJRUXEP0fFw",
+     "by": "Africa Cloud Papa",
+     "why": "Scan repositories for committed secrets with Gitleaks."
+    }
+   ]
+  },
+  "122": {
+   "text": [
+    {
+     "t": "Pydantic: Models",
+     "u": "https://docs.pydantic.dev/latest/concepts/models/",
+     "why": "Define and validate extraction and recommendation schemas."
+    },
+    {
+     "t": "Pydantic: Validators",
+     "u": "https://docs.pydantic.dev/latest/concepts/validators/",
+     "why": "Custom rules for vague or malformed fields."
+    }
+   ],
+   "video": [
+    {
+     "t": "Validate LLM Output with Pydantic",
+     "u": "https://www.youtube.com/watch?v=gjxZ4AGRMLk",
+     "by": "Fahd Mirza",
+     "why": "Short demo validating LLM output with Pydantic."
+    },
+    {
+     "t": "Taming LLMs with Pydantic Parsing, Validating, and Guarding output (PyBay 2025)",
+     "u": "https://www.youtube.com/watch?v=eIy2aBPIg2g",
+     "by": "SF Python",
+     "why": "Parsing and validating LLM output with Pydantic."
+    }
+   ]
+  },
+  "123": {
+   "text": [
+    {
+     "t": "How to use fixtures (pytest)",
+     "u": "https://docs.pytest.org/en/stable/how-to/fixtures.html",
+     "why": "Reusable setup for tool and workflow tests."
+    },
+    {
+     "t": "FastAPI: Testing",
+     "u": "https://fastapi.tiangolo.com/tutorial/testing/",
+     "why": "TestClient and dependency overrides for fakes."
+    }
+   ],
+   "video": [
+    {
+     "t": "Most devs don't know how to evaluate LLMs",
+     "u": "https://www.youtube.com/watch?v=KeCXEegca-w",
+     "by": "Raj talks tech",
+     "why": "Concepts and tools for evaluating LLM systems."
+    },
+    {
+     "t": "Build Your First Eval: Creating a Custom LLM Evaluator with a Golden Dataset",
+     "u": "https://www.youtube.com/watch?v=NaCjm8rdxqk",
+     "by": "Arize AI",
+     "why": "Build a small eval from a golden dataset."
+    }
+   ]
+  },
+  "124": {
+   "text": [
+    {
+     "t": "Control startup and shutdown order in Compose",
+     "u": "https://docs.docker.com/compose/how-tos/startup-order/",
+     "why": "depends_on with service_healthy for Postgres readiness."
+    },
+    {
+     "t": "Set environment variables within your container's environment",
+     "u": "https://docs.docker.com/compose/how-tos/environment-variables/set-environment-variables/",
+     "why": "Config through environment; env_file and interpolation."
+    },
+    {
+     "t": "Make a README",
+     "u": "https://www.makeareadme.com/",
+     "why": "Checklist of sections a README needs."
+    }
+   ],
+   "video": [
+    {
+     "t": "Every Docker Compose Concept Explained in 20 Minutes",
+     "u": "https://www.youtube.com/watch?v=gKDwt4XWBTo",
+     "by": "Programming With Avelx",
+     "why": "20-minute tour of Compose concepts."
+    },
+    {
+     "t": "Complete Docker Compose Tutorial (with Docker Networking)",
+     "u": "https://www.youtube.com/watch?v=BTXfR76WmCw",
+     "by": "Monis Yousuf",
+     "why": "Multi-container app and how containers reach each other."
+    }
+   ]
+  },
+  "125": {
+   "text": [
+    {
+     "t": "Architectural Decision Records",
+     "u": "https://adr.github.io/",
+     "why": "Template for recording decisions and alternatives."
+    },
+    {
+     "t": "Behavioral interview: Tech Interview Handbook",
+     "u": "https://www.techinterviewhandbook.org/behavioral-interview/",
+     "why": "Structure stories about your project."
+    }
+   ],
+   "video": [
+    {
+     "t": "#113 - Architecture Decision Record (ADR)",
+     "u": "https://www.youtube.com/watch?v=-JqraBhrrjI",
+     "by": "Tech Lead Journal",
+     "why": "Interview on writing decision records and trade-offs."
+    },
+    {
+     "t": "How to Explain your Projects in Interviews? Step-by-Step Answer",
+     "u": "https://www.youtube.com/watch?v=tS4asIy-k_4",
+     "by": "Aishwarya Mahapatra",
+     "why": "Step-by-step structure for describing a project aloud."
+    }
+   ]
+  },
+  "126": {
+   "text": [
+    {
+     "t": "Resume guide: Tech Interview Handbook",
+     "u": "https://www.techinterviewhandbook.org/resume/",
+     "why": "Project and impact bullets for your CV."
+    },
+    {
+     "t": "Pinning items to your profile",
+     "u": "https://docs.github.com/en/account-and-profile/how-tos/profile-customization/pinning-items-to-your-profile",
+     "why": "Pin Project 1 where recruiters look first."
+    }
+   ],
+   "video": [
+    {
+     "t": "How to Write a Great Software Engineer Resume",
+     "u": "https://www.youtube.com/watch?v=ciIkiWwZnlc",
+     "by": "Engineering with Utsav",
+     "why": "Engineering CV structure and project bullets."
+    },
+    {
+     "t": "6 RESUME PROJECTS That Will Actually Get You HIRED In 2026",
+     "u": "https://www.youtube.com/watch?v=f7ndZ-t9NPg",
+     "by": "Vivek Gupta",
+     "why": "Choosing and framing projects on a CV; opinionated."
+    }
+   ]
+  }
+ }
+}

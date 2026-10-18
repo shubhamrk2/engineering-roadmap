@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheet 23 — Python from Zero — Applied AI Roadmap</title>
+<link rel="stylesheet" href="assets/css/sheet.css">
+<link rel="stylesheet" href="assets/css/glass.css">
+</head>
+<body data-sheet="23" class="glass">
+<a class="skip" href="#main">Skip to sheet</a>
+<div class="wrap">
+<nav class="rail" aria-label="Sheet index"></nav>
+
+<main id="main">
+
+<header class="sheethead">
+  <div>
+    <div class="no">Sheet 23 &middot; Applied AI track &middot; Weeks 01&ndash;04</div>
+    <h1>Python from zero<span>.</span></h1>
+    <p class="lede">Four weeks to go from <b>reading Python with help</b> to <b>writing it from a blank file</b>.
+    You already know what a loop and a function are from C++; what changes is the syntax, the dictionary,
+    and the habit of letting a test tell you whether you are right. Every exercise has a pytest file that
+    marks your own code, so you never have to take anyone&rsquo;s word that you can do it.</p>
+  </div>
+  <div class="specs">
+    <div><span>Weeks</span><span>01 &ndash; 04</span></div>
+    <div><span>Hours</span><span>~ 100</span></div>
+    <div><span>Must know</span><span>Gate 1</span></div>
+    <div><span>Nice to have</span><span>argparse</span></div>
+    <div><span>Ships</span><span>log analyzer CLI</span></div>
+  </div>
+</header>
+
+<div class="sheetbody">
+
+<!-- ===================================================================== -->
+<h2 id="map">The one problem this sheet is built around</h2>
+<p class="sub">Count the ERROR lines per service in a log file. It looks small. It needs every beginner idea in
+Python, which is why it is both the first diagnostic and the final gate.</p>
+
+<figure class="dwg dwg--hero">
+<svg viewBox="0 0 1200 380" role="img" aria-label="A pipeline: raw log lines are split into parts, filtered to ERROR lines, and counted into a dictionary keyed by service name. Each stage is labelled with the Python idea it needs and the week it is taught.">
+  <defs>
+    <marker id="s23-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s23-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s23-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <rect class="box" x="30" y="60" width="210" height="110" rx="3"/>
+  <text class="t" x="48" y="86">lines</text>
+  <text class="m" x="48" y="108">"09:01 ERROR payments</text>
+  <text class="m" x="48" y="124">  Timeout"</text>
+  <text class="m" x="48" y="140">"09:02 INFO auth ok"</text>
+  <text class="mm" x="48" y="160">LIST &middot; WEEK 2</text>
+
+  <rect class="box-c" x="290" y="60" width="210" height="110" rx="3"/>
+  <text class="t" x="308" y="86">split</text>
+  <text class="m" x="308" y="108">parts = line.split()</text>
+  <text class="m" x="308" y="124">level = parts[2]</text>
+  <text class="m" x="308" y="140">svc = parts[3]</text>
+  <text class="mm" x="308" y="160">STRINGS &middot; WEEK 1</text>
+
+  <rect class="box-c" x="550" y="60" width="210" height="110" rx="3"/>
+  <text class="t" x="568" y="86">keep ERROR only</text>
+  <text class="m" x="568" y="108">if level == "ERROR":</text>
+  <text class="m" x="568" y="124">    ...</text>
+  <text class="mm" x="568" y="160">IF &middot; WEEK 1</text>
+
+  <rect class="box-a" x="810" y="60" width="210" height="110" rx="3"/>
+  <text class="t b" x="828" y="86">tally in a dict</text>
+  <text class="m" x="828" y="108">counts[svc] =</text>
+  <text class="m" x="828" y="124">  counts.get(svc,0)+1</text>
+  <text class="mm" x="828" y="160">DICTIONARY &middot; WEEK 2</text>
+
+  <rect class="box-a" x="1070" y="60" width="110" height="110" rx="3"/>
+  <text class="t b" x="1125" y="100" text-anchor="middle">result</text>
+  <text class="m" x="1125" y="124" text-anchor="middle">payments: 2</text>
+  <text class="m" x="1125" y="140" text-anchor="middle">auth: 1</text>
+
+  <path class="flow" d="M244,115 H284" marker-end="url(#s23-ac)"/>
+  <path class="flow" d="M504,115 H544" marker-end="url(#s23-ac)"/>
+  <path class="flow" d="M764,115 H804" marker-end="url(#s23-ac)"/>
+  <path class="flow-b" d="M1024,115 H1064" marker-end="url(#s23-ab)"/>
+
+  <rect class="box-r" x="290" y="230" width="470" height="92" rx="3"/>
+  <text class="t r" x="308" y="256">What the real world adds (week 3)</text>
+  <text class="m" x="308" y="278">a line with fewer than four parts &rarr; IndexError</text>
+  <text class="m" x="308" y="296">an empty file &rarr; should return {}, not crash</text>
+  <text class="m" x="308" y="314">a missing file &rarr; FileNotFoundError, handled on purpose</text>
+  <path class="flow-r dash" d="M395,174 V224" marker-end="url(#s23-ar)"/>
+
+  <rect class="box" x="810" y="230" width="370" height="92" rx="3"/>
+  <text class="t" x="828" y="256">How you know you are right</text>
+  <text class="m" x="828" y="278">pytest runs your function on inputs</text>
+  <text class="m" x="828" y="296">you did not choose. Green = correct</text>
+  <text class="m" x="828" y="314">on those inputs, nothing more.</text>
+  <path class="flow-b dash" d="M915,174 V224" marker-end="url(#s23-ab)"/>
+
+  <circle class="bub" cx="165" cy="30" r="13"/><text class="bubt" x="165" y="34">1</text>
+  <path class="lead" d="M165,43 V56"/>
+  <circle class="bub" cx="395" cy="30" r="13"/><text class="bubt" x="395" y="34">2</text>
+  <path class="lead" d="M395,43 V56"/>
+  <circle class="bub" cx="915" cy="30" r="13"/><text class="bubt" x="915" y="34">3</text>
+  <path class="lead" d="M915,43 V56"/>
+  <circle class="bub" cx="165" cy="276" r="13"/><text class="bubt" x="165" y="280">4</text>
+  <path class="lead" d="M178,276 H286"/>
+</svg>
+<figcaption>Drawing 23-A &mdash; the log-counting pipeline. <b>Cyan</b> = data flowing through. <b>Brass</b> = the idea you must
+own. <b>Red</b> = what breaks on real input.</figcaption>
+</figure>
+
+<div class="notes">
+  <div class="n"><b>1</b><div><b>A log file is just a list of strings.</b> Python reads a file into a list with one string per
+  line. Everything else is deciding what to do with each string. If you can loop over a list of strings, you can
+  process any text file.</div></div>
+  <div class="n"><b>2</b><div><b>Split, then index.</b> <code>"a b c".split()</code> returns <code>["a", "b", "c"]</code>. Counting
+  from zero, the level is <code>parts[2]</code> and the service is <code>parts[3]</code>. This is the same as indexing a
+  <code>std::vector</code>, except Python raises <code>IndexError</code> instead of reading garbage memory.</div></div>
+  <div class="n"><b>3</b><div><b>The dictionary is the whole trick.</b> A dict is a notebook: key in, value out. To count
+  things you read the current count (or 0 if the key is new), add one, and store it back. Almost every integration
+  script you will write contains this pattern.</div></div>
+  <div class="n"><b>4</b><div><b>Real input is the real test.</b> A function that works on the five lines you typed and
+  crashes on the sixth malformed line is not finished. Week 3 is about making that impossible.</div></div>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why a test file instead of an answer key</span>
+  <p>An answer key lets you check that your solution looks like mine. A test file checks that your solution
+  <b>works</b>, which is what an interviewer and a production system care about. Each exercise in
+  <code>python-lab/</code> starts as a stub that raises <code>NotImplementedError</code>; your job is to turn every test
+  green. If a test fails, the failure message is the spec, and learning to read it is half of this sheet.</p>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the rule that makes this work</span>
+  <p>Using an AI to <b>explain</b> a concept or a traceback is fine and encouraged. Using it to <b>write the function body</b>
+  defeats the exercise: the tests will go green and you will have learned nothing, which is exactly the trap you
+  described at the start. If you are stuck, ask for a hint in words, not for the code. Gate 1 on the last Saturday
+  of week 4 is done with no AI and no search, so cheating the lab only delays the day you find out.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="week1">Week 1 &mdash; values, decisions, loops, functions</h2>
+<p class="sub">Run a file, hold values in names, branch, repeat, and package it as a function. If you have written C++
+loops and functions, this week is translation, not learning to program.</p>
+
+<h3 id="w1-run">Run a file and read an error</h3>
+<p>Save the code below as <code>lesson1.py</code> and run <code>python lesson1.py</code> in a terminal opened in the same folder.
+(On Windows, <code>py lesson1.py</code> also works.) There is no compile step: Python reads the file top to bottom and executes
+each line.</p>
+
+<div class="code" data-lang="python">
+<header><b>lesson1.py</b></header>
+<pre><code>name = "Shubham"          # no type written: Python decides it is a str
+years = 3                 # an int
+print(name)
+print(years)
+print("I have", years, "years of experience")
+print(f"{name} has {years} years")      # f-string: put values inside braces
+print(years + 2)          # 5
+print(name + "!")         # Shubham!
+</code></pre>
+</div>
+
+<p>Now the part that matters: break it on purpose. The error is the lesson.</p>
+
+<div class="code" data-lang="text">
+<header><b>what Python prints for print(name + years)</b></header>
+<pre><code>Traceback (most recent call last):
+  File "lesson1.py", line 9, in &lt;module&gt;
+    print(name + years)
+TypeError: can only concatenate str (not "int") to str</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">How to read that, bottom up</span>
+  <p><b>Last line first.</b> <code>TypeError</code> is the kind of problem, and the sentence after the colon says what happened:
+  you tried to add a number to a string. <b>Then the line above it:</b> <code>line 9</code> in your file is where it
+  happened. Read the bottom line, find that line number, and fix that one thing. Do not read the traceback top to
+  bottom like a story. A <code>NameError</code> means you used a name that was never defined, which is nearly always a
+  spelling mistake.</p>
+</div>
+
+<h3 id="w1-types">Types, strings and the first differences from C++</h3>
+<div class="vs">
+  <div><div class="vh">C++</div>
+<div class="code" data-lang="text">
+<header><b>declare, then use</b></header>
+<pre><code>int years = 3;
+std::string name = "Shubham";
+int half = 7 / 2;          // 3  (integer division)
+if (years &gt; 2) { ... }
+for (int i = 0; i &lt; 5; i++) { ... }</code></pre>
+</div></div>
+  <div><div class="vh">Python</div>
+<div class="code" data-lang="python">
+<header><b>just use it</b></header>
+<pre><code>years = 3
+name = "Shubham"
+half = 7 / 2               # 3.5  (true division)
+whole = 7 // 2             # 3    (floor division)
+if years &gt; 2:
+    print("senior")
+for i in range(5):         # 0 1 2 3 4
+    print(i)
+</code></pre>
+</div></div>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Idea</th><th>C++</th><th>Python</th><th>What bites you</th></tr></thead>
+<tbody>
+<tr><td>Block</td><td><code>{ ... }</code></td><td>indentation after a colon</td><td>Mixed tabs and spaces. Use 4 spaces, always.</td></tr>
+<tr><td>Types</td><td>declared</td><td>on the value, not the name</td><td><code>"3" + 3</code> is an error, <code>"3" * 3</code> is <code>"333"</code>.</td></tr>
+<tr><td>Division</td><td><code>7/2 = 3</code></td><td><code>7/2 = 3.5</code>, <code>7//2 = 3</code></td><td>Using <code>/</code> where you wanted a whole number.</td></tr>
+<tr><td>And / or / not</td><td><code>&amp;&amp; || !</code></td><td><code>and or not</code></td><td>Writing <code>&amp;&amp;</code> is a syntax error.</td></tr>
+<tr><td>Equality</td><td><code>==</code></td><td><code>==</code> (value), <code>is</code> (same object)</td><td>Using <code>is</code> for strings or numbers.</td></tr>
+<tr><td>Loop over a range</td><td><code>for(i=0;i&lt;n;i++)</code></td><td><code>for i in range(n)</code></td><td><code>range(5)</code> stops <b>before</b> 5.</td></tr>
+<tr><td>Null</td><td><code>nullptr</code></td><td><code>None</code></td><td>Comparing with <code>== None</code>; use <code>is None</code>.</td></tr>
+</tbody></table></div>
+
+<h3 id="w1-func">Functions</h3>
+<p>A function takes inputs and <b>returns</b> a value. Returning is not printing: <code>print</code> shows something to a human;
+<code>return</code> hands a value to the code that called you. Tests can only check what you return.</p>
+
+<div class="code" data-lang="python">
+<header><b>functions_tour.py</b></header>
+<pre><code>def is_working_hours(hour):
+    return 9 &lt;= hour &lt; 18          # a chained comparison; returns True or False
+
+def request_cost(days, rate=100):   # rate has a default
+    total = days * rate
+    if days &gt;= 5:
+        total = total * 0.9         # 10% discount for a long request
+    return total
+
+def count_vowels(text):
+    count = 0                       # the accumulator pattern
+    for ch in text.lower():
+        if ch in "aeiou":
+            count += 1
+    return count
+
+print(is_working_hours(10))         # True
+print(request_cost(3))              # 300
+print(request_cost(5, rate=200))    # 900.0
+print(count_vowels("Badge Desk"))   # 3
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; print vs return</span>
+  <p>A function that <code>print</code>s its answer and returns nothing returns <code>None</code>. Your test asserts
+  <code>count_vowels("abc") == 1</code>, gets <code>None</code>, and fails, while the output on screen looks right.
+  If the screen is right and the test is wrong, check whether you used <code>print</code> where you meant
+  <code>return</code>.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Official reading &mdash; week 1</div>
+  <a class="r" href="https://docs.python.org/3/tutorial/introduction.html" target="_blank" rel="noopener"><span>Python tutorial &mdash; An informal introduction<i>Numbers, strings, lists. Read sections 3.1&ndash;3.2 only; skim the rest.</i></span><span class="dur">25 min</span></a>
+  <a class="r" href="https://docs.python.org/3/tutorial/controlflow.html" target="_blank" rel="noopener"><span>Python tutorial &mdash; More control flow tools<i>if, for, range, defining functions. This is the week&rsquo;s main reading.</i></span><span class="dur">40 min</span></a>
+  <a class="r" href="https://pythontutor.com/" target="_blank" rel="noopener"><span>Python Tutor<i>Paste any snippet and step through it line by line to watch variables change. Use it whenever a loop confuses you.</i></span><span class="dur">tool</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="week2">Week 2 &mdash; lists, tuples, sets and dictionaries</h2>
+<p class="sub">Collections are where Python stops looking like C++. The dictionary, in particular, is the tool you will reach for
+more than any other for the rest of this roadmap.</p>
+
+<h3 id="w2-lists">Lists, tuples and the aliasing surprise</h3>
+<div class="code" data-lang="python">
+<header><b>collections_tour.py</b></header>
+<pre><code>sites = ["BLR-01", "BLR-02"]       # list: ordered, changeable (like std::vector)
+sites.append("HYD-01")
+print(sites[0], sites[-1])          # BLR-01 HYD-01   (-1 is the last item)
+print(sites[1:])                    # ['BLR-02', 'HYD-01']   a slice
+
+window = ("09:00", "18:00")         # tuple: fixed size, cannot be changed
+start, end = window                 # unpacking
+print(start, end)
+
+alias = sites                       # NOT a copy: two names, one list
+alias.append("PUNE-01")
+print(sites)                        # ['BLR-01', 'BLR-02', 'HYD-01', 'PUNE-01']
+copy = list(sites)                  # a real, independent copy
+copy.append("X")
+print(len(sites), len(copy))        # 4 5
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; assignment does not copy</span>
+  <p>In C++, <code>vector b = a;</code> copies. In Python, <code>b = a</code> makes a second <b>name</b> for the same list.
+  Change one and the other changes. Use <code>list(a)</code> or <code>a.copy()</code> when you want an independent copy.
+  Interviewers love this one.</p>
+</div>
+
+<h3 id="w2-dict">The dictionary and the counting pattern</h3>
+<p>A dictionary maps keys to values, like <code>std::unordered_map</code>. Reading a key that does not exist raises
+<code>KeyError</code>. <code>.get(key, default)</code> reads safely. Counting is always the same three beats:
+read the current count, add one, store it back.</p>
+
+<div class="code" data-lang="python">
+<header><b>counting_pattern.py</b></header>
+<pre><code>notebook = {}                                   # empty dict
+
+# one fruit at a time, no loop yet
+notebook["apple"] = 1
+print(notebook)                                 # {'apple': 1}
+notebook["apple"] = notebook["apple"] + 1       # works only because the key exists
+print(notebook)                                 # {'apple': 2}
+
+# the safe version for a key that might be new
+fruit = "pear"
+current = notebook.get(fruit, 0)                # 0 when missing
+notebook[fruit] = current + 1
+print(notebook)                                 # {'apple': 2, 'pear': 1}
+
+# the same idea in a loop
+counts = {}
+for item in ["apple", "pear", "apple", "fig", "apple"]:
+    counts[item] = counts.get(item, 0) + 1
+print(counts)                                   # {'apple': 3, 'pear': 1, 'fig': 1}
+
+for key, value in counts.items():               # iterate keys and values together
+    print(key, value)
+print("fig" in counts)                           # True   (membership in a dict is O(1))
+</code></pre>
+</div>
+
+<p>When the value is a list instead of a number you are <b>grouping</b>: key to list of things.</p>
+
+<div class="code" data-lang="python">
+<header><b>grouping_pattern.py</b></header>
+<pre><code>requests = [
+    {"id": "req-1", "site": "BLR-01"},
+    {"id": "req-2", "site": "HYD-01"},
+    {"id": "req-3", "site": "BLR-01"},
+]
+by_site = {}
+for r in requests:
+    if r["site"] not in by_site:
+        by_site[r["site"]] = []          # first time we see this site
+    by_site[r["site"]].append(r["id"])
+print(by_site)                           # {'BLR-01': ['req-1', 'req-3'], 'HYD-01': ['req-2']}
+
+# setdefault does the "create if missing" step in one call
+by_site2 = {}
+for r in requests:
+    by_site2.setdefault(r["site"], []).append(r["id"])
+print(by_site2 == by_site)               # True
+</code></pre>
+</div>
+
+<h3 id="w2-comp">Comprehensions and sorting</h3>
+<div class="code" data-lang="python">
+<header><b>comprehensions.py</b></header>
+<pre><code>numbers = [1, 2, 3, 4, 5, 6]
+evens   = [n for n in numbers if n % 2 == 0]        # [2, 4, 6]
+squares = {n: n * n for n in numbers}                # {1: 1, 2: 4, ...}
+unique  = {n % 3 for n in numbers}                   # {0, 1, 2}  a set
+
+counts = {"payments": 2, "auth": 1, "search": 5}
+ranked = sorted(counts.items(), key=lambda kv: kv[1], reverse=True)
+print(ranked)                  # [('search', 5), ('payments', 2), ('auth', 1)]
+print(ranked[:2])              # top two
+
+# A comprehension is a loop in one line. If it needs a second thought, write the loop.
+</code></pre>
+</div>
+
+<h3 id="w2-parse">Parsing a log line</h3>
+<div class="code" data-lang="python">
+<header><b>parsing.py</b></header>
+<pre><code>line = "2026-10-18 09:01:12 ERROR payments Timeout calling gateway"
+parts = line.split()
+print(parts)                              # ['2026-10-18', '09:01:12', 'ERROR', 'payments', 'Timeout', 'calling', 'gateway']
+
+date, time, level, service, *message = parts   # starred unpacking: the rest goes in a list
+print(level, service)                     # ERROR payments
+print(" ".join(message))                  # Timeout calling gateway
+
+bad = "garbage"
+parts = bad.split()
+print(len(parts))                         # 1
+print(len(parts) &lt; 5)                     # True  &rarr; check the length BEFORE indexing
+</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">The three questions from the first diagnostic</span>
+  <p><b>1. What if <code>lines</code> is empty?</b> The loop body never runs, so the dict stays <code>{}</code>.
+  <b>2. What if a line is malformed?</b> Decide what you want (skip it and log a warning is a sensible default),
+  then make the code do it deliberately, by checking <code>len(parts)</code> before you index.
+  <b>3. Complexity?</b> One pass over <i>n</i> lines, each line <i>O(k)</i> for its length, dictionary updates <i>O(1)</i>
+  on average: <i>O(total characters)</i>, space <i>O(number of services)</i>. In C++ you would reach for
+  <code>std::unordered_map&lt;std::string,int&gt;</code> and the complexity is the same.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Official reading &mdash; week 2</div>
+  <a class="r" href="https://docs.python.org/3/tutorial/datastructures.html" target="_blank" rel="noopener"><span>Python tutorial &mdash; Data structures<i>Lists, tuples, sets, dictionaries, comprehensions, looping techniques. The main reading.</i></span><span class="dur">45 min</span></a>
+  <a class="r" href="https://pythontutor.com/" target="_blank" rel="noopener"><span>Python Tutor<i>Run the aliasing example and watch two names point at one list.</i></span><span class="dur">tool</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="week3">Week 3 &mdash; files, JSON, errors, modules, logging</h2>
+<p class="sub">Real input is messy. This week turns code that works on the happy path into code that behaves on purpose when the
+file is missing, the JSON is broken, or the line is not what you expected.</p>
+
+<h3 id="w3-exc">Exceptions</h3>
+<div class="code" data-lang="python">
+<header><b>exceptions.py</b></header>
+<pre><code>def safe_int(value, default=None):
+    try:
+        return int(value)
+    except (ValueError, TypeError):     # name the exceptions you expect
+        return default
+
+print(safe_int("12"))        # 12
+print(safe_int("12x"))       # None
+print(safe_int(None, -1))    # -1
+
+class ConfigError(Exception):
+    """Our own error: lets callers catch exactly this problem."""
+
+def require(value, name):
+    if value is None:
+        raise ConfigError(f"{name} is required")
+    return value
+
+try:
+    require(None, "API_KEY")
+except ConfigError as err:
+    print("caught:", err)        # caught: API_KEY is required
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the bare except</span>
+  <p><code>except:</code> with no type catches everything, including your typos and <kbd>Ctrl</kbd>+<kbd>C</kbd>. A bug disappears
+  and the program carries on with wrong data. Catch the specific exceptions you can actually handle, and let the rest
+  crash loudly so you see them.</p>
+</div>
+
+<h3 id="w3-files">Files, pathlib and JSON</h3>
+<div class="code" data-lang="python">
+<header><b>files_json.py</b></header>
+<pre><code>import json
+import tempfile
+from pathlib import Path
+
+folder = Path(tempfile.mkdtemp())           # a throwaway folder for this demo
+log = folder / "app.log"                    # / joins paths on any OS
+
+log.write_text("line one\n\nline two\n", encoding="utf-8")
+
+with open(log, encoding="utf-8") as f:      # 'with' closes the file even if an error occurs
+    lines = [ln.strip() for ln in f if ln.strip()]
+print(lines)                                 # ['line one', 'line two']
+
+report = {"errors": {"payments": 2, "auth": 1}, "skipped": 0}
+out = folder / "report.json"
+out.write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")
+print(json.loads(out.read_text(encoding="utf-8"))["errors"]["payments"])   # 2
+
+try:
+    json.loads("{not valid json")
+except json.JSONDecodeError as err:
+    print("bad json:", err.msg)              # bad json: Expecting property name enclosed in double quotes
+
+try:
+    (folder / "missing.txt").read_text()
+except FileNotFoundError:
+    print("no such file")
+</code></pre>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>JSON</th><th>Python</th></tr></thead>
+<tbody>
+<tr><td>object <code>{}</code></td><td><code>dict</code></td></tr>
+<tr><td>array <code>[]</code></td><td><code>list</code></td></tr>
+<tr><td>string, number</td><td><code>str</code>, <code>int</code> / <code>float</code></td></tr>
+<tr><td><code>true</code> / <code>false</code></td><td><code>True</code> / <code>False</code></td></tr>
+<tr><td><code>null</code></td><td><code>None</code></td></tr>
+</tbody></table></div>
+
+<h3 id="w3-venv">Modules, virtual environments, packages</h3>
+<p>A <b>module</b> is just a <code>.py</code> file you can <code>import</code>. A <b>virtual environment</b> is a private folder of
+installed packages for one project, so one project&rsquo;s versions never break another&rsquo;s.</p>
+
+<div class="code" data-lang="powershell">
+<header><b>Windows PowerShell, inside your project folder</b></header>
+<pre><code>python -m venv .venv                 # create the environment
+.\.venv\Scripts\Activate.ps1         # activate; your prompt now starts with (.venv)
+python -m pip install pytest         # installs into .venv only
+pip freeze &gt; requirements.txt        # record exact versions
+deactivate                           # leave the environment
+</code></pre>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">In production</span>
+  <p>Every real Python project has a <code>requirements.txt</code> (or <code>pyproject.toml</code>) so that anyone, or any build server,
+  can recreate the same environment. &ldquo;It works on my machine&rdquo; almost always means an undeclared dependency.
+  If PowerShell refuses to run the activate script, that is an execution-policy setting on your own laptop; use
+  <code>Set-ExecutionPolicy -Scope CurrentUser RemoteSigned</code> on your <b>personal</b> machine only.</p>
+</div>
+
+<h3 id="w3-log">Logging instead of print</h3>
+<div class="code" data-lang="python">
+<header><b>logging_tour.py</b></header>
+<pre><code>import logging
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+log = logging.getLogger(__name__)
+
+def count_errors(lines):
+    counts, skipped = {}, 0
+    for line in lines:
+        parts = line.split()
+        if len(parts) &lt; 5:
+            skipped += 1
+            log.warning("skipping malformed line: %r", line[:40])   # never log whole payloads
+            continue
+        if parts[2] == "ERROR":
+            counts[parts[3]] = counts.get(parts[3], 0) + 1
+    log.info("done: %d services, %d lines skipped", len(counts), skipped)
+    return counts
+
+print(count_errors(["2026-10-18 09:01:12 ERROR payments Timeout", "garbage"]))
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; logging secrets</span>
+  <p>Logs are copied, indexed and kept for years. Do not log tokens, passwords, full request bodies, or personal data.
+  Log identifiers, counts and timings. This habit matters again when you log what an LLM was asked.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Official reading &mdash; week 3</div>
+  <a class="r" href="https://docs.python.org/3/tutorial/errors.html" target="_blank" rel="noopener"><span>Python tutorial &mdash; Errors and exceptions<i>try, except, raise, custom exceptions.</i></span><span class="dur">30 min</span></a>
+  <a class="r" href="https://docs.python.org/3/tutorial/inputoutput.html" target="_blank" rel="noopener"><span>Python tutorial &mdash; Input and output<i>Reading and writing files, with, JSON.</i></span><span class="dur">30 min</span></a>
+  <a class="r" href="https://docs.python.org/3/tutorial/venv.html" target="_blank" rel="noopener"><span>Python tutorial &mdash; Virtual environments and packages<i>Exactly the commands above, with the reasoning.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://docs.python.org/3/howto/logging.html" target="_blank" rel="noopener"><span>Logging HOWTO<i>Read the basic tutorial section; skip the advanced part for now.</i></span><span class="dur">25 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="week4">Week 4 &mdash; classes, types, pytest, Git, debugging</h2>
+<p class="sub">Model things as classes, prove behaviour with tests you write yourself, keep history, and find bugs by method. This is
+the week that turns exercises into engineering.</p>
+
+<h3 id="w4-class">Classes and dataclasses</h3>
+<div class="code" data-lang="python">
+<header><b>classes_tour.py</b></header>
+<pre><code>from dataclasses import dataclass, field
+from datetime import date
+from enum import Enum
+
+class Status(str, Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+
+class Stack:
+    """A plain class. 'self' is the object the method was called on (C++: this)."""
+    def __init__(self):                 # constructor
+        self._items = []                # leading underscore = 'internal, by convention'
+
+    def push(self, item):
+        self._items.append(item)
+
+    def pop(self):
+        if not self._items:
+            raise IndexError("pop from empty stack")
+        return self._items.pop()
+
+    def is_empty(self):
+        return not self._items
+
+s = Stack()
+s.push(1); s.push(2)
+print(s.pop(), s.is_empty())            # 2 False
+
+@dataclass
+class AccessRequest:                    # a dataclass writes __init__, __repr__, __eq__ for you
+    id: str
+    starts_on: date
+    ends_on: date
+    status: Status = Status.PENDING
+    reasons: list[str] = field(default_factory=list)   # never `= []`
+
+    def __post_init__(self):            # runs after __init__: validate here
+        if self.ends_on &lt; self.starts_on:
+            raise ValueError("ends_on must not be before starts_on")
+
+    @property
+    def duration_days(self):
+        return (self.ends_on - self.starts_on).days + 1
+
+    def approve(self):
+        if self.status is not Status.PENDING:
+            raise RuntimeError(f"cannot approve a request that is {self.status.value}")
+        self.status = Status.APPROVED
+
+r = AccessRequest("req-1", date(2026, 11, 2), date(2026, 11, 6))
+print(r.duration_days)                  # 5
+r.approve()
+print(r.status.value)                   # approved
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the shared default list</span>
+  <p><code>def add(item, seen=[])</code> creates the list <b>once</b>, when the function is defined, and shares it across every call.
+  The second call sees the first call&rsquo;s items. Use <code>seen=None</code> and create the list inside, or
+  <code>field(default_factory=list)</code> in a dataclass.</p>
+</div>
+
+<h3 id="w4-types">Type hints</h3>
+<div class="code" data-lang="python">
+<header><b>type_hints.py</b></header>
+<pre><code>def count_errors(lines: list[str]) -&gt; dict[str, int]:
+    counts: dict[str, int] = {}
+    for line in lines:
+        parts = line.split()
+        if len(parts) &gt;= 5 and parts[2] == "ERROR":
+            counts[parts[3]] = counts.get(parts[3], 0) + 1
+    return counts
+
+def find_user(user_id: str) -&gt; str | None:      # may return a string or None
+    return {"e-902": "Asha"}.get(user_id)
+
+print(count_errors(["2026-10-18 09:01:12 ERROR payments Timeout"]))   # {'payments': 1}
+print(find_user("e-902"), find_user("zzz"))                          # Asha None
+</code></pre>
+</div>
+<p>Hints are <b>not enforced</b> when the program runs. They document intent, and editors and checkers use them to catch
+mistakes before you run the code. FastAPI and Pydantic (week 6) turn them into real runtime validation.</p>
+
+<h3 id="w4-test">pytest from scratch</h3>
+<div class="code" data-lang="python" data-run="pytest" data-expect="fail">
+<header><b>test_example.py</b></header>
+<pre><code>import pytest
+
+def total_with_discount(days, rate=100):
+    total = days * rate
+    return total * 0.9 if days &gt;= 5 else total
+
+def test_short_request_has_no_discount():
+    assert total_with_discount(3) == 300
+
+def test_long_request_gets_ten_percent_off():
+    assert total_with_discount(5, rate=200) == pytest.approx(900)
+
+@pytest.mark.parametrize("days, expected", [(1, 100), (4, 400), (5, 450), (10, 900)])
+def test_many_cases(days, expected):
+    assert total_with_discount(days) == pytest.approx(expected)
+
+def test_negative_days_is_an_error_we_forgot_to_handle():
+    # This test FAILS on purpose: it proves the function accepts nonsense.
+    # Fixing the function (raise ValueError) is how a test earns its keep.
+    with pytest.raises(ValueError):
+        total_with_discount(-1)
+</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p><b>&ldquo;How do you know your function is correct?&rdquo;</b> A test only proves the function works for the inputs the test
+  uses. Good tests cover the normal case, the edges (empty, one item, the boundary value), and the failures (bad input).
+  If I cannot describe a case that would make a test fail, I have not tested anything yet.</p>
+</div>
+
+<h3 id="w4-debug">Debugging method and Git</h3>
+<figure class="dwg">
+<svg viewBox="0 0 1200 250" role="img" aria-label="The debugging loop: reproduce the failure, read the traceback bottom first, isolate the smallest failing input, form one hypothesis, change one thing, run again. If it still fails, return to isolate.">
+  <defs>
+    <marker id="s23-bc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s23-br" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+  <rect class="box-c" x="30" y="50" width="170" height="70" rx="3"/>
+  <text class="t" x="115" y="80" text-anchor="middle">1 Reproduce</text>
+  <text class="mm mid" x="115" y="100">SAME FAILURE</text>
+  <rect class="box-c" x="236" y="50" width="170" height="70" rx="3"/>
+  <text class="t" x="321" y="80" text-anchor="middle">2 Read the error</text>
+  <text class="mm mid" x="321" y="100">LAST LINE FIRST</text>
+  <rect class="box-c" x="442" y="50" width="170" height="70" rx="3"/>
+  <text class="t" x="527" y="80" text-anchor="middle">3 Isolate</text>
+  <text class="mm mid" x="527" y="100">SHRINK THE INPUT</text>
+  <rect class="box-a" x="648" y="50" width="170" height="70" rx="3"/>
+  <text class="t b" x="733" y="80" text-anchor="middle">4 One hypothesis</text>
+  <text class="mm mid" x="733" y="100">WRITE IT DOWN FIRST</text>
+  <rect class="box-a" x="854" y="50" width="170" height="70" rx="3"/>
+  <text class="t b" x="939" y="80" text-anchor="middle">5 Change one thing</text>
+  <text class="mm mid" x="939" y="100">THEN RE-RUN</text>
+  <rect class="box" x="1060" y="50" width="110" height="70" rx="3"/>
+  <text class="t" x="1115" y="80" text-anchor="middle">6 Test</text>
+  <text class="mm mid" x="1115" y="100">LOCK IT IN</text>
+  <path class="flow" d="M204,85 H230" marker-end="url(#s23-bc)"/>
+  <path class="flow" d="M410,85 H436" marker-end="url(#s23-bc)"/>
+  <path class="flow" d="M616,85 H642" marker-end="url(#s23-bc)"/>
+  <path class="flow" d="M822,85 H848" marker-end="url(#s23-bc)"/>
+  <path class="flow" d="M1028,85 H1054" marker-end="url(#s23-bc)"/>
+  <path class="flow-r dash" d="M939,124 V200 H527 V124" marker-end="url(#s23-br)"/>
+  <text class="mm r mid" x="733" y="194">still failing: your hypothesis was wrong, go back to isolate. Do not stack guesses.</text>
+</svg>
+<figcaption>Drawing 23-B &mdash; the debugging loop. <b>Red</b> = the path you take when your first idea was wrong, which is usually.</figcaption>
+</figure>
+
+<div class="code" data-lang="bash">
+<header><b>git, the first day</b></header>
+<pre><code>git init                          # start tracking this folder
+git status                        # what changed?
+git add loganalyzer.py tests/     # stage specific files
+git commit -m "Add count_errors with tests for empty and malformed input"
+git log --oneline                 # history, newest first
+git branch fix-empty-input        # a parallel line of work
+git switch fix-empty-input
+git diff                          # exactly what you changed, before you commit it
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; what must never reach a public repo</span>
+  <p>Your portfolio repos are public and permanent. Never commit employer code, client data, tokens, or <code>.env</code> files.
+  Add <code>.env</code> and <code>.venv/</code> to <code>.gitignore</code> before your first commit; removing a secret
+  later does not remove it from history.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Official reading &mdash; week 4</div>
+  <a class="r" href="https://docs.python.org/3/tutorial/classes.html" target="_blank" rel="noopener"><span>Python tutorial &mdash; Classes<i>Read 9.1&ndash;9.4 first; inheritance can wait.</i></span><span class="dur">40 min</span></a>
+  <a class="r" href="https://docs.python.org/3/library/dataclasses.html" target="_blank" rel="noopener"><span>dataclasses<i>Skim the introduction and the field() section.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://docs.pytest.org/en/stable/getting-started.html" target="_blank" rel="noopener"><span>pytest &mdash; Get started<i>Assertions, running tests, fixtures. Do the first three sections.</i></span><span class="dur">30 min</span></a>
+  <a class="r" href="https://git-scm.com/book/en/v2" target="_blank" rel="noopener"><span>Pro Git<i>Chapter 2 (Git basics) is enough for now.</i></span><span class="dur">60 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="lab">The lab: python-lab/</h2>
+<p class="sub">Twenty-odd exercises with tests. You write the functions; pytest tells you whether they are right.</p>
+
+<div class="code" data-lang="powershell">
+<header><b>one-time setup, from the engineering-roadmap folder</b></header>
+<pre><code>cd python-lab
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+
+pytest week01              # run one week
+pytest week01 -k greeting  # run tests whose name contains 'greeting'
+pytest -x                  # stop at the first failure
+pytest -q                  # shorter output
+</code></pre>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>File</th><th>You edit</th><th>Tests (do not edit)</th><th>Week</th></tr></thead>
+<tbody>
+<tr><td><code>week01/</code></td><td><code>w01_basics.py</code></td><td><code>test_w01_basics.py</code></td><td>1</td></tr>
+<tr><td><code>week02/</code></td><td><code>w02_collections.py</code></td><td><code>test_w02_collections.py</code></td><td>2</td></tr>
+<tr><td><code>week03/</code></td><td><code>w03_files.py</code></td><td><code>test_w03_files.py</code></td><td>3</td></tr>
+<tr><td><code>week04/</code></td><td><code>w04_models.py</code></td><td><code>test_w04_models.py</code>, and your own <code>test_w04_mine.py</code></td><td>4</td></tr>
+</tbody></table></div>
+
+<p>Every stub starts as <code>raise NotImplementedError</code>, so every test starts red. That is the starting line, not a problem.</p>
+
+<div class="panel panel--real">
+  <span class="ph">What &ldquo;green&rdquo; does and does not mean</span>
+  <p>Passing the supplied tests means your code handles the cases I thought of. It does not mean the code is correct for every input, or
+  production-ready. Week 4 asks you to write tests of your own precisely because the next bug will be in a case nobody listed.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="cpp">C++ to Python, quick reference</h2>
+<p class="sub">Use it as a translator while the Python is still unfamiliar. The goal is to stop needing it by week 4.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Task</th><th>C++</th><th>Python</th></tr></thead>
+<tbody>
+<tr><td>Dynamic array</td><td><code>std::vector&lt;int&gt;</code></td><td><code>list</code></td></tr>
+<tr><td>Hash map</td><td><code>std::unordered_map&lt;K,V&gt;</code></td><td><code>dict</code></td></tr>
+<tr><td>Hash set</td><td><code>std::unordered_set&lt;T&gt;</code></td><td><code>set</code></td></tr>
+<tr><td>Pair / fixed record</td><td><code>std::pair</code>, <code>struct</code></td><td><code>tuple</code>, <code>dataclass</code></td></tr>
+<tr><td>Iterate</td><td><code>for (auto&amp; x : v)</code></td><td><code>for x in v:</code></td></tr>
+<tr><td>Index and value</td><td><code>for (i...) v[i]</code></td><td><code>for i, x in enumerate(v):</code></td></tr>
+<tr><td>String split</td><td>stringstream / find</td><td><code>s.split()</code></td></tr>
+<tr><td>Exceptions</td><td><code>try / catch</code></td><td><code>try / except</code></td></tr>
+<tr><td>Resource cleanup</td><td>RAII</td><td><code>with</code></td></tr>
+<tr><td>Header files</td><td><code>#include</code></td><td><code>import</code></td></tr>
+<tr><td>Null</td><td><code>nullptr</code></td><td><code>None</code></td></tr>
+<tr><td>Memory</td><td>manual / smart pointers</td><td>garbage collected; names, not boxes</td></tr>
+<tr><td>Speed</td><td>compiled, fast</td><td>interpreted, slower; fine for glue, I/O and AI work</td></tr>
+</tbody></table></div>
+
+<!-- ===================================================================== -->
+<h2 id="connect">How the weeks connect</h2>
+<p class="sub">By Friday of week 4 you have shipped one small thing that uses all four weeks.</p>
+
+<div class="panel panel--real">
+  <span class="ph">What you ship: loganalyzer</span>
+  <p>A command-line tool: <code>python loganalyzer.py app.log --top 3 --out report.json</code>. It reads a log, skips and warns on malformed
+  lines, counts ERRORs per service, prints the top N, writes a JSON report, has tests, a README, and lives in a public Git repository.
+  That is a real, small, honest portfolio piece, and every line of it is something you can explain.</p>
+</div>
+
+<p>Next: <a href="ai-plan.html">Sheet 20 &mdash; the plan</a> shows where these four weeks sit in the five-month roadmap, and
+<a href="ai-daily.html">Sheet 21 &mdash; the daily planner</a> tells you exactly what to do each day. Progress is recorded on
+<a href="ai-tracker.html">Sheet 22 &mdash; the skills tracker</a>.</p>
+
+<!-- ===================================================================== -->
+<h2 id="drill">Drill book</h2>
+<p class="sub">Answer aloud first, then open the answer. If you cannot say it without notes, it goes on your revise list.</p>
+
+<div class="drill">
+  <div class="dh">Drill &mdash; Python fundamentals</div>
+  <details><summary>What is the difference between <code>print</code> and <code>return</code>?</summary>
+    <div class="ans"><p><code>print</code> writes text to the screen for a human; the function still returns <code>None</code>. <code>return</code> hands a value back to the code that called the function so it can be used, stored, or tested. Tests and other functions can only use what you return. Follow-up: &ldquo;what does a function with no return statement give back?&rdquo; <code>None</code>.</p></div></details>
+  <details><summary>Why does <code>b = a</code> not copy a list, and how do you copy one?</summary>
+    <div class="ans"><p>Assignment binds a second name to the same object, so changing the list through either name changes it for both. Use <code>list(a)</code>, <code>a.copy()</code> or a slice <code>a[:]</code> for a shallow copy. Follow-up: &ldquo;is that copy deep?&rdquo; No: nested lists inside are still shared; use <code>copy.deepcopy</code> if you need independence all the way down.</p></div></details>
+  <details><summary>How do you count occurrences of each item in a list without a library?</summary>
+    <div class="ans"><p>Loop over the items and keep a dict: <code>counts[item] = counts.get(item, 0) + 1</code>. <code>.get</code> returns 0 for a key not seen yet, so there is no <code>KeyError</code>. Time is O(n), space O(distinct items). Follow-up: &ldquo;is there a library for this?&rdquo; <code>collections.Counter</code>, but you must be able to write the loop.</p></div></details>
+  <details><summary>What does <code>with open(path) as f:</code> do for you?</summary>
+    <div class="ans"><p>It guarantees the file is closed when the block ends, even if an exception is raised inside it. That avoids leaked file handles, which on Windows can also lock the file. It is Python&rsquo;s equivalent of RAII for resources.</p></div></details>
+  <details><summary>Why is a bare <code>except:</code> a bad idea?</summary>
+    <div class="ans"><p>It catches everything, including programming errors and <kbd>Ctrl</kbd>+<kbd>C</kbd>, so bugs vanish and the program continues with bad state. Catch the specific exceptions you can handle and let others propagate. Follow-up: &ldquo;when is catching broadly acceptable?&rdquo; At a top-level boundary that logs the error with its traceback and then fails or returns an error response.</p></div></details>
+  <details><summary>What is the mutable default argument bug?</summary>
+    <div class="ans"><p>Default values are evaluated once when the function is defined. <code>def f(x, seen=[])</code> shares one list across all calls, so state leaks between calls. Use <code>seen=None</code> and create a new list inside, or <code>field(default_factory=list)</code> in a dataclass.</p></div></details>
+  <details><summary>Your function passes its tests but fails in production. What do you check first?</summary>
+    <div class="ans"><p>What input production sent that the tests did not: empty values, missing fields, unexpected types, very large inputs, odd encodings, duplicates. Reproduce with the real failing input (sanitised), add it as a test that fails, then fix the code until it passes. The new test stays forever.</p></div></details>
+  <details><summary>Where do the type hints matter if Python does not enforce them?</summary>
+    <div class="ans"><p>They document intent, let editors and checkers like mypy catch mistakes before running, and frameworks such as FastAPI and Pydantic read them to validate input at runtime. So they are optional in plain Python and load-bearing in a typical API codebase.</p></div></details>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="signoff">Sign-off</h2>
+<p class="sub">Tick a box only when you did it yourself, from a blank file, without an AI writing the body.</p>
+
+<div class="signoff">
+  <div class="sh"><span>Weeks 01&ndash;04</span><span>Sheet 23</span></div>
+  <label><input type="checkbox"><span>I ran a Python file from a terminal and fixed a NameError and a TypeError by reading the traceback bottom first.</span></label>
+  <label><input type="checkbox"><span>All week 1 tests pass, and I wrote every function body myself.</span></label>
+  <label><input type="checkbox"><span>I can explain, aloud, why <code>b = a</code> does not copy a list.</span></label>
+  <label><input type="checkbox"><span>I solved <code>count_errors</code> from a blank file and it passes the week 2 tests, including the empty and malformed cases.</span></label>
+  <label><input type="checkbox"><span>I can write the dict counting pattern from memory and say what <code>.get(key, 0)</code> does.</span></label>
+  <label><input type="checkbox"><span>All week 3 tests pass; my code behaves deliberately for a missing file and for invalid JSON.</span></label>
+  <label><input type="checkbox"><span>I created a virtual environment, installed pytest in it, and wrote a requirements.txt.</span></label>
+  <label><input type="checkbox"><span>I wrote at least 6 of my own pytest tests for <code>parse_log_line</code>, and broke the function on purpose to see one fail.</span></label>
+  <label><input type="checkbox"><span>My log analyzer CLI and its tests are on a personal GitHub repo with at least 8 meaningful commits and no employer data.</span></label>
+  <label><input type="checkbox"><span>Gate 1: I solved the original diagnostic cold in 30 minutes, with no AI and no search.</span></label>
+</div>
+
+</div><!-- /sheetbody -->
+</main>
+
+<aside class="toc" aria-label="Contents"></aside>
+</div>
+
+<script src="assets/js/nav-data.js"></script>
+<script src="assets/js/sheet.js"></script>
+</body>
+</html>

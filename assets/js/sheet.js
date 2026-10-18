@@ -26,7 +26,9 @@
     var rail = document.querySelector('.rail');
     if (!rail) return;
     var h = '';
-    h += '<div class="brand"><b>Badge<i>Desk</i></b><span>Engineering drawing set &middot; rev 1</span></div>';
+    h += body.classList.contains('glass')
+      ? '<div class="brand"><b>Applied&nbsp;<i>AI</i></b><span>Engineering roadmap &middot; rev 2</span></div>'
+      : '<div class="brand"><b>Badge<i>Desk</i></b><span>Engineering drawing set &middot; rev 1</span></div>';
     h += '<div class="searchbox"><input id="q" type="search" placeholder="Search sheets  (press /)" autocomplete="off" aria-label="Search sheets"></div>';
     var g = null;
     SHEETS.forEach(function (s) {
@@ -103,7 +105,7 @@
     var tb = document.createElement('aside');
     tb.className = 'titleblock';
     tb.innerHTML =
-      '<div><span>Sheet</span><span>' + me.no + ' / ' + SHEETS[SHEETS.length - 1].no + '</span></div>' +
+      '<div><span>Sheet</span><span>' + me.no + ' / ' + Math.max.apply(null, SHEETS.map(function (s) { return +s.no; })) + '</span></div>' +
       '<div><span>Title</span><span>' + me.t + '</span></div>' +
       '<div><span>Week</span><span>' + me.w + '</span></div>' +
       '<div><span>Signed off</span><span id="tbp">0 / 0</span></div>' +

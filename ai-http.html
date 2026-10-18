@@ -1,0 +1,1922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheet 24 — HTTP and API Clients — Applied AI Roadmap</title>
+<link rel="stylesheet" href="assets/css/sheet.css">
+<link rel="stylesheet" href="assets/css/glass.css">
+</head>
+<body data-sheet="24" class="glass">
+<a class="skip" href="#main">Skip to sheet</a>
+<div class="wrap">
+<nav class="rail" aria-label="Sheet index"></nav>
+
+<main id="main">
+
+<header class="sheethead">
+  <div>
+    <div class="no">Sheet 24 &middot; Applied AI track &middot; Week 05</div>
+    <h1>HTTP and API clients<span>.</span></h1>
+    <p class="lede">Every integration you have built for four years was HTTP underneath. This sheet makes that layer visible and then
+    teaches the part that separates a script from a service: <b>a client that survives a slow, flaky, rate-limited third party</b>.
+    Timeouts, retries, pagination and secrets are not extras. They are the work.</p>
+  </div>
+  <div class="specs">
+    <div><span>Weeks</span><span>05 (days 29 &ndash; 35)</span></div>
+    <div><span>Hours</span><span>~ 25</span></div>
+    <div><span>Must know</span><span>timeouts, retries, auth</span></div>
+    <div><span>Nice to have</span><span>OAuth2 flows</span></div>
+    <div><span>Ships</span><span>ResilientClient + tests</span></div>
+  </div>
+</header>
+
+<div class="sheetbody">
+
+<div class="panel panel--real">
+  <span class="ph">Tested with</span>
+  <p>Tested with: python 3.14.7, httpx 0.28.1, httpcore 1.0.9, pytest 9.1.1, curl 8.21.0 (Windows build) and Windows PowerShell 5.1, on 18 Oct 2026, Windows 11.
+  Every Python block below was executed by <code>tools/run-python-blocks.py</code> except the ones marked <code>data-run="no"</code>; those are
+  named in the text next to them. Blocks that talk to a server use either <code>httpx.MockTransport</code> (a fake server inside the process) or a real
+  HTTP server started on <code>127.0.0.1</code> by the block itself, so they need no internet. The two blocks that call a public test API were run by hand on the same date and the
+  printed output is what they produced; a public test site can change or vanish, so treat that output as an example, not a promise.
+  If your installed <code>httpx</code> disagrees with anything here, the installed version wins: read its error message.
+  For every video I confirmed that the id exists and read its real title and channel with <code>tools/verify-resources.mjs</code>; I did <b>not</b> watch each one end to end, so the one-line notes come from titles and descriptions. Judge them yourself after five minutes.</p>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Personal laptop versus corporate laptop</span>
+  <p>Everything on this sheet needs only Python, <code>pip install httpx pytest</code> and a terminal, so do it on your <b>personal</b> laptop with no admin rights needed
+  (a virtual environment is enough; see <a href="ai-python.html">Sheet 23</a>). On a corporate machine behind a TLS-inspecting proxy, calls to public APIs may fail with
+  certificate errors and <code>pip</code> may be blocked: that is a property of the network, not a bug in your code. The labs never touch the network, so they run anywhere
+  Python runs. Machine setup details live on <a href="setup.html">Sheet 01</a>.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="map">One request, end to end</h2>
+<p class="sub">Before any library: what happens between <code>client.get(url)</code> and a Python dict. Every later section is a
+decision about one box in this drawing.</p>
+
+<figure class="dwg dwg--hero">
+<svg viewBox="0 0 1200 430" role="img" aria-label="The life of one HTTP request. Your code calls the client, which opens a connection by resolving DNS, connecting over TCP and negotiating TLS. The request line, headers and body travel to the server. The server returns a response with a status, headers and body. The client classifies the response as ok, retry or fail. A retry goes back to connection set-up, and an ok becomes a typed result. Connect, write and read timeouts are marked under the boxes they bound.">
+  <defs>
+    <marker id="s24-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s24-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s24-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <rect class="box-c" x="30" y="70" width="200" height="70" rx="3"/>
+  <text class="t" x="48" y="94">Your code</text>
+  <text class="mm" x="48" y="112">client.get(url)</text>
+  <text class="mm" x="48" y="128">params, headers</text>
+
+  <rect class="box" x="290" y="70" width="200" height="70" rx="3"/>
+  <text class="t" x="308" y="94">Connection set-up</text>
+  <text class="mm" x="308" y="112">DNS &middot; TCP &middot; TLS</text>
+  <text class="mm c" x="308" y="154">CONNECT TIMEOUT</text>
+
+  <rect class="box-c" x="550" y="70" width="200" height="70" rx="3"/>
+  <text class="t" x="568" y="94">Request on the wire</text>
+  <text class="mm" x="568" y="112">line + headers + body</text>
+  <text class="mm c" x="568" y="154">WRITE TIMEOUT</text>
+
+  <rect class="box" x="810" y="70" width="200" height="70" rx="3"/>
+  <text class="t" x="828" y="94">The server</text>
+  <text class="mm" x="828" y="112">app, database, vendor</text>
+  <text class="mm c" x="828" y="154">READ TIMEOUT (SILENCE)</text>
+
+  <path class="flow" d="M234,105 H284" marker-end="url(#s24-ac)"/>
+  <path class="flow" d="M494,105 H544" marker-end="url(#s24-ac)"/>
+  <path class="flow" d="M754,105 H804" marker-end="url(#s24-ac)"/>
+
+  <rect class="box-a" x="810" y="210" width="200" height="62" rx="3"/>
+  <text class="t b" x="828" y="234">Response</text>
+  <text class="mm" x="828" y="252">status, headers, body</text>
+  <path class="flow" d="M910,144 V204" marker-end="url(#s24-ac)"/>
+
+  <rect class="box-a" x="550" y="210" width="200" height="62" rx="3"/>
+  <text class="t b" x="568" y="234">Classify</text>
+  <text class="mm" x="568" y="252">ok / retry / fail</text>
+  <path class="flow" d="M806,241 H756" marker-end="url(#s24-ac)"/>
+
+  <rect class="box-r" x="290" y="210" width="200" height="62" rx="3"/>
+  <text class="t r" x="308" y="234">Retry loop</text>
+  <text class="mm" x="308" y="252">backoff, cap, budget</text>
+  <path class="flow-r" d="M546,241 H496" marker-end="url(#s24-ar)"/>
+  <path class="flow-r dash" d="M390,206 V146" marker-end="url(#s24-ar)"/>
+  <text class="mm r" x="402" y="182">TRY AGAIN</text>
+
+  <rect class="box-a" x="550" y="330" width="200" height="56" rx="3"/>
+  <text class="t b" x="568" y="354">Typed result</text>
+  <text class="mm" x="568" y="372">dict, or a clear error</text>
+  <path class="flow-b" d="M650,276 V324" marker-end="url(#s24-ab)"/>
+
+  <rect class="box" x="30" y="210" width="200" height="62" rx="3"/>
+  <text class="t" x="48" y="234">Your total deadline</text>
+  <text class="mm" x="48" y="252">only YOU enforce this</text>
+
+  <circle class="bub" cx="130" cy="36" r="13"/><text class="bubt" x="130" y="40">1</text>
+  <path class="lead" d="M130,49 V66"/>
+  <circle class="bub" cx="390" cy="36" r="13"/><text class="bubt" x="390" y="40">2</text>
+  <path class="lead" d="M390,49 V66"/>
+  <circle class="bub" cx="650" cy="36" r="13"/><text class="bubt" x="650" y="40">3</text>
+  <path class="lead" d="M650,49 V66"/>
+  <circle class="bub" cx="910" cy="36" r="13"/><text class="bubt" x="910" y="40">4</text>
+  <path class="lead" d="M910,49 V66"/>
+  <circle class="bub" cx="1080" cy="241" r="13"/><text class="bubt" x="1080" y="245">5</text>
+  <path class="lead" d="M1067,241 H1014"/>
+  <circle class="bub" cx="800" cy="358" r="13"/><text class="bubt" x="800" y="362">6</text>
+  <path class="lead" d="M787,358 H754"/>
+</svg>
+<figcaption>Drawing 24-A &mdash; the life of one request. <b>Cyan</b> = someone is waiting on the wire. <b>Brass</b> = the answer you care
+about. <b>Red</b> = the failure and retry path. Every grey wait in this picture needs a limit.</figcaption>
+</figure>
+
+<div class="notes">
+  <div class="n"><b>1</b><div><b>Your code only sees a function call.</b> <code>client.get(url, params=..., headers=...)</code> hides everything to its right. When something goes
+  wrong in production, the bug is almost always in a box you cannot see from this line, which is why this sheet opens the boxes.</div></div>
+  <div class="n"><b>2</b><div><b>Connecting is not free and can fail on its own.</b> The name is looked up (DNS), a TCP connection is opened, and for <code>https</code> the two sides agree
+  encryption (TLS). Each can fail before a single byte of your request is sent. The connect timeout bounds exactly this step.</div></div>
+  <div class="n"><b>3</b><div><b>A request is plain text.</b> A method, a path, headers, a blank line, an optional body. Section 2 shows one byte for byte.</div></div>
+  <div class="n"><b>4</b><div><b>The server is a black box with its own slow parts.</b> It may call a database or, as in BadgeDesk-style integrations, a slow vendor system. The
+  read timeout is how long you will tolerate <i>silence</i> from it, not how long you will tolerate its total work.</div></div>
+  <div class="n"><b>5</b><div><b>A response always has a status line.</b> A 404 or a 503 is a perfectly valid HTTP answer; nothing has &ldquo;gone wrong&rdquo; at the network level. Whether it is an
+  error for <i>you</i> is a decision your code makes.</div></div>
+  <div class="n"><b>6</b><div><b>Classify, then act.</b> Three outcomes only: it worked, it might work if you try again, or trying again cannot help. Getting this classification right is
+  most of what makes a client trustworthy; sections 7 and 8 are about it.</div></div>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p><b>&ldquo;What happens when you call an API from your code?&rdquo;</b> Name the stages in order: resolve the name, open a TCP connection, negotiate TLS, send the request
+  (method, path, headers, body), wait for the server, read the response (status, headers, body), then decide what the status means. Then add the point that
+  gets you hired: each wait can hang, so each needs a timeout, and a failure at one stage is handled differently from a failure at another.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="anatomy">Request and response anatomy</h2>
+<p class="sub">HTTP is a text protocol over a connection. If you can read these few lines you can debug any API from a log.</p>
+
+<h3 id="a-raw">The messages, byte for byte</h3>
+<p>A client sends a <b>request</b>: one request line, some header lines, a blank line, then an optional body. The server answers with a <b>response</b>: one status line,
+header lines, a blank line, then an optional body. Nothing else exists at this level.</p>
+
+<div class="code" data-lang="text">
+<header><b>what travels over the connection (HTTP/1.1, simplified)</b></header>
+<pre><code>POST /v1/requests HTTP/1.1                      &lt;- request line: METHOD  PATH  VERSION
+Host: api.example.test                          &lt;- headers: Name: value, one per line
+Authorization: Bearer abc.def.ghi
+Content-Type: application/json                  &lt;- what the body IS
+Accept: application/json                        &lt;- what the client WANTS back
+Content-Length: 66
+                                                &lt;- a blank line ends the headers
+{"employee_id":"e-902","site_id":"BLR-01","reason":"client visit"}
+
+HTTP/1.1 201 Created                            &lt;- status line: VERSION  CODE  REASON
+Content-Type: application/json
+Location: /v1/requests/req-1                    &lt;- where the new thing lives
+Content-Length: 55
+
+{"id":"req-1","status":"pending","employee_id":"e-902"}</code></pre>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Part</th><th>Request</th><th>Response</th><th>What bites you</th></tr></thead>
+<tbody>
+<tr><td>First line</td><td>method + path (+ query) + version</td><td>version + status code + reason</td><td>The reason text (&ldquo;Created&rdquo;) is decoration. Code against the number.</td></tr>
+<tr><td>Headers</td><td>who you are, what you send, what you accept</td><td>what came back, how long to cache, when to retry</td><td>Names are case-insensitive. <code>content-type</code> and <code>Content-Type</code> are the same header.</td></tr>
+<tr><td>Body</td><td>optional (usually absent on GET)</td><td>optional (absent on 204)</td><td>A body without a correct <code>Content-Type</code> is parsed wrongly or rejected with 415.</td></tr>
+<tr><td>Who sets what</td><td>you, plus the library (Host, Content-Length, User-Agent)</td><td>the server, plus proxies in between</td><td>Proxies can add, strip or rewrite headers. The response you see is not always the one the server sent.</td></tr>
+</tbody></table></div>
+
+<h3 id="a-real">Watch one happen</h3>
+<p>The block below starts a real HTTP server inside your program (Python&rsquo;s standard library <code>http.server</code>, on port 0 so the operating system picks a free one),
+calls it with <code>httpx</code>, and prints exactly what the server received. There is no internet involved. A <code>Handler</code> class with a <code>do_GET</code> method is how
+<code>http.server</code> decides what to do for a GET; <code>self.headers</code> and <code>self.requestline</code> are the request, <code>send_response</code> and <code>send_header</code>
+build the response. Daemon threads end when the main program ends.</p>
+
+<div class="code" data-lang="python" data-timeout="60">
+<header><b>see_the_wire.py</b></header>
+<pre><code>import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+import httpx
+
+
+class Echo(BaseHTTPRequestHandler):
+    def do_GET(self):
+        # self.requestline is the first line of the request, exactly as it arrived
+        print("REQUEST LINE :", self.requestline)
+        for name in ("Host", "Accept", "X-Request-Id", "User-Agent"):
+            print(f"HEADER {name:&lt;11}:", self.headers.get(name))
+        body = b'{"items": [], "count": 0}'
+        self.send_response(200)                          # status line: HTTP/1.1 200 OK
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()                               # blank line: headers are finished
+        self.wfile.write(body)
+
+    def log_message(self, *args):                        # silence the default access log
+        pass
+
+
+server = HTTPServer(("127.0.0.1", 0), Echo)              # port 0: the OS picks a free port
+threading.Thread(target=server.serve_forever, daemon=True).start()
+base = f"http://127.0.0.1:{server.server_port}"
+
+r = httpx.get(f"{base}/v1/requests", params={"status": "pending", "limit": 2},
+              headers={"Accept": "application/json", "X-Request-Id": "req-demo-1"})
+print("STATUS       :", r.status_code, r.reason_phrase)
+print("CONTENT-TYPE :", r.headers["content-type"])
+print("BODY (text)  :", r.text)
+print("BODY (parsed):", r.json())
+server.shutdown()</code></pre>
+</div>
+
+<p>Output when run (the port number differs each time):</p>
+<div class="code" data-lang="text">
+<header><b>output</b></header>
+<pre><code>REQUEST LINE : GET /v1/requests?status=pending&amp;limit=2 HTTP/1.1
+HEADER Host       : 127.0.0.1:54372
+HEADER Accept     : application/json
+HEADER X-Request-Id: req-demo-1
+HEADER User-Agent : python-httpx/0.28.1
+STATUS       : 200 OK
+CONTENT-TYPE : application/json
+BODY (text)  : {"items": [], "count": 0}
+BODY (parsed): {'items': [], 'count': 0}</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the body is text until you parse it</span>
+  <p><code>r.text</code> is a string. <code>r.json()</code> is a dict or list. Mixing them up produces <code>TypeError: string indices must be integers</code>, which looks baffling
+  until you remember that <code>"{...}"["id"]</code> is indexing a string. And a server can return status 200 with a body that is <b>not</b> JSON (a maintenance page, a
+  proxy login page), in which case <code>r.json()</code> raises. Treat &ldquo;2xx with an unparseable body&rdquo; as a failure you handle, not one that cannot happen.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch and read &mdash; anatomy of HTTP</div>
+  <a class="r" href="https://www.youtube.com/watch?v=iYM2zFP3Zn0" target="_blank" rel="noopener"><span>Traversy Media &mdash; HTTP Crash Course &amp; Exploration<i>Request/response cycle, status codes, headers and body, as its description says. Start here.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview" target="_blank" rel="noopener"><span>MDN &mdash; An overview of HTTP<i>The standard reference for the message format, written for developers.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://docs.python.org/3/library/http.server.html" target="_blank" rel="noopener"><span>Python docs &mdash; http.server<i>The module the block above uses; read the BaseHTTPRequestHandler section.</i></span><span class="dur">10 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="semantics">Methods, URLs, status codes, JSON</h2>
+<p class="sub">The vocabulary. A method says what you want done, a status code says what happened, and two properties &mdash; safe and idempotent &mdash;
+decide what a client may do automatically.</p>
+
+<h3 id="s-url">URL, path, query, fragment</h3>
+<div class="code" data-lang="python">
+<header><b>url_parts.py</b></header>
+<pre><code>from urllib.parse import quote
+import httpx
+
+u = httpx.URL("https://api.example.test:8443/v1/sites/BLR-01/requests?status=pending&amp;limit=2#top")
+print(u.scheme, u.host, u.port)        # https api.example.test 8443
+print(u.path)                          # /v1/sites/BLR-01/requests
+print(u.query)                         # b'status=pending&amp;limit=2'
+print(dict(u.params))                  # {'status': 'pending', 'limit': '2'}
+print(u.fragment)                      # top  (never sent to the server)
+
+# Let the library build and escape the query string. Never glue strings together.
+u2 = httpx.URL("https://api.example.test/v1/requests").copy_merge_params({"reason": "client visit &amp; demo", "tag": ["a", "b"]})
+print(u2)                              # ...?reason=client+visit+%26+demo&amp;tag=a&amp;tag=b
+
+# A path segment is different from a query value: quote it so a '/' cannot change the route.
+print(quote("e-902/../admin", safe=""))   # e-902%2F..%2Fadmin</code></pre>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Where data goes</th><th>Example</th><th>Use it for</th><th>Not for</th></tr></thead>
+<tbody>
+<tr><td>Path</td><td><code>/v1/sites/BLR-01/requests</code></td><td>Identifying <i>which</i> resource</td><td>Optional filters</td></tr>
+<tr><td>Query string</td><td><code>?status=pending&amp;limit=2</code></td><td>Filtering, sorting, paging a collection</td><td>Secrets (URLs end up in logs, browser history, proxies)</td></tr>
+<tr><td>Header</td><td><code>Authorization: Bearer &hellip;</code></td><td>Credentials, content type, request ids, idempotency keys</td><td>Large data</td></tr>
+<tr><td>Body</td><td><code>{"site_id": "BLR-01"}</code></td><td>The thing being created or changed</td><td>GET requests (many servers ignore a GET body)</td></tr>
+</tbody></table></div>
+
+<h3 id="s-methods">Methods: safe and idempotent</h3>
+<p><b>Safe</b> means the request is not supposed to change anything on the server (it only reads). <b>Idempotent</b> means that sending it once or ten times leaves the server in the
+same state. These two words decide whether you may retry automatically, so learn the table.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Method</th><th>Meaning</th><th>Safe</th><th>Idempotent</th><th>Typical success</th><th>Retry blindly?</th></tr></thead>
+<tbody>
+<tr><td><code>GET</code></td><td>Read a resource or a collection</td><td>yes</td><td>yes</td><td>200</td><td>Yes</td></tr>
+<tr><td><code>HEAD</code></td><td>Like GET, headers only</td><td>yes</td><td>yes</td><td>200</td><td>Yes</td></tr>
+<tr><td><code>POST</code></td><td>Create, or &ldquo;do this action&rdquo;</td><td>no</td><td><b>no</b></td><td>201, 202, 200</td><td><b>No</b>, unless the API gives you an idempotency key</td></tr>
+<tr><td><code>PUT</code></td><td>Replace a resource entirely at a known URL</td><td>no</td><td>yes</td><td>200, 204</td><td>Yes: the same replace twice is the same end state</td></tr>
+<tr><td><code>PATCH</code></td><td>Change some fields</td><td>no</td><td>not guaranteed</td><td>200, 204</td><td>Depends: &ldquo;set status to approved&rdquo; is safe to repeat, &ldquo;add 1 day&rdquo; is not</td></tr>
+<tr><td><code>DELETE</code></td><td>Remove a resource</td><td>no</td><td>yes</td><td>204, 200</td><td>Yes (the second one may return 404; that still means &ldquo;gone&rdquo;)</td></tr>
+</tbody></table></div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; &ldquo;idempotent&rdquo; is about server state, not about the response</span>
+  <p>The second <code>DELETE /v1/requests/req-1</code> returns 404 instead of 204, yet the method is still idempotent: after one call or ten, the request is gone. Interviewers like
+  this one. The dangerous method is <code>POST</code>: retrying &ldquo;create a badge&rdquo; after a timeout can create two badges, because a timeout does not tell you whether the server
+  did the work. Section 12 shows how an idempotency key fixes that.</p>
+</div>
+
+<h3 id="s-status">Status codes: five classes, sixteen that matter</h3>
+<div class="tw"><table>
+<thead><tr><th>Class</th><th>Meaning</th><th>Whose problem</th><th>Client default</th></tr></thead>
+<tbody>
+<tr><td>1xx</td><td>Informational (rarely seen)</td><td>&mdash;</td><td>Ignore</td></tr>
+<tr><td>2xx</td><td>It worked</td><td>nobody</td><td>Read the body</td></tr>
+<tr><td>3xx</td><td>Go elsewhere (see <code>Location</code>)</td><td>routing</td><td>Follow only if you chose to; httpx does not follow redirects unless you set <code>follow_redirects=True</code></td></tr>
+<tr><td>4xx</td><td>Your request is wrong or not allowed</td><td><b>the client</b></td><td>Do not retry (except 408, 429); fix the request</td></tr>
+<tr><td>5xx</td><td>The server failed</td><td><b>the server</b></td><td>Retry with backoff if the method allows (502, 503, 504 most of all)</td></tr>
+</tbody></table></div>
+
+<div class="tw"><table>
+<thead><tr><th>Code</th><th>Name</th><th>What it means in practice</th><th>Client action</th></tr></thead>
+<tbody>
+<tr><td>200</td><td>OK</td><td>Success; body has the result</td><td>Parse the body</td></tr>
+<tr><td>201</td><td>Created</td><td>A resource was made; <code>Location</code> or the body names it</td><td>Store the new id</td></tr>
+<tr><td>202</td><td>Accepted</td><td>Queued, <b>not done yet</b>. Common for slow vendor work</td><td>Poll a status URL or wait for a webhook; do not assume completion</td></tr>
+<tr><td>204</td><td>No Content</td><td>Success with no body (often DELETE, PUT)</td><td>Do not call <code>.json()</code>: it raises</td></tr>
+<tr><td>301</td><td>Moved Permanently</td><td>The URL changed for good</td><td>Update your stored URL; a POST may be turned into a GET by naive clients</td></tr>
+<tr><td>400</td><td>Bad Request</td><td>Malformed JSON, missing field, bad parameter</td><td>Fix and resend. Retrying is pointless</td></tr>
+<tr><td>401</td><td>Unauthorized</td><td>Not authenticated: no credentials, expired token, wrong key</td><td>Refresh the token once; else fail loudly</td></tr>
+<tr><td>403</td><td>Forbidden</td><td>Authenticated, but not allowed to do this</td><td>Do not retry. Fix permissions or scope</td></tr>
+<tr><td>404</td><td>Not Found</td><td>No such resource (or the API hides one you may not see)</td><td>Often a normal answer; decide per call</td></tr>
+<tr><td>409</td><td>Conflict</td><td>State clash: duplicate, version mismatch</td><td>Read the current state, then decide. Blind retry repeats the clash</td></tr>
+<tr><td>422</td><td>Unprocessable Content</td><td>Well-formed but invalid (FastAPI uses it for validation errors)</td><td>Read the error list, fix the data</td></tr>
+<tr><td>429</td><td>Too Many Requests</td><td>You are over the rate limit</td><td>Wait for <code>Retry-After</code>, then retry; slow down</td></tr>
+<tr><td>500</td><td>Internal Server Error</td><td>The server hit a bug</td><td>Retry a few times for safe calls; report if persistent</td></tr>
+<tr><td>502</td><td>Bad Gateway</td><td>A proxy got a bad answer from the real server</td><td>Retry with backoff</td></tr>
+<tr><td>503</td><td>Service Unavailable</td><td>Overloaded or down for maintenance</td><td>Retry with backoff; honour <code>Retry-After</code></td></tr>
+<tr><td>504</td><td>Gateway Timeout</td><td>The proxy gave up waiting for the real server</td><td>Retry cautiously: the work may still be running behind it</td></tr>
+</tbody></table></div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p><b>&ldquo;What is the difference between 401 and 403?&rdquo;</b> 401 means the server does not know who you are (missing, expired or wrong credentials), so the fix is to authenticate. 403 means it
+  knows exactly who you are and the answer is no, so the fix is permissions. <b>&ldquo;And 502 versus 504?&rdquo;</b> Both come from a gateway or proxy in front of the real server: 502 is a
+  bad or empty reply, 504 is no reply in time. In both cases the work behind the gateway may or may not have happened, which is why POST is dangerous to retry.</p>
+</div>
+
+<h3 id="s-json">JSON and content types</h3>
+<p>JSON is text with six types: object, array, string, number, <code>true</code>/<code>false</code>, <code>null</code>. <code>Content-Type</code> tells the receiver how to read the body. The most
+common client mistake is sending form-encoded data when the API wants JSON. The block asks a fake server to report back what it was sent, so you can see the three ways to send a body.</p>
+
+<div class="code" data-lang="python">
+<header><b>bodies_and_content_types.py</b></header>
+<pre><code>import json
+import httpx
+
+def echo(request: httpx.Request) -&gt; httpx.Response:
+    """A fake server: report back what it was sent."""
+    return httpx.Response(200, json={
+        "content_type": request.headers.get("content-type"),
+        "length": request.headers.get("content-length"),
+        "body": request.content.decode(),
+    })
+
+client = httpx.Client(transport=httpx.MockTransport(echo), base_url="https://api.example.test")
+payload = {"employee_id": "e-902", "site_id": "BLR-01", "reason": "client visit"}
+
+print(client.post("/v1/requests", json=payload).json())     # json=  -&gt; JSON body + Content-Type set for you
+print(client.post("/v1/requests", data=payload).json())     # data=  -&gt; HTML-form encoding (NOT JSON)
+print(client.post("/v1/requests", content=json.dumps(payload),
+                  headers={"Content-Type": "application/json"}).json())   # content= -&gt; raw bytes you built
+
+# JSON is text with six types. Python objects map onto it, and some do not fit.
+print(json.dumps({"ok": True, "n": None, "xs": [1, 2.5, "x"]}))   # {"ok": true, "n": null, "xs": [1, 2.5, "x"]}
+try:
+    json.dumps({"when": __import__("datetime").date(2026, 11, 29)})
+except TypeError as err:
+    print("TypeError:", err)                                  # dates are not JSON: send an ISO string yourself</code></pre>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Content-Type</th><th>Body looks like</th><th>httpx argument</th></tr></thead>
+<tbody>
+<tr><td><code>application/json</code></td><td><code>{"a":1}</code></td><td><code>json=obj</code></td></tr>
+<tr><td><code>application/x-www-form-urlencoded</code></td><td><code>a=1&amp;b=2</code></td><td><code>data=dict</code></td></tr>
+<tr><td><code>multipart/form-data</code></td><td>file upload parts</td><td><code>files=</code></td></tr>
+<tr><td><code>text/plain</code>, <code>text/csv</code>, <code>application/octet-stream</code></td><td>raw text or bytes</td><td><code>content=</code></td></tr>
+</tbody></table></div>
+
+<div class="drill">
+  <div class="dh">Predict &mdash; then reveal</div>
+  <details><summary>A vendor API says &ldquo;send JSON&rdquo;. You write <code>client.post(url, data={"site_id": "BLR-01"})</code>. What does the server most likely answer, and why is the message confusing?</summary>
+    <div class="ans"><p>Usually <code>400</code> or <code>415 Unsupported Media Type</code>, or <code>422</code> from a framework like FastAPI saying the body is missing. <code>data=</code> sends
+    <code>site_id=BLR-01</code> with a form content type, so a JSON parser sees no JSON at all. The message is confusing because it reports a <i>missing</i> field while you can see you sent one. The fix is the argument name:
+    <code>json=</code>. When an API claims a field is missing that you are sure you sent, print the request you actually made (headers and body) before doubting the server.</p></div></details>
+</div>
+
+<div class="res">
+  <div class="rh">Read &mdash; methods and status codes</div>
+  <a class="r" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods" target="_blank" rel="noopener"><span>MDN &mdash; HTTP request methods<i>Safe and idempotent per method, from the primary reference.</i></span><span class="dur">15 min</span></a>
+  <a class="r" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status" target="_blank" rel="noopener"><span>MDN &mdash; HTTP response status codes<i>The full list; keep it open when a code surprises you.</i></span><span class="dur">reference</span></a>
+  <a class="r" href="https://www.rfc-editor.org/rfc/rfc9110" target="_blank" rel="noopener"><span>RFC 9110 &mdash; HTTP Semantics<i>The standard itself. Do not read it end to end; search it when two sources disagree.</i></span><span class="dur">reference</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="curl">curl from the terminal</h2>
+<p class="sub">Before writing Python, make the call by hand. If curl gets the answer you expect and your code does not, the bug is in your code. Done in this order it saves hours.</p>
+
+<p>The commands below were run against the public test sites <code>jsonplaceholder.typicode.com</code> and <code>httpbin.org</code> on 18 Oct 2026. They need the internet, so the block
+runner does not execute them; the printed output is what they produced. Both sites can change or go offline: if one fails, try the other, or use the local server from section 2.
+<code>jsonplaceholder</code> pretends to accept writes but does not store them; its answers are realistic, its state is not.</p>
+
+<h3 id="c-bash">Git Bash, macOS, Linux</h3>
+<div class="code" data-lang="bash" data-run="no">
+<header><b>Git Bash</b></header>
+<pre><code># GET, show the status line and headers (-i), follow nothing, give up after 20 s (--max-time)
+curl -i --max-time 20 https://jsonplaceholder.typicode.com/todos/1
+
+# Query parameters: quote the URL, because &amp; means "run in background" to the shell
+curl -s "https://jsonplaceholder.typicode.com/posts?userId=1" | head -c 120
+
+# POST JSON: single quotes around the body keep the double quotes intact
+curl -s -X POST https://jsonplaceholder.typicode.com/posts \
+  -H "Content-Type: application/json" \
+  -d '{"title":"hello","body":"x","userId":1}' \
+  -w "\nHTTP %{http_code}\n"
+
+# Only the status code and the total time (great for "is it slow?")
+curl -s -o /dev/null -w "%{http_code} total=%{time_total}s\n" https://jsonplaceholder.typicode.com/posts/1
+
+# A bearer token from an environment variable (never typed into the command)
+curl -s -H "Authorization: Bearer $VENDOR_API_KEY" https://api.example.test/v1/requests
+
+# Verbose: the request headers you SENT and the response headers you GOT (-v)
+curl -v --max-time 20 -o /dev/null https://jsonplaceholder.typicode.com/todos/1</code></pre>
+</div>
+
+<div class="code" data-lang="text">
+<header><b>output of the first and third commands, trimmed</b></header>
+<pre><code>HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Content-Length: 83
+cache-control: max-age=43200
+x-ratelimit-limit: 3600000
+...
+{
+  "userId": 1,
+  "id": 1,
+  "title": "delectus aut autem",
+  "completed": false
+}
+
+{
+  "title": "hello",
+  "body": "x",
+  "userId": 1,
+  "id": 101
+}
+HTTP 201</code></pre>
+</div>
+
+<h3 id="c-ps">Windows PowerShell 5.1</h3>
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; three PowerShell traps</span>
+  <p><b>1.</b> In Windows PowerShell 5.1, <code>curl</code> is an alias for <code>Invoke-WebRequest</code>, a different tool with different flags. Type <code>curl.exe</code>, with the extension.
+  <b>2.</b> PowerShell 5.1 strips the double quotes out of arguments it passes to a native program. I ran <code>curl.exe -d '{"title":"hello"}'</code> against httpbin: the server received the text
+  <code>{title:hello}</code> and reported <code>"json": null</code>. <b>3.</b> The fixes that worked when I ran them are below: escape each inner quote with a backslash, or put the body in a file.
+  (Newer PowerShell 7 changed this behaviour; the commands below are for 5.1, the version on stock Windows 11.)</p>
+</div>
+
+<div class="code" data-lang="powershell" data-run="no">
+<header><b>Windows PowerShell 5.1</b></header>
+<pre><code># 1. GET: same as bash, but write curl.exe
+curl.exe -i --max-time 20 https://jsonplaceholder.typicode.com/todos/1
+
+# 2. Query string: the URL needs double quotes here too (PowerShell treats &amp; as reserved)
+curl.exe -s "https://jsonplaceholder.typicode.com/posts?userId=1"
+
+# 3. POST JSON, fix A: backslash-escape every inner double quote
+curl.exe -s -X POST https://httpbin.org/post -H "Content-Type: application/json" -d '{\"title\":\"hello\",\"userId\":1}'
+
+# 4. POST JSON, fix B (more robust): write the body to a file, send the file with @
+'{"title":"hello","userId":1}' | Set-Content -Encoding ascii $env:TEMP\body.json
+curl.exe -s -X POST https://httpbin.org/post -H "Content-Type: application/json" --data "@$env:TEMP\body.json"
+
+# 5. Status code and timing only (note NUL instead of /dev/null)
+curl.exe -s -o NUL -w "%{http_code} total=%{time_total}s\n" https://jsonplaceholder.typicode.com/posts/1
+
+# 6. A secret from an environment variable
+curl.exe -s -H "Authorization: Bearer $env:VENDOR_API_KEY" https://api.example.test/v1/requests</code></pre>
+</div>
+
+<div class="code" data-lang="text">
+<header><b>what httpbin echoed for fix B</b></header>
+<pre><code>"json": {
+  "title": "hello",
+  "userId": 1
+},</code></pre>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Flag</th><th>Meaning</th><th>When you want it</th></tr></thead>
+<tbody>
+<tr><td><code>-i</code></td><td>Include response headers in the output</td><td>Seeing the status line and <code>Retry-After</code></td></tr>
+<tr><td><code>-v</code></td><td>Verbose: show request and response headers, TLS handshake</td><td>&ldquo;What did I actually send?&rdquo;</td></tr>
+<tr><td><code>-s</code></td><td>Silent: hide the progress meter</td><td>Piping into another command</td></tr>
+<tr><td><code>-X METHOD</code></td><td>Set the method</td><td>POST, PUT, PATCH, DELETE</td></tr>
+<tr><td><code>-H "Name: value"</code></td><td>Add a header</td><td>Auth, Content-Type, Accept</td></tr>
+<tr><td><code>-d</code> / <code>--data @file</code></td><td>Send a body (implies POST)</td><td>JSON bodies; <code>@file</code> sidesteps quoting</td></tr>
+<tr><td><code>-o FILE</code></td><td>Write the body to a file (or discard it)</td><td>Downloads; <code>-o /dev/null</code> to ignore</td></tr>
+<tr><td><code>-w FORMAT</code></td><td>Print timing and status after the transfer</td><td><code>%{http_code}</code>, <code>%{time_total}</code></td></tr>
+<tr><td><code>--max-time N</code></td><td>Abort the whole transfer after N seconds</td><td><b>Always.</b> curl has no default overall timeout</td></tr>
+<tr><td><code>--connect-timeout N</code></td><td>Limit the connection step only</td><td>Distinguishing &ldquo;unreachable&rdquo; from &ldquo;slow&rdquo;</td></tr>
+<tr><td><code>-L</code></td><td>Follow redirects</td><td>3xx responses; off by default, like httpx</td></tr>
+</tbody></table></div>
+
+<p>One more thing I measured: <code>curl -m 5 https://httpbin.org/delay/10</code> printed status <code>000</code> and exited after 5.0 seconds with exit code 28 (&ldquo;operation timed out&rdquo;). Status
+<code>000</code> is curl&rsquo;s way of saying &ldquo;no HTTP response at all&rdquo;, which is a very different failure from a 504.</p>
+
+<div class="res">
+  <div class="rh">Watch and read &mdash; curl</div>
+  <a class="r" href="https://www.youtube.com/watch?v=BuEYquQweGo" target="_blank" rel="noopener"><span>Tony Teaches Tech &mdash; How To Use curl (with lots of helpful examples)<i>GET and POST over HTTP on Linux, Windows and Mac. Use the PowerShell notes above when it quotes JSON for bash.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://everything.curl.dev/" target="_blank" rel="noopener"><span>Everything curl<i>The free book by curl&rsquo;s author; the &ldquo;Usage&rdquo; chapters cover everything in the flag table.</i></span><span class="dur">reference</span></a>
+  <a class="r" href="https://jsonplaceholder.typicode.com/" target="_blank" rel="noopener"><span>JSONPlaceholder<i>The free fake API used above. Fine for practice; remember it does not persist writes.</i></span><span class="dur">tool</span></a>
+  <a class="r" href="https://httpbin.org/" target="_blank" rel="noopener"><span>httpbin<i>Echoes your request and can return any status or delay on demand: <code>/status/503</code>, <code>/delay/3</code>.</i></span><span class="dur">tool</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="httpx">Calling APIs from Python with httpx</h2>
+<p class="sub">One <code>Client</code>, configured once, used for many calls. The same four moves every time: build the request, send it, check the status, parse the body.</p>
+
+<h3 id="h-why">Why httpx, and why a Client</h3>
+<p><code>httpx</code> is a third-party HTTP library with a <code>requests</code>-like interface that also supports async and HTTP/2 and has a built-in way to fake the network
+(<code>MockTransport</code>, used throughout this sheet). The module-level <code>httpx.get(...)</code> is a convenience that opens and closes a connection each time. A <b>Client</b>
+keeps a pool of open connections, so repeated calls skip the DNS/TCP/TLS set-up, and it holds settings you want on every call: base URL, headers, timeout, authentication.
+The word you will hear is &ldquo;session&rdquo;; in httpx the object is <code>httpx.Client</code> and it does the same job.</p>
+
+<div class="code" data-lang="powershell">
+<header><b>personal laptop, inside your virtual environment</b></header>
+<pre><code>python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install httpx pytest
+python -c "import httpx; print(httpx.__version__)"     # 0.28.1 when this sheet was written</code></pre>
+</div>
+
+<h3 id="h-client">The four moves</h3>
+<p>Read this block slowly: it contains the vocabulary of the whole day. <code>with ... as client</code> is the context manager from <a href="ai-python.html">Sheet 23</a>: it closes the connection
+pool when the block ends. <code>MockTransport</code> plays the server; in real code you delete that one line and give the client a real <code>base_url</code>.</p>
+
+<div class="code" data-lang="python">
+<header><b>client_basics.py</b></header>
+<pre><code>import httpx
+
+DB = {"req-1": {"id": "req-1", "employee_id": "e-902", "site_id": "BLR-01", "status": "pending"}}
+
+def fake_api(request: httpx.Request) -&gt; httpx.Response:
+    if request.headers.get("authorization") != "Bearer test-key":
+        return httpx.Response(401, json={"error": "missing or bad key"})
+    rid = request.url.path.rsplit("/", 1)[-1]
+    if rid in DB:
+        return httpx.Response(200, json=DB[rid])
+    return httpx.Response(404, json={"error": f"no request {rid}"})
+
+with httpx.Client(
+    transport=httpx.MockTransport(fake_api),       # real code would omit this line
+    base_url="https://api.example.test",
+    headers={"Authorization": "Bearer test-key", "Accept": "application/json"},
+    timeout=httpx.Timeout(10.0, connect=3.0),
+) as client:                                       # `with` closes the connection pool for you
+    r = client.get("/v1/requests/req-1")
+    r.raise_for_status()                           # 2xx: returns quietly
+    data = r.json()                                # body text -&gt; dict
+    print(data["id"], data["status"])              # req-1 pending
+
+    r = client.get("/v1/requests/req-404")
+    print(r.status_code, r.is_success)             # 404 False   &lt;- no exception yet: a 404 is a valid HTTP answer
+    try:
+        r.raise_for_status()                       # NOW it raises
+    except httpx.HTTPStatusError as err:
+        print(type(err).__name__, err.response.status_code, err.request.url)
+        print(err.response.json())                 # the error body often says what was wrong</code></pre>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>You want</th><th>Write</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td>Query string</td><td><code>client.get(url, params={"status": "pending"})</code></td><td>httpx escapes it. A list value repeats the key</td></tr>
+<tr><td>Headers</td><td><code>headers={...}</code> on the client or on one call</td><td>Per-call headers win over client headers</td></tr>
+<tr><td>JSON body</td><td><code>client.post(url, json={...})</code></td><td>Sets <code>Content-Type: application/json</code> for you</td></tr>
+<tr><td>Fail on 4xx/5xx</td><td><code>r.raise_for_status()</code></td><td>Raises <code>httpx.HTTPStatusError</code>; 2xx and 3xx pass quietly</td></tr>
+<tr><td>Parse the body</td><td><code>r.json()</code></td><td>Raises <code>ValueError</code> (JSONDecodeError) if the body is not JSON</td></tr>
+<tr><td>Follow redirects</td><td><code>follow_redirects=True</code></td><td>Off by default in httpx</td></tr>
+<tr><td>Wait limit</td><td><code>timeout=httpx.Timeout(10.0, connect=3.0)</code></td><td>Next section. Never leave it implicit</td></tr>
+</tbody></table></div>
+
+<h3 id="h-real">Against a real server</h3>
+<p>The block below calls a public test API with an explicit timeout and every failure turned into a one-line message. It was <b>not executed by the block runner</b> because it needs the
+internet and a third-party site; I ran it by hand on 18 Oct 2026 and it printed the two lines shown under it. It is checked against the httpx documentation for
+<a href="https://www.python-httpx.org/quickstart/" target="_blank" rel="noopener">Quickstart</a> and <a href="https://www.python-httpx.org/exceptions/" target="_blank" rel="noopener">Exceptions</a> (version 0.28.1).</p>
+
+<div class="code" data-lang="python" data-run="no" data-why="needs the public internet and a third-party test site; run by hand on 18 Oct 2026">
+<header><b>call_public_api.py</b></header>
+<pre><code>import httpx
+
+try:
+    r = httpx.get(
+        "https://jsonplaceholder.typicode.com/todos/1",
+        timeout=httpx.Timeout(10.0, connect=3.0),     # always say how long you will wait
+    )
+    r.raise_for_status()
+except httpx.TimeoutException:
+    raise SystemExit("timed out: the server did not answer in time")
+except httpx.HTTPStatusError as err:
+    raise SystemExit(f"server said {err.response.status_code}")
+except httpx.TransportError as err:                  # DNS failure, refused, TLS error ...
+    raise SystemExit(f"could not reach the server: {type(err).__name__}")
+
+todo = r.json()
+print(r.status_code, r.headers["content-type"])
+print(todo["id"], todo["title"], todo["completed"])</code></pre>
+</div>
+<div class="code" data-lang="text">
+<header><b>output (run by hand)</b></header>
+<pre><code>200 application/json; charset=utf-8
+1 delectus aut autem False</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; a 404 is not an exception until you ask for one</span>
+  <p><code>client.get(...)</code> returns normally for a 404 or a 503, because the server did answer. Forgetting <code>raise_for_status()</code> is the classic bug: the code carries on, calls
+  <code>.json()</code> on an error body, and reads <code>data["items"]</code> from <code>{"error": "not found"}</code>, which fails three lines later with a <code>KeyError</code> that
+  points nowhere near the cause. Check the status immediately, in the same place, every time. Better still: wrap it once, in a client class (the lab does this).</p>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p><b>&ldquo;Why use a Session or Client object instead of calling get() each time?&rdquo;</b> Connection reuse (no repeated TCP and TLS set-up, which is often most of a small call&rsquo;s latency),
+  shared configuration such as base URL, headers and timeout in one place, and one place to attach authentication, logging and test doubles. The cost is that you must close it, hence <code>with</code>.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch and read &mdash; httpx</div>
+  <a class="r" href="https://www.youtube.com/watch?v=qAh5dDODJ5k" target="_blank" rel="noopener"><span>Patrick Loeber &mdash; HTTPX Tutorial, a next-generation HTTP client for Python<i>Install, basic use, Client, async and testing. Recorded for an earlier httpx release: the basics hold, but check the 0.28 docs for details.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=2FNcJKCfrzI" target="_blank" rel="noopener"><span>John Watson Rooney &mdash; HTTPX is the ASYNC Requests I was Looking For<i>A second voice on the same library; skip the async parts for now, you need only the sync Client.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://www.python-httpx.org/quickstart/" target="_blank" rel="noopener"><span>HTTPX &mdash; Quickstart<i>The official page for params, headers, json, status codes and timeouts.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://www.python-httpx.org/advanced/clients/" target="_blank" rel="noopener"><span>HTTPX &mdash; Clients<i>Why to use a Client, what it shares across calls, and how to configure it.</i></span><span class="dur">15 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="timeouts">Timeouts: the setting that prevents the 3 a.m. hang</h2>
+<p class="sub">A network call with no limit on how long it may take is a call that can wait forever. A worker that waits forever holds a thread, a connection and a queue slot, and eventually everything behind it stops.</p>
+
+<h3 id="t-why">Why &ldquo;no timeout&rdquo; means &ldquo;hang&rdquo;</h3>
+<p>TCP will happily keep a connection open for as long as both ends exist. If the server is overloaded, a firewall silently drops packets, or a vendor system stalls half-way through a response,
+your client waits for data that never comes. Nothing raises. The program just stops making progress. Libraries differ in their defaults: <code>httpx</code> applies a default of 5 seconds to each phase
+(per the <a href="https://www.python-httpx.org/advanced/timeouts/" target="_blank" rel="noopener">httpx timeouts page</a>), the popular <code>requests</code> library has <b>no default at all</b>, and
+<code>curl</code> has no overall limit unless you pass <code>--max-time</code>. Do not rely on a default you have not read. Set it, in the code, where the next person will see it.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 400" role="img" aria-label="Three nested time limits. The top bar is the total deadline of 30 seconds, enforced by your own code. Below it, three attempt bars of up to 10 seconds each separated by waits, with the third attempt cut off by the deadline. Below that, one attempt is expanded into a connect timeout of 3 seconds, a short write phase and a read timeout that limits silence, not total time. A red note says httpx enforces connect, read, write and pool limits but not a total, so a server that sends one byte at a time can outlast every per-read limit.">
+  <defs>
+    <marker id="s24-dc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s24-dr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <text class="mm" x="60" y="34">LAYER 1 &middot; THE WHOLE JOB</text>
+  <rect class="box-a" x="60" y="44" width="1080" height="46" rx="3"/>
+  <text class="t b" x="78" y="73">Total deadline: 30 s  (your code, time.monotonic)</text>
+
+  <text class="mm" x="60" y="124">LAYER 2 &middot; EACH ATTEMPT AND EACH WAIT</text>
+  <rect class="box-c" x="60" y="134" width="360" height="46" rx="3"/>
+  <text class="t" x="78" y="163">attempt 1: up to 10 s</text>
+  <rect class="box" x="424" y="134" width="60" height="46" rx="3"/>
+  <text class="mm" x="436" y="162">wait</text>
+  <rect class="box-c" x="488" y="134" width="360" height="46" rx="3"/>
+  <text class="t" x="506" y="163">attempt 2: up to 10 s</text>
+  <rect class="box" x="852" y="134" width="100" height="46" rx="3"/>
+  <text class="mm" x="864" y="162">wait 2 s</text>
+  <rect class="box-r" x="956" y="134" width="184" height="46" rx="3"/>
+  <text class="t r" x="970" y="163">cut off at 30 s</text>
+
+  <path class="ln dash" d="M60,184 L60,232"/>
+  <path class="ln dash" d="M420,184 L420,232"/>
+  <text class="mm" x="60" y="224">LAYER 3 &middot; INSIDE ONE ATTEMPT</text>
+
+  <rect class="box" x="60" y="240" width="108" height="46" rx="3"/>
+  <text class="t" x="72" y="268">connect 3 s</text>
+  <rect class="box" x="172" y="240" width="40" height="46" rx="3"/>
+  <text class="mm" x="177" y="268">wr</text>
+  <rect class="box-c" x="216" y="240" width="204" height="46" rx="3"/>
+  <text class="t" x="228" y="268">read: max silence</text>
+
+  <text class="mm" x="60" y="306">DNS + TCP + TLS</text>
+  <text class="mm" x="172" y="326">SEND BODY</text>
+  <text class="mm c" x="216" y="306">PER READ, NOT TOTAL</text>
+
+  <rect class="box-r" x="480" y="240" width="660" height="110" rx="3"/>
+  <text class="t r" x="498" y="266">The gap that catches everyone</text>
+  <text class="m" x="498" y="290">httpx limits connect, read, write and pool. It has no total limit.</text>
+  <text class="m" x="498" y="310">A server that sends one byte every 0.9 s never trips a 1 s read limit,</text>
+  <text class="m" x="498" y="330">yet the call can last minutes. Only your own clock closes that gap.</text>
+  <path class="flow-r dash" d="M420,263 H474" marker-end="url(#s24-dr)"/>
+</svg>
+<figcaption>Drawing 24-B &mdash; the timeout stack. <b>Brass</b> = the limit you own. <b>Cyan</b> = limits the library enforces per phase. <b>Red</b> = where the stack leaks.</figcaption>
+</figure>
+
+<h3 id="t-kinds">The four httpx limits</h3>
+<div class="tw"><table>
+<thead><tr><th>Limit</th><th>Bounds</th><th>Fires when</th><th>Exception</th><th>Sensible start</th></tr></thead>
+<tbody>
+<tr><td><code>connect</code></td><td>Opening the connection (DNS, TCP, TLS)</td><td>Host unreachable, packets dropped, server not accepting</td><td><code>ConnectTimeout</code></td><td>3 &ndash; 5 s</td></tr>
+<tr><td><code>read</code></td><td>Waiting for the next chunk of response data</td><td>Server accepted you, then went quiet</td><td><code>ReadTimeout</code></td><td>10 &ndash; 30 s, from the vendor&rsquo;s real latency</td></tr>
+<tr><td><code>write</code></td><td>Sending the request body</td><td>Server not reading what you send</td><td><code>WriteTimeout</code></td><td>5 &ndash; 10 s</td></tr>
+<tr><td><code>pool</code></td><td>Waiting for a free connection in the pool</td><td>Too many concurrent calls for the pool size</td><td><code>PoolTimeout</code></td><td>5 s</td></tr>
+<tr><td>total</td><td>The whole call, start to finish</td><td><b>never, in httpx</b></td><td>yours to define</td><td>retries &times; per-attempt + waits</td></tr>
+</tbody></table></div>
+
+<p>All four timeout exceptions are subclasses of <code>httpx.TimeoutException</code>, so one <code>except httpx.TimeoutException</code> catches any of them. The next block runs a real local server
+that is deliberately slow in two different ways, and measures what <code>httpx</code> does. Predict first.</p>
+
+<div class="drill">
+  <div class="dh">Predict &mdash; then reveal</div>
+  <details><summary>The client has <code>read=1.0</code>. Server A says nothing for 3 s, then answers. Server B sends one byte every 0.4 s for 3.2 s. Which call raises <code>ReadTimeout</code>, and after how long?</summary>
+    <div class="ans"><p>Only A. It raises after about 1.0 s, not 3 s. B never raises: each byte arrives well inside the 1 s window, and the timer resets on every read, so the call succeeds after about 3 s with no timeout at all.
+    This is the difference between a limit on <i>silence</i> and a limit on <i>duration</i>. For a hard cap you need your own deadline, shown as the third part of the block.</p></div></details>
+</div>
+
+<div class="code" data-lang="python" data-timeout="90">
+<header><b>timeouts_measured.py</b></header>
+<pre><code>import threading, time
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+import httpx
+
+
+class Slow(BaseHTTPRequestHandler):
+    def do_GET(self):
+        try:
+            if self.path == "/silent":              # accepts the request, then says nothing for 3 s
+                time.sleep(3)
+                self.send_response(200); self.send_header("Content-Length", "2"); self.end_headers()
+                self.wfile.write(b"ok")
+            elif self.path == "/ping":
+                self.send_response(200); self.send_header("Content-Length", "0"); self.end_headers()
+            elif self.path == "/drip":              # sends 1 byte every 0.4 s, 8 bytes in total
+                self.send_response(200); self.send_header("Content-Length", "8"); self.end_headers()
+                for _ in range(8):
+                    self.wfile.write(b"x"); self.wfile.flush(); time.sleep(0.4)
+        except OSError:                             # the client gave up and closed the socket: expected here
+            pass
+
+    def log_message(self, *a):
+        pass
+
+
+server = ThreadingHTTPServer(("127.0.0.1", 0), Slow)
+threading.Thread(target=server.serve_forever, daemon=True).start()
+base = f"http://127.0.0.1:{server.server_port}"
+client = httpx.Client(timeout=httpx.Timeout(5.0, read=1.0))   # connect/write/pool 5 s, read 1 s
+client.get(base + "/ping")                            # warm-up: the first call pays one-off setup cost
+
+# 1. A read timeout: the server is connected but silent.
+t0 = time.monotonic()
+try:
+    client.get(f"{base}/silent")
+except httpx.ReadTimeout as err:
+    print(f"ReadTimeout after {time.monotonic() - t0:.1f}s")          # about 1.0s, not 3s
+
+# 2. The trap: read=1.0 is the wait for EACH chunk, not for the whole response.
+t0 = time.monotonic()
+r = client.get(f"{base}/drip")
+print(f"drip finished: {len(r.content)} bytes in {time.monotonic() - t0:.1f}s, no timeout fired")   # ~3.2s
+
+# 3. A total deadline is yours to enforce: stream the body and check the clock.
+def get_with_deadline(url, total=1.5):
+    deadline = time.monotonic() + total
+    with client.stream("GET", url) as resp:
+        chunks = []
+        for chunk in resp.iter_bytes():
+            chunks.append(chunk)
+            if time.monotonic() &gt; deadline:
+                raise TimeoutError(f"total deadline of {total}s exceeded")
+        return b"".join(chunks)
+
+t0 = time.monotonic()
+try:
+    get_with_deadline(f"{base}/drip", total=1.5)
+except TimeoutError as err:
+    print(f"{err} (stopped at {time.monotonic() - t0:.1f}s)")
+server.shutdown()</code></pre>
+</div>
+<div class="code" data-lang="text">
+<header><b>output (times vary by a few tenths of a second)</b></header>
+<pre><code>ReadTimeout after 1.0s
+drip finished: 8 bytes in 2.8s, no timeout fired
+total deadline of 1.5s exceeded (stopped at 1.6s)</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the first call is slower than the rest</span>
+  <p>When I first timed this without the warm-up line, the first <code>ReadTimeout</code> took 1.5 s instead of 1.0 s: the first call through a new <code>Client</code> pays a one-off cost to set up TLS
+  machinery. It is a good reminder that a measured timing from one call proves little. Warm up, repeat, and compare against a distribution, not a single number.</p>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">In production &mdash; picking the numbers</span>
+  <p>Do not guess. Find the vendor&rsquo;s documented response time, or measure the 95th and 99th percentile of real calls, and set the read limit slightly above the 99th. A limit tighter than normal
+  latency causes self-inflicted failures; a limit of five minutes is no limit at all. Then work backwards from the person or process waiting: if a web request must answer in 5 s, a call that retries
+  three times with 10 s read limits is a bug no matter how resilient it looks. The <b>total deadline</b> is a product decision, not a technical one.</p>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p><b>&ldquo;What happens when the server takes 30 seconds to answer?&rdquo;</b> (This is Saturday&rsquo;s question.) With no timeout your call blocks for 30 s and ties up a worker, so ten slow calls can
+  starve a pool of ten. With a 10 s read timeout the call fails at 10 s with <code>ReadTimeout</code>. Whether you retry depends on the method: a GET can be retried, a POST that may already have taken effect needs an
+  idempotency key. The user sees either a spinner for 30 s or a clear message after a bounded wait, and you pick the second. Add that the server may <i>still be working</i> after you give up, which is why the work itself must be safe to repeat.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch and read &mdash; timeouts</div>
+  <a class="r" href="https://www.python-httpx.org/advanced/timeouts/" target="_blank" rel="noopener"><span>HTTPX &mdash; Timeouts<i>The four limits, their defaults, and how to set them per call and per client.</i></span><span class="dur">10 min</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=HZdE1dNLX9s" target="_blank" rel="noopener"><span>MsDeep Singh &mdash; Timeouts, Retries, Backoff with Jitter (System Design)<i>Where timeouts sit among retries and backoff in a distributed system. Language-agnostic.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/" target="_blank" rel="noopener"><span>Amazon Builders&rsquo; Library &mdash; Timeouts, retries and backoff with jitter<i>How a large operator chooses timeouts and why retries can cause the outage they were meant to survive.</i></span><span class="dur">25 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="errors">Error handling: a taxonomy</h2>
+<p class="sub">&ldquo;The call failed&rdquo; is not one thing. Four different failures need four different responses, and the status code alone does not separate them.</p>
+
+<h3 id="e-families">Four families</h3>
+<div class="grid g2">
+  <div class="card"><span class="cm">Family 1 &middot; retry</span><b class="ct">Transport failures</b>
+    <p>DNS failure, connection refused, connection reset, TLS error. The request may never have reached the server. <code>httpx.TransportError</code> and its children
+    (<code>ConnectError</code>, <code>ReadError</code>, <code>RemoteProtocolError</code>). Usually retryable; for POST ask whether it could have been processed.</p></div>
+  <div class="card"><span class="cm">Family 2 &middot; retry, carefully</span><b class="ct">Timeouts</b>
+    <p><code>httpx.TimeoutException</code>. The worst case, because you do not know whether the server did the work. Safe to retry for GET, PUT, DELETE. For POST, only with an idempotency key.</p></div>
+  <div class="card"><span class="cm">Family 3 &middot; depends on the code</span><b class="ct">HTTP status errors</b>
+    <p>The server answered. 408, 429, 500, 502, 503, 504: transient, retry. 400, 401, 403, 404, 409, 422: the request or your permission is wrong, retrying changes nothing.
+    <code>httpx.HTTPStatusError</code>, only after you call <code>raise_for_status()</code>.</p></div>
+  <div class="card"><span class="cm">Family 4 &middot; do not retry</span><b class="ct">Body and logic errors</b>
+    <p>A 200 whose body is not JSON, a missing field, a schema that changed. Retrying a deterministic failure just repeats it. Fail loudly, log the status and a trimmed body, and alert a human.
+    Includes your own bugs: a <code>TypeError</code> is never a reason to retry.</p></div>
+</div>
+
+<div class="code" data-lang="python">
+<header><b>classify_outcomes.py</b></header>
+<pre><code>import httpx
+
+# The exception family tree. Catch the parent you mean, not `Exception`.
+for exc in (httpx.ConnectTimeout, httpx.ReadTimeout, httpx.ConnectError, httpx.HTTPStatusError, httpx.DecodingError):
+    print(f"{exc.__name__:&lt;18}", " &gt; ".join(c.__name__ for c in reversed(exc.__mro__[:-3])))
+
+def classify(do_request):
+    """Run one request and say what kind of outcome it was."""
+    try:
+        r = do_request()
+    except httpx.TimeoutException:
+        return "retryable: timeout"
+    except httpx.TransportError as err:                  # connect refused, DNS, TLS, connection reset
+        return f"retryable: network ({type(err).__name__})"
+    if r.status_code in (408, 429, 500, 502, 503, 504):
+        return f"retryable: HTTP {r.status_code}"
+    if r.status_code &gt;= 400:
+        return f"permanent: HTTP {r.status_code} (fix the request, do not repeat it)"
+    try:
+        r.json()
+    except ValueError:
+        return "permanent: 2xx but the body is not JSON"
+    return "ok"
+
+def run(status=200, body=b"{}", raises=None):
+    def handler(request):
+        if raises is not None:
+            raise raises(request)                        # a function that builds the exception
+        return httpx.Response(status, content=body)
+    client = httpx.Client(transport=httpx.MockTransport(handler), base_url="https://api.example.test")
+    return classify(lambda: client.get("/x"))
+
+print(run(status=200))
+print(run(status=404))
+print(run(status=422))
+print(run(status=429))
+print(run(status=503))
+print(run(status=200, body=b"&lt;html&gt;maintenance&lt;/html&gt;"))
+print(run(raises=lambda req: httpx.ReadTimeout("slow", request=req)))
+print(run(raises=lambda req: httpx.ConnectError("refused", request=req)))</code></pre>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Failure</th><th>Retry?</th><th>Why</th><th>Instead</th></tr></thead>
+<tbody>
+<tr><td>Connection refused / reset</td><td>Yes, with backoff</td><td>Often a restart or a brief overload</td><td>After the budget: alert</td></tr>
+<tr><td>Read timeout on GET</td><td>Yes</td><td>Reads are repeatable</td><td>Longer limit if latency is genuinely high</td></tr>
+<tr><td>Read timeout on POST</td><td><b>Only with an idempotency key</b></td><td>The work may have happened</td><td>Query the resource first, or use the key</td></tr>
+<tr><td>429</td><td>Yes, after <code>Retry-After</code></td><td>Capacity will return</td><td>Slow down so you stop earning 429s</td></tr>
+<tr><td>500 / 502 / 503 / 504</td><td>Yes, few times</td><td>Transient far more often than not</td><td>Circuit breaker if it persists</td></tr>
+<tr><td>400 / 422</td><td><b>No</b></td><td>The same bad request fails the same way</td><td>Fix the data; log the validation body</td></tr>
+<tr><td>401</td><td>Once, after refreshing the token</td><td>Expired token is normal; a wrong key is not</td><td>Fail loudly on a second 401</td></tr>
+<tr><td>403</td><td><b>No</b></td><td>A permission is missing</td><td>Fix scopes or roles</td></tr>
+<tr><td>404</td><td>No</td><td>It does not exist (sometimes the right answer)</td><td>Handle as a value, not an error</td></tr>
+<tr><td>409</td><td>No, not blindly</td><td>State clash</td><td>Re-read, then decide</td></tr>
+<tr><td>200 but body is not JSON</td><td>No</td><td>Deterministic, or a proxy page</td><td>Log a trimmed body, alert</td></tr>
+</tbody></table></div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the catch-all</span>
+  <p><code>except Exception: retry()</code> retries your own typos, keyboard interrupts of a sort and every permanent error, turning a bug into a slow, expensive loop that hides itself. Name the exceptions you
+  mean to retry (<code>httpx.TransportError</code>, plus your own &ldquo;retryable status&rdquo; error) and let everything else fall through to crash loudly. Also never swallow the
+  exception and return <code>None</code> for a failed call: the caller will treat &ldquo;the vendor is down&rdquo; as &ldquo;there are no results&rdquo;.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Read &mdash; errors</div>
+  <a class="r" href="https://www.python-httpx.org/exceptions/" target="_blank" rel="noopener"><span>HTTPX &mdash; Exceptions<i>The full exception hierarchy and which operation raises which. Compare with the tree printed above.</i></span><span class="dur">10 min</span></a>
+  <a class="r" href="https://learn.microsoft.com/en-us/azure/architecture/best-practices/transient-faults" target="_blank" rel="noopener"><span>Microsoft Azure Architecture &mdash; Transient fault handling<i>The vendor-neutral guidance on which faults to retry and how, written for cloud services.</i></span><span class="dur">20 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="retries">Retries, backoff, jitter, budgets</h2>
+<p class="sub">A retry is a bet that the next attempt will succeed. Placed well it hides a blip. Placed badly it turns one slow server into a dead one.</p>
+
+<h3 id="r-backoff">Exponential backoff with a cap</h3>
+<p>Waiting a fixed second between attempts hammers a struggling server at a steady rate. <b>Exponential backoff</b> doubles the wait each time (1 s, 2 s, 4 s, 8 s), giving the server room
+to recover. A <b>cap</b> stops the wait growing without limit (2<sup>10</sup> seconds is 17 minutes). The formula for wait number <i>i</i>, counting from 0, is <code>min(cap, base &times; 2<sup>i</sup>)</code>.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 380" role="img" aria-label="A retry timeline. Attempt 1 fails with 503 and waits about 1 second. Attempt 2 times out and waits about 2 seconds. Attempt 3 gets 429 with Retry-After 5, and the client waits 5 seconds because the server's number overrides its own backoff. Attempt 4 succeeds with 200. Below, two small histograms compare 1000 clients retrying at the same instant without jitter, which makes one tall spike, against the same clients with jitter, which spreads the load into many short bars.">
+  <defs>
+    <marker id="s24-tc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s24-tb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+  </defs>
+
+  <text class="mm" x="60" y="30">ONE CLIENT &middot; NOT TO SCALE</text>
+  <path class="ln" d="M60,100 H1140"/>
+
+  <rect class="box-r" x="60" y="70" width="88" height="60" rx="3"/>
+  <text class="t r" x="72" y="96">try 1</text>
+  <text class="mm" x="72" y="114">503</text>
+
+  <rect class="box" x="152" y="84" width="90" height="32" rx="3"/>
+  <text class="mm" x="160" y="105">~1 s</text>
+
+  <rect class="box-r" x="246" y="70" width="88" height="60" rx="3"/>
+  <text class="t r" x="258" y="96">try 2</text>
+  <text class="mm" x="258" y="114">TIMEOUT</text>
+
+  <rect class="box" x="338" y="84" width="170" height="32" rx="3"/>
+  <text class="mm" x="346" y="105">~2 s (jittered)</text>
+
+  <rect class="box-r" x="512" y="70" width="88" height="60" rx="3"/>
+  <text class="t r" x="524" y="96">try 3</text>
+  <text class="mm" x="524" y="114">429</text>
+
+  <rect class="box-a" x="604" y="84" width="330" height="32" rx="3"/>
+  <text class="mm b" x="612" y="105">Retry-After: 5  (server wins)</text>
+
+  <rect class="box-c" x="938" y="70" width="88" height="60" rx="3"/>
+  <text class="t c" x="950" y="96">try 4</text>
+  <text class="mm" x="950" y="114">200 OK</text>
+
+  <text class="m" x="60" y="164">Failures that are worth retrying: 503, timeout, 429. After the last allowed try the last error is raised, never swallowed.</text>
+  <text class="m" x="60" y="184">Never wait after the final attempt: sleeping and then raising only delays the bad news.</text>
+
+  <text class="mm" x="60" y="232">1000 CLIENTS FAIL AT THE SAME INSTANT (ONE SERVER BLIP)</text>
+
+  <text class="t r" x="60" y="256">No jitter</text>
+  <rect x="150" y="262" width="26" height="90" fill="#ea5f42" opacity="0.8"/>
+  <path class="ln" d="M60,352 H340"/>
+  <text class="mm" x="60" y="372">ALL RETRY AT t = 1 s: A SECOND SPIKE</text>
+
+  <text class="t c" x="640" y="256">Full jitter</text>
+  <rect x="720" y="326" width="22" height="26" fill="#5fc4d8" opacity="0.85"/>
+  <rect x="746" y="322" width="22" height="30" fill="#5fc4d8" opacity="0.85"/>
+  <rect x="772" y="328" width="22" height="24" fill="#5fc4d8" opacity="0.85"/>
+  <rect x="798" y="320" width="22" height="32" fill="#5fc4d8" opacity="0.85"/>
+  <rect x="824" y="326" width="22" height="26" fill="#5fc4d8" opacity="0.85"/>
+  <rect x="850" y="323" width="22" height="29" fill="#5fc4d8" opacity="0.85"/>
+  <rect x="876" y="329" width="22" height="23" fill="#5fc4d8" opacity="0.85"/>
+  <rect x="902" y="325" width="22" height="27" fill="#5fc4d8" opacity="0.85"/>
+  <path class="ln" d="M640,352 H1000"/>
+  <text class="mm" x="640" y="372">EACH WAITS RANDOM(0, WAIT): LOAD SPREADS OUT</text>
+</svg>
+<figcaption>Drawing 24-C &mdash; a retry timeline and why jitter matters. <b>Red</b> = failed attempts. <b>Brass</b> = a wait dictated by the server. <b>Cyan</b> = success and the spread-out load.
+Bar heights are illustrative; the block below measures the real effect.</figcaption>
+</figure>
+
+<h3 id="r-jitter">Jitter: why randomise</h3>
+<p>If a vendor blips and a thousand workers all fail at once, plain exponential backoff has all thousand retry again at exactly the same instant, then again, in synchronised waves.
+<b>Jitter</b> multiplies each wait by a random number so the retries spread out. &ldquo;Full jitter&rdquo; (wait a random time between 0 and the computed delay) is the simple, effective version, and is the one the
+<a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/" target="_blank" rel="noopener">AWS Architecture Blog</a> measured. This block simulates 1000 clients with a seeded random source so the output is the same every run:</p>
+
+<div class="code" data-lang="python">
+<header><b>jitter_simulation.py</b></header>
+<pre><code>import random
+from collections import Counter
+
+def retry_times(clients, attempts, base, cap, jitter, rng):
+    """When does each client's retry land? All clients failed together at t=0."""
+    times = []
+    for _ in range(clients):
+        t = 0.0
+        for i in range(attempts):
+            wait = min(cap, base * 2 ** i)
+            t += wait * rng.random() if jitter else wait     # "full jitter": uniform in [0, wait]
+            times.append(t)
+    return times
+
+rng = random.Random(7)                                        # seeded: the same output every run
+for jitter in (False, True):
+    times = retry_times(clients=1000, attempts=4, base=1.0, cap=30.0, jitter=jitter, rng=rng)
+    windows = Counter(int(t * 10) for t in times)             # bucket arrivals into 0.1-second windows
+    peak = max(windows.values())
+    print(f"jitter={jitter!s:&lt;5}  busiest 0.1 s window: {peak:&gt;4} requests   (1000 clients, 4 retries each)")</code></pre>
+</div>
+<div class="code" data-lang="text">
+<header><b>output</b></header>
+<pre><code>jitter=False  busiest 0.1 s window: 1000 requests   (1000 clients, 4 retries each)
+jitter=True   busiest 0.1 s window:  157 requests   (1000 clients, 4 retries each)</code></pre>
+</div>
+
+<p>The peak load on the server fell from 1000 simultaneous requests to 157 in the worst 0.1 s window. That figure is for this particular seed and this particular setup, so treat it as a demonstration
+of direction, not a constant.</p>
+
+<h3 id="r-loop">The retry loop by hand</h3>
+<p>This is the smallest honest retry loop. The lab asks for more: a total attempt count, a cap, a <code>sleep</code> function you can replace in tests, a jitter source you can replace, and <code>Retry-After</code>
+support. A function that sleeps for real cannot be tested quickly, so the lab makes <code>sleep</code> a parameter. That one design choice (<b>inject the things that are slow or random</b>) is the idea to take from it.</p>
+
+<div class="code" data-lang="python">
+<header><b>retry_by_hand.py</b></header>
+<pre><code>import random, time
+
+def backoff(attempt, base=0.5, cap=30.0):
+    """Wait before retry number `attempt` (0, 1, 2 ...): grows 2x each time, never above cap, randomised."""
+    return random.uniform(0, min(cap, base * 2 ** attempt))
+
+calls = []
+def flaky():
+    calls.append(time.monotonic())
+    if len(calls) &lt; 3:                       # fails twice, then works
+        raise ConnectionError("vendor reset the connection")
+    return "badge provisioned"
+
+for attempt in range(5):                     # at most 5 tries
+    try:
+        print(flaky())
+        break
+    except ConnectionError as err:
+        wait = backoff(attempt, base=0.05)   # tiny base so this demo takes a fraction of a second
+        print(f"attempt {attempt + 1} failed ({err}); sleeping {wait:.3f}s")
+        time.sleep(wait)
+else:
+    raise RuntimeError("gave up after 5 attempts")</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">You must be able to explain this</span>
+  <p>Three lines of this block are interview material. <code>2 ** attempt</code>: why the wait grows. <code>min(cap, ...)</code>: why it stops growing. <code>random.uniform(0, ...)</code>: why the random part goes <i>after</i> the cap.
+  And the <code>for ... else</code>: the <code>else</code> branch runs only if the loop finished without a <code>break</code>, that is, only if every attempt failed. It is a Python idiom you will not see in C++.</p>
+</div>
+
+<h3 id="r-after">Retry-After, budgets and what must not be retried</h3>
+<div class="grid g3">
+  <div class="card"><span class="cm">Rule 01</span><b class="ct">The server&rsquo;s number wins</b>
+    <p>A 429 or 503 may carry <code>Retry-After</code>: either whole seconds (<code>120</code>) or an HTTP date (<code>Wed, 21 Oct 2026 07:28:00 GMT</code>). It knows its own recovery time better than your formula. Cap it
+    so a hostile or buggy value of 86400 does not park your worker for a day. The lab has you parse both forms.</p></div>
+  <div class="card"><span class="cm">Rule 02</span><b class="ct">Budget the retries</b>
+    <p>Three attempts per call is fine for one caller. For a thousand callers it triples the load exactly when the server is weakest. A <b>retry budget</b> caps retries as a share of traffic (for example, at most 10 percent
+    extra requests over a minute) or as a total per job, so a bad hour cannot multiply into an outage. Limit retries at one layer, not at every layer: three layers each retrying three times is 27 calls.</p></div>
+  <div class="card"><span class="cm">Rule 03</span><b class="ct">Idempotency before retry</b>
+    <p>Retrying a POST that already succeeded creates a duplicate. Either the call is naturally idempotent, or you send a unique <code>Idempotency-Key</code> so the server recognises the repeat and returns the first result.
+    Section 12 shows the mechanism; not every vendor supports it, so find out before the first retry ships.</p></div>
+</div>
+
+<h3 id="r-vs">Retry or not: a comparison</h3>
+<div class="vs">
+  <div><div class="vh">Retry</div><div class="vb"><p>Transport errors, timeouts, 408, 429, 500, 502, 503, 504, on idempotent calls or with an idempotency key. The failure is a property of the moment, not of your request.
+  Bounded attempts, capped and jittered backoff, <code>Retry-After</code> honoured, the last error raised.</p></div></div>
+  <div><div class="vh">Do not retry</div><div class="vb"><p>400, 401 (after one refresh), 403, 404, 409, 422, a body that will not parse, any exception from your own code, and a non-idempotent POST with no key.
+  The failure is a property of the request or of you. Repeating it burns quota and delays the real fix.</p></div></div>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Dimension</th><th>Retry</th><th>Do not retry</th></tr></thead>
+<tbody>
+<tr><td>Cause</td><td>Transient: load, restart, network blip</td><td>Permanent: wrong request, missing permission, a bug</td></tr>
+<tr><td>Chance the next try helps</td><td>High</td><td>Zero for the same request</td></tr>
+<tr><td>Risk of retrying</td><td>Duplicates for POST; extra load on a weak server</td><td>Wasted quota, hidden bug, rate-limit penalties</td></tr>
+<tr><td>What you do next</td><td>Wait, then repeat, with limits</td><td>Surface the error with its body and stop</td></tr>
+<tr><td>Typical codes</td><td>408 429 500 502 503 504</td><td>400 401 403 404 409 422</td></tr>
+</tbody></table></div>
+<p>Pick &ldquo;retry&rdquo; only when the failure is transient <b>and</b> repeating the call is safe; otherwise pick &ldquo;do not retry&rdquo; and make the error loud.</p>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; retries that cause the outage</span>
+  <p>The classic incident: a database slows down, every client times out at 5 s and retries immediately three times, the database now receives four times the traffic, slows further, and never recovers
+  even after the original fault is fixed. The cure is the set above: backoff, jitter, a cap on attempts, a retry budget, and a total deadline so abandoned work stops. A client you cannot make stop retrying is an attack
+  on your own infrastructure.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch and read &mdash; retries</div>
+  <a class="r" href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/" target="_blank" rel="noopener"><span>AWS Architecture Blog &mdash; Exponential Backoff And Jitter<i>The measurements behind &ldquo;full jitter&rdquo;. Short and worth reading once, in full.</i></span><span class="dur">10 min</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=26-Lc18ORD8" target="_blank" rel="noopener"><span>Muhammad Daif &mdash; Understanding Exponential Backoff<i>The title promises a guide to efficient retries. Check any numbers it gives against the formula above.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=RAyvEqtrjpE" target="_blank" rel="noopener"><span>Last Mile Developer &mdash; Mitigating Thundering Herds and Retry Storms<i>The title is the problem jitter solves: synchronised retries hammering a recovering service.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Retry-After" target="_blank" rel="noopener"><span>MDN &mdash; Retry-After<i>The two accepted formats (seconds or HTTP date) and which statuses use it.</i></span><span class="dur">5 min</span></a>
+  <a class="r" href="https://learn.microsoft.com/en-us/azure/architecture/patterns/retry" target="_blank" rel="noopener"><span>Azure Architecture Center &mdash; Retry pattern<i>The pattern, when not to use it, and the idempotency caveat, as a general reference.</i></span><span class="dur">15 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="auth">Authentication, authorisation and secrets</h2>
+<p class="sub">Two questions the server asks on every call: <i>who are you?</i> and <i>are you allowed?</i> Then a third that is yours: <i>where does the credential live without leaking?</i></p>
+
+<h3 id="au-two">Authn versus authz</h3>
+<div class="vs">
+  <div><div class="vh">Authentication (authn)</div><div class="vb"><p>Proving <b>who</b> you are. A password, a key, a token, a certificate. Failure answer: <code>401</code>. Fix: supply or refresh credentials.</p></div></div>
+  <div><div class="vh">Authorisation (authz)</div><div class="vb"><p>Deciding <b>what</b> that identity may do. Roles, scopes, ownership. Failure answer: <code>403</code>. Fix: change permissions, not the call.</p></div></div>
+</div>
+<div class="tw"><table>
+<thead><tr><th>Question</th><th>Authentication</th><th>Authorisation</th></tr></thead>
+<tbody>
+<tr><td>Asks</td><td>Who is this?</td><td>May this identity do this?</td></tr>
+<tr><td>Happens</td><td>First</td><td>After authentication, on every action</td></tr>
+<tr><td>Failure code</td><td>401 Unauthorized (the name is a historical misnomer)</td><td>403 Forbidden</td></tr>
+<tr><td>Example</td><td>The token is valid and belongs to service account <code>svc-badges</code></td><td><code>svc-badges</code> may read requests but not delete them</td></tr>
+<tr><td>Typical fix</td><td>New key, refreshed token</td><td>Grant a scope or role; least privilege</td></tr>
+</tbody></table></div>
+<p>The two-sentence version for the daily plan&rsquo;s &ldquo;done when&rdquo;: <b>authentication is proving who you are; authorisation is what you are then allowed to do.</b> A token can be perfectly valid and still get a 403.</p>
+
+<h3 id="au-kinds">API keys, bearer tokens, basic auth</h3>
+<div class="tw"><table>
+<thead><tr><th>Scheme</th><th>How it travels</th><th>Lifetime</th><th>Good for</th><th>Weakness</th></tr></thead>
+<tbody>
+<tr><td>API key</td><td>A header the vendor names (<code>X-API-Key: &hellip;</code>) or sometimes a query parameter</td><td>Long, until revoked</td><td>Server-to-server calls, simple vendors</td><td>A leak is valid until someone notices. A key in a URL ends up in logs</td></tr>
+<tr><td>Bearer token</td><td><code>Authorization: Bearer &lt;token&gt;</code></td><td>Short (minutes to hours), refreshed</td><td>OAuth2 and most modern APIs</td><td>Whoever holds it can use it. Send over TLS only</td></tr>
+<tr><td>Basic auth</td><td><code>Authorization: Basic base64(user:password)</code></td><td>Same as the password</td><td>Internal tools, token endpoints</td><td>base64 is encoding, not encryption: readable by anyone who sees the header</td></tr>
+</tbody></table></div>
+
+<div class="code" data-lang="python">
+<header><b>auth_headers.py</b></header>
+<pre><code>import base64
+import logging
+
+import httpx
+
+seen = {}
+def show_headers(request):
+    seen.clear(); seen.update(request.headers)
+    return httpx.Response(200, json={})
+
+mock = httpx.MockTransport(show_headers)
+
+with httpx.Client(transport=mock, base_url="https://api.example.test") as c:
+    c.get("/x", headers={"X-API-Key": "k-123"})                       # 1. API key in a custom header (the vendor picks the name)
+    print("api key :", seen["x-api-key"])
+
+    c.get("/x", headers={"Authorization": "Bearer abc.def.ghi"})      # 2. bearer token: whoever holds it is let in
+    print("bearer  :", seen["authorization"])
+
+    c.get("/x", auth=httpx.BasicAuth("svc-demo", "s3cret"))           # 3. basic: base64("user:password"). Encoding, NOT encryption.
+    print("basic   :", seen["authorization"])
+
+print(base64.b64decode(seen["authorization"].split()[1]).decode())   # svc-demo:s3cret  &lt;- readable by anyone who sees it without TLS
+
+# Logging safely: log WHICH call was made, never the credential.
+SENSITIVE = {"authorization", "x-api-key", "cookie", "proxy-authorization"}
+def safe_headers(headers):
+    return {k: ("[redacted]" if k.lower() in SENSITIVE else v) for k, v in headers.items()}
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+req = httpx.Request("GET", "https://api.example.test/v1/requests",
+                    headers={"Authorization": "Bearer abc.def.ghi", "Accept": "application/json"})
+logging.info("calling %s %s headers=%s", req.method, req.url, safe_headers(req.headers))</code></pre>
+</div>
+
+<h3 id="au-secrets">Where secrets live</h3>
+<p>A credential belongs in <b>the environment of the running process</b>, not in code, not in a URL, not in a log line, and not in Git. The standard route is an <b>environment variable</b>,
+set outside the program; for local development a <code>.env</code> file (key=value lines) that a small loader turns into environment variables. The file is listed in <code>.gitignore</code> <b>before</b> the first commit.
+Read it once at start-up and fail at once if it is missing: the lab&rsquo;s <code>read_api_key</code> is exactly this.</p>
+
+<div class="code" data-lang="python">
+<header><b>read_secret.py</b></header>
+<pre><code>import os
+
+
+class ConfigError(Exception):
+    pass
+
+
+def read_key(env, name="VENDOR_API_KEY"):
+    value = env.get(name, "").strip()
+    if not value:
+        # Name the variable. NEVER print the value, and never print the whole environment.
+        raise ConfigError(f"{name} is not set. Export it, or put it in .env (which must be in .gitignore).")
+    return value
+
+
+print(read_key({"VENDOR_API_KEY": " k-123 \n"}))        # k-123
+try:
+    read_key({})                                         # a test passes a plain dict; real code passes os.environ
+except ConfigError as err:
+    print("ConfigError:", err)
+
+# Real code:  key = read_key(os.environ)  at start-up, so a missing key stops the program in the
+# first second, not at 03:00 when the first request is finally made.
+print(type(os.environ).__name__)                         # behaves like a dict of str -&gt; str</code></pre>
+</div>
+
+<div class="code" data-lang="powershell">
+<header><b>set an environment variable for this terminal only (PowerShell)</b></header>
+<pre><code>$env:VENDOR_API_KEY = "paste-a-test-key-here"    # exists only in this window; gone when you close it
+python my_script.py
+Remove-Item Env:VENDOR_API_KEY                    # tidy up
+
+# Git Bash equivalent:
+#   export VENDOR_API_KEY="paste-a-test-key-here"</code></pre>
+</div>
+
+<p>A <code>.env</code> file is the same idea made persistent for one project. The block writes one into a throw-away folder and shows what a loader does, using only the standard library.
+In a real project you would use the <code>python-dotenv</code> package, which handles more edge cases (quoting, <code>export</code> prefixes, interpolation); I have not installed or tested it for this sheet, so read its README before relying on specifics.</p>
+
+<div class="code" data-lang="python">
+<header><b>dotenv_by_hand.py</b></header>
+<pre><code>import os
+import tempfile
+from pathlib import Path
+
+
+def load_env_file(path, env=os.environ):
+    """The mechanism behind .env files: KEY=value lines become environment variables.
+    A real project uses the python-dotenv package; this is what it does at its simplest."""
+    for line in Path(path).read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue                                        # skip blanks, comments, junk
+        key, _, value = line.partition("=")                 # split at the FIRST '=' only
+        env.setdefault(key.strip(), value.strip().strip('"').strip("'"))   # a real env var wins over the file
+
+
+folder = Path(tempfile.mkdtemp())
+(folder / ".env").write_text('# local secrets, never committed\nVENDOR_API_KEY="k-demo-123"\nVENDOR_BASE_URL=https://vendor.example.test\n', encoding="utf-8")
+
+fake_env = {"VENDOR_BASE_URL": "https://override.example.test"}      # pretend this was exported in the shell
+load_env_file(folder / ".env", fake_env)
+print(fake_env["VENDOR_API_KEY"])                  # k-demo-123
+print(fake_env["VENDOR_BASE_URL"])                 # https://override.example.test  (the shell value won)
+
+(folder / ".gitignore").write_text(".env\n.venv/\n__pycache__/\n", encoding="utf-8")
+ignored = (folder / ".gitignore").read_text(encoding="utf-8").split()
+print(".env" in ignored)                            # True: check this BEFORE the first commit, not after</code></pre>
+</div>
+
+<div class="code" data-lang="text">
+<header><b>.gitignore (the first file you create in a new repository)</b></header>
+<pre><code>.env
+.venv/
+__pycache__/
+*.pem
+.env.*
+!.env.example</code></pre>
+</div>
+<p>Commit a <code>.env.example</code> with <b>fake</b> values and the variable names, so the next person knows what to set. To check nothing secret is staged, run <code>git status</code> and <code>git diff --cached</code> before every commit and read the output.
+<code>git check-ignore -v .env</code> tells you whether Git is ignoring a file and which rule matched.</p>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the four ways a secret leaks</span>
+  <p><b>1. In code.</b> A literal <code>"sk-..."</code> committed once is in Git history forever; deleting it later does not remove it from earlier commits, so the key must be <i>revoked</i>, not just removed.
+  <b>2. In a URL.</b> <code>?api_key=...</code> is stored by proxies, servers and browsers. <b>3. In a log.</b> <code>logging.info(headers)</code> or a full request dump writes the bearer token into a system many people can read; redact as in the block above.
+  <b>4. In an error message.</b> <code>raise ConfigError(f"bad key {key}")</code> prints it into a traceback. Name the variable, never the value. And a public repository is public to scrapers within minutes, not days.</p>
+</div>
+
+<h3 id="au-oauth">OAuth2 client-credentials: the enterprise reality</h3>
+<p>Most enterprise vendors do not hand out a permanent key. You register an application, receive a <b>client id</b> and <b>client secret</b>, and exchange them at a token endpoint for a short-lived bearer token
+(commonly valid for about an hour). That is the <b>client-credentials grant</b> of OAuth 2.0, defined in <a href="https://www.rfc-editor.org/rfc/rfc6749#section-4.4" target="_blank" rel="noopener">RFC 6749 section 4.4</a>. It is the flow
+for a service acting as itself, with no human logging in. You have used it already, even if it was hidden inside a Power Platform connector or a Microsoft Entra app registration: the connector held the secret and fetched and refreshed the token for you.
+Now you are the one writing that part.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 380" role="img" aria-label="The OAuth2 client-credentials flow. Your service posts its client id and secret to the token endpoint, which returns an access token and an expires_in of 3600 seconds. The service calls the vendor API with the bearer token. The API answers 200, or 401 if the token has expired or been revoked. On a 401 the service fetches a new token once and retries once; a second 401 is a failure.">
+  <defs>
+    <marker id="s24-ec" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s24-er" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <rect class="box-a" x="60" y="170" width="220" height="70" rx="3"/>
+  <text class="t b" x="78" y="196">Your service</text>
+  <text class="mm" x="78" y="214">id + secret from env</text>
+  <text class="mm" x="78" y="230">caches the token</text>
+
+  <rect class="box" x="490" y="50" width="220" height="70" rx="3"/>
+  <text class="t" x="508" y="76">Token endpoint</text>
+  <text class="mm" x="508" y="94">identity provider</text>
+
+  <rect class="box-c" x="920" y="170" width="220" height="70" rx="3"/>
+  <text class="t" x="938" y="196">Vendor API</text>
+  <text class="mm" x="938" y="214">checks the token</text>
+
+  <path class="flow" d="M170,166 V85 H484" marker-end="url(#s24-ec)"/>
+  <text class="m" x="190" y="76">1  POST /oauth/token  (id + secret)</text>
+
+  <path class="flow" d="M484,106 H250 V164" marker-end="url(#s24-ec)"/>
+  <text class="m" x="262" y="132">2  access_token, expires_in 3600</text>
+
+  <path class="flow" d="M284,195 H914" marker-end="url(#s24-ec)"/>
+  <text class="m" x="330" y="187">3  GET /v1/badges   Authorization: Bearer ...</text>
+
+  <path class="flow" d="M914,222 H284" marker-end="url(#s24-ec)"/>
+  <text class="m" x="330" y="246">4  200 OK   or   401 token expired</text>
+
+  <path class="flow-r dash" d="M1030,166 V30 H600 V44" marker-end="url(#s24-er)"/>
+  <text class="mm r" x="640" y="22">5  ON 401: FETCH A NEW TOKEN ONCE, RETRY ONCE</text>
+
+  <rect class="box-r" x="60" y="290" width="1080" height="60" rx="3"/>
+  <text class="t r" x="78" y="316">Refresh before expiry, not after</text>
+  <text class="m" x="78" y="336">Treat the token as expired 30 s early. A second 401 after a fresh token means the credentials or scopes are wrong: fail loudly, never loop.</text>
+</svg>
+<figcaption>Drawing 24-D &mdash; the client-credentials flow. <b>Cyan</b> = synchronous calls. <b>Brass</b> = the component you write and the credentials it holds. <b>Red</b> = the recovery path.</figcaption>
+</figure>
+
+<p>The block implements it as an <code>httpx.Auth</code> object, which httpx calls around every request. The token is cached, refreshed 30 s before it expires, and the clock is injected so the demo can move time forward instantly.
+It runs against a fake vendor, so it shows the <i>mechanism</i>; every real vendor adds its own details (extra parameters such as <code>scope</code> or <code>audience</code>, the token endpoint URL, sometimes credentials in the body instead of Basic auth).
+Read the vendor&rsquo;s documentation for those; do not assume.</p>
+
+<div class="code" data-lang="python">
+<header><b>client_credentials_auth.py</b></header>
+<pre><code>import time
+
+import httpx
+
+
+class TokenAuth(httpx.Auth):
+    """OAuth2 client-credentials: swap a client id + secret for a short-lived bearer token,
+    cache it, and refresh before it expires."""
+
+    def __init__(self, token_client, token_url, client_id, client_secret, clock=time.monotonic):
+        self.token_client, self.token_url = token_client, token_url
+        self.client_id, self.client_secret = client_id, client_secret
+        self.clock, self._token, self._expires_at = clock, None, 0.0
+
+    def _fetch(self):
+        r = self.token_client.post(self.token_url, data={"grant_type": "client_credentials"},
+                                   auth=(self.client_id, self.client_secret))
+        r.raise_for_status()
+        body = r.json()
+        self._token = body["access_token"]
+        self._expires_at = self.clock() + body["expires_in"] - 30     # refresh 30 s early: latency and clocks drift
+
+    def auth_flow(self, request):
+        if self._token is None or self.clock() &gt;= self._expires_at:
+            self._fetch()
+        request.headers["Authorization"] = f"Bearer {self._token}"
+        response = yield request
+        if response.status_code == 401:                               # revoked early: fetch once more, retry once
+            self._fetch()
+            request.headers["Authorization"] = f"Bearer {self._token}"
+            yield request
+
+
+token_calls = []
+
+def vendor(request):                                                  # a fake vendor with a token endpoint
+    if request.url.path == "/oauth/token":
+        token_calls.append(1)
+        return httpx.Response(200, json={"access_token": f"tok-{len(token_calls)}",
+                                         "token_type": "Bearer", "expires_in": 3600})
+    return httpx.Response(200, json={"you_sent": request.headers["authorization"]})
+
+
+transport = httpx.MockTransport(vendor)
+now = [0.0]                                                           # a fake clock we control
+auth = TokenAuth(httpx.Client(transport=transport), "https://vendor.example.test/oauth/token",
+                 "client-1", "secret-1", clock=lambda: now[0])
+
+with httpx.Client(transport=transport, base_url="https://vendor.example.test", auth=auth) as api:
+    print(api.get("/v1/badges").json())      # {'you_sent': 'Bearer tok-1'}
+    print(api.get("/v1/badges").json())      # still tok-1: cached, the token endpoint was called once
+    now[0] = 3600                            # an hour passes
+    print(api.get("/v1/badges").json())      # {'you_sent': 'Bearer tok-2'}: refreshed before the old one died
+print("token endpoint calls:", len(token_calls))   # 2</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p><b>&ldquo;How would you authenticate a worker to a third-party API?&rdquo;</b> Store the credentials in the environment or a secrets manager, never in code. If the vendor supports OAuth2 client credentials, exchange them for a short-lived token, cache it, refresh it
+  before expiry, and on one 401 refresh once and retry once. Log which call was made, never the token. Give the service account the least privilege it needs, and rotate the secret on a schedule. Follow-up: &ldquo;what if the secret leaks?&rdquo; Revoke
+  and rotate immediately, then look for where it was exposed, because deleting it from the repository does not un-leak it.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch and read &mdash; authentication</div>
+  <a class="r" href="https://www.youtube.com/watch?v=ZV5yTm4pT8g" target="_blank" rel="noopener"><span>ByteByteGo &mdash; OAuth 2 Explained In Simple Terms<i>The roles and the flow in a few minutes. Our case, client credentials, is the one with no human in the loop.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=I747kI_y9eQ" target="_blank" rel="noopener"><span>LearnThatStack &mdash; API Authentication Explained (Basic Auth, Bearer &amp; JWT)<i>Basic versus bearer side by side, matching the table above.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Authorization" target="_blank" rel="noopener"><span>MDN &mdash; Authorization header<i>The exact syntax of Basic and Bearer and what each status means.</i></span><span class="dur">5 min</span></a>
+  <a class="r" href="https://owasp.org/API-Security/" target="_blank" rel="noopener"><span>OWASP API Security Top 10<i>What actually goes wrong with API credentials and authorisation; read the first three entries.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://12factor.net/config" target="_blank" rel="noopener"><span>The Twelve-Factor App &mdash; Config<i>The reasoning for keeping configuration and secrets in environment variables.</i></span><span class="dur">5 min</span></a>
+  <a class="r" href="https://www.rfc-editor.org/rfc/rfc6749#section-4.4" target="_blank" rel="noopener"><span>RFC 6749 &mdash; Client Credentials Grant<i>The short standard section for the flow in the drawing. Read when a vendor&rsquo;s version differs.</i></span><span class="dur">5 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="pagination">Pagination: offset versus cursor</h2>
+<p class="sub">An API will not return a million rows in one response, and you would not want it to. It returns a page and tells you how to get the next. The way it tells you decides whether you lose or duplicate data.</p>
+
+<h3 id="p-why">Why page at all</h3>
+<p>One huge response costs memory on both ends, risks hitting a timeout, and fails as a whole if anything goes wrong at the last byte. Pages are small, bounded and individually retryable. The price is that your client must loop, and that the
+data may <b>change while you loop</b>. Two designs exist, and they behave very differently under change.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 330" role="img" aria-label="Offset pagination versus cursor pagination when a new row arrives between page fetches. The list has seven rows after req-7 is inserted at the front. With offset pagination the second page, offset 3, starts one row early and returns req-4 a second time, shown in red. With cursor pagination the second page starts after req-4 and returns req-3, req-2, req-1 with no repeat, shown in brass.">
+  <defs>
+    <marker id="s24-pb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s24-pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <text class="t r" x="40" y="34">OFFSET: &ldquo;skip 3 rows from the top, as it is now&rdquo;</text>
+  <text class="t b" x="630" y="34">CURSOR: &ldquo;the 3 rows after req-4&rdquo;</text>
+
+  <text class="mm c" x="40" y="104">NEW ROW</text>
+  <rect class="box-c" x="40" y="116" width="70" height="44" rx="3"/><text class="t" x="52" y="144">req-7</text>
+  <rect class="box" x="118" y="116" width="70" height="44" rx="3"/><text class="t" x="130" y="144">req-6</text>
+  <rect class="box" x="196" y="116" width="70" height="44" rx="3"/><text class="t" x="208" y="144">req-5</text>
+  <rect class="box-r" x="274" y="116" width="70" height="44" rx="3"/><text class="t r" x="286" y="144">req-4</text>
+  <rect class="box" x="352" y="116" width="70" height="44" rx="3"/><text class="t" x="364" y="144">req-3</text>
+  <rect class="box" x="430" y="116" width="70" height="44" rx="3"/><text class="t" x="442" y="144">req-2</text>
+  <rect class="box" x="508" y="116" width="70" height="44" rx="3"/><text class="t" x="520" y="144">req-1</text>
+
+  <text class="mm c" x="630" y="104">NEW ROW</text>
+  <rect class="box-c" x="630" y="116" width="70" height="44" rx="3"/><text class="t" x="642" y="144">req-7</text>
+  <rect class="box" x="708" y="116" width="70" height="44" rx="3"/><text class="t" x="720" y="144">req-6</text>
+  <rect class="box" x="786" y="116" width="70" height="44" rx="3"/><text class="t" x="798" y="144">req-5</text>
+  <rect class="box-a" x="864" y="116" width="70" height="44" rx="3"/><text class="t b" x="876" y="144">req-4</text>
+  <rect class="box" x="942" y="116" width="70" height="44" rx="3"/><text class="t" x="954" y="144">req-3</text>
+  <rect class="box" x="1020" y="116" width="70" height="44" rx="3"/><text class="t" x="1032" y="144">req-2</text>
+  <rect class="box" x="1098" y="116" width="70" height="44" rx="3"/><text class="t" x="1110" y="144">req-1</text>
+
+  <path class="ln" d="M118,186 H344"/><text class="mm" x="118" y="204">PAGE 1, FETCHED BEFORE req-7 ARRIVED</text>
+  <path class="flow-r" d="M274,226 H500" marker-end="url(#s24-pr)"/><text class="mm r" x="274" y="246">PAGE 2: OFFSET 3 &rarr; req-4 AGAIN</text>
+
+  <path class="ln" d="M708,186 H934"/><text class="mm" x="708" y="204">PAGE 1, FETCHED BEFORE req-7 ARRIVED</text>
+  <path class="flow-b" d="M942,226 H1160" marker-end="url(#s24-pb)"/><text class="mm b" x="942" y="246">PAGE 2: AFTER req-4 &rarr; NO REPEAT</text>
+
+  <text class="m" x="40" y="286">Rows can be repeated or skipped whenever the list changes between calls. Slow on deep pages.</text>
+  <text class="m" x="630" y="286">Stable under inserts and deletes. You cannot jump to page 50; you can only go forward.</text>
+</svg>
+<figcaption>Drawing 24-E &mdash; the same data change, two pagination styles. <b>Red</b> = a repeated row. <b>Brass</b> = a clean continuation. <b>Cyan</b> = the row that arrived between the calls.</figcaption>
+</figure>
+
+<div class="code" data-lang="python">
+<header><b>offset_vs_cursor.py</b></header>
+<pre><code># A "database" of 6 requests, newest first. A new one arrives between the client's two page fetches.
+rows = [f"req-{n}" for n in range(6, 0, -1)]          # ['req-6', ..., 'req-1']
+
+def page_by_offset(offset, limit):
+    return rows[offset:offset + limit]
+
+seen = page_by_offset(0, 3)                            # the client fetches page 1
+print("offset page 1:", seen)                          # ['req-6', 'req-5', 'req-4']
+rows.insert(0, "req-7")                                # &lt;-- a new request is created meanwhile
+page2 = page_by_offset(3, 3)                           # the client fetches page 2
+print("offset page 2:", page2)                         # ['req-4', 'req-3', 'req-2']   req-4 AGAIN
+print("duplicates   :", set(seen) &amp; set(page2))        # {'req-4'}; and req-1 is never reached by page 2
+
+# Cursor: "give me the 3 items after THIS one". A new row at the front cannot shift it.
+rows = [f"req-{n}" for n in range(6, 0, -1)]
+def page_after(cursor, limit):
+    start = 0 if cursor is None else rows.index(cursor) + 1
+    chunk = rows[start:start + limit]
+    next_cursor = chunk[-1] if start + limit &lt; len(rows) else None
+    return {"items": chunk, "next_cursor": next_cursor}
+
+p1 = page_after(None, 3)
+rows.insert(0, "req-7")                                # the same interference
+p2 = page_after(p1["next_cursor"], 3)
+print("cursor page 1:", p1["items"])                   # ['req-6', 'req-5', 'req-4']
+print("cursor page 2:", p2["items"], p2["next_cursor"])   # ['req-3', 'req-2', 'req-1'] None</code></pre>
+</div>
+
+<div class="vs">
+  <div><div class="vh">Offset / limit</div>
+<div class="code" data-lang="text">
+<header><b>request</b></header>
+<pre><code>GET /v1/requests?offset=30&amp;limit=10
+-&gt; {"items": [...], "total": 412}</code></pre>
+</div></div>
+  <div><div class="vh">Cursor</div>
+<div class="code" data-lang="text">
+<header><b>request</b></header>
+<pre><code>GET /v1/requests?cursor=eyJpZCI6MzB9&amp;limit=10
+-&gt; {"items": [...], "next_cursor": "eyJpZCI6NDB9"}</code></pre>
+</div></div>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Dimension</th><th>Offset / limit</th><th>Cursor (keyset, token)</th></tr></thead>
+<tbody>
+<tr><td>Position means</td><td>&ldquo;N rows from the top <i>now</i>&rdquo;</td><td>&ldquo;after this specific item&rdquo;</td></tr>
+<tr><td>Rows inserted or deleted mid-scan</td><td><b>Duplicates and gaps</b></td><td>Stable</td></tr>
+<tr><td>Deep pages</td><td>Slow: the database counts past every skipped row</td><td>Fast: seeks straight to the position</td></tr>
+<tr><td>Jump to page N</td><td>Yes</td><td>No, forward only</td></tr>
+<tr><td>Total count</td><td>Easy (<code>total</code>)</td><td>Often absent or expensive</td></tr>
+<tr><td>Client work</td><td>Increase a number</td><td>Echo back an opaque string; stop when it is missing or null</td></tr>
+<tr><td>Failure mode</td><td>Silent wrong data</td><td>A cursor can expire (400 or 410); a buggy server can repeat one forever</td></tr>
+<tr><td>Choose when</td><td>Small, static lists with a visible &ldquo;page 3&rdquo; control</td><td><b>Any sync, export or large changing collection</b></td></tr>
+</tbody></table></div>
+<p>For a client that copies data out of an API (every integration you will write), prefer cursor pagination whenever the vendor offers it; use offset only when you have no alternative, and then expect to reconcile.</p>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the cursor loop that never ends</span>
+  <p>The loop is &ldquo;ask, append, follow <code>next_cursor</code> until it is empty&rdquo;. If a server bug returns the same cursor forever, or you accidentally compare against the wrong field, that loop runs until memory is gone and your job never finishes.
+  Production loops carry two guards: remember every cursor seen and stop (with an error) on a repeat, and cap the number of pages. The lab&rsquo;s <code>fetch_all</code> requires both, and its tests deliberately feed it a server that loops. Also check what &ldquo;empty&rdquo;
+  means for the specific API: an empty <i>list</i> of items with a non-null cursor is legal on some APIs, so stop on the cursor, not on the list.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch and read &mdash; pagination</div>
+  <a class="r" href="https://www.youtube.com/watch?v=WUICbOOtAic" target="_blank" rel="noopener"><span>Ambient Coder &mdash; Web API Pagination: Offset-based vs Cursor-based<i>The two designs compared, per the title. Check it against the table above.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api" target="_blank" rel="noopener"><span>GitHub docs &mdash; Using pagination in the REST API<i>A real, widely used API paging by Link headers. Good to compare with your own mental model.</i></span><span class="dur">10 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="ratelimits">Rate limits: 429, Retry-After, throttling yourself</h2>
+<p class="sub">Every serious API caps how fast you may call it. You can find out the limit the hard way, with 429s, or the polite way, by never exceeding it.</p>
+
+<h3 id="rl-429">What a limit looks like</h3>
+<p>When you exceed it the API answers <code>429 Too Many Requests</code>, usually with a <code>Retry-After</code> header giving seconds or a date. Many APIs also send headers that report your budget on every response so you can slow down before hitting the wall.
+Those headers are <b>not standardised</b>: you will meet <code>X-RateLimit-Limit</code>, <code>X-RateLimit-Remaining</code> and <code>X-RateLimit-Reset</code> (the JSONPlaceholder response earlier carried exactly these three) and other spellings.
+Read the vendor&rsquo;s page; never hard-code a guess. Limits may also be per key, per user, per IP, per endpoint, or per second, minute or day.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Approach</th><th>How</th><th>Pros</th><th>Cons</th></tr></thead>
+<tbody>
+<tr><td>React to 429</td><td>Wait <code>Retry-After</code> and retry</td><td>Simple. Needed anyway</td><td>You are already over the limit; repeated 429s may escalate to a block</td></tr>
+<tr><td>Throttle yourself</td><td>Token bucket in the client, below the vendor&rsquo;s limit</td><td>No 429s in the normal case; smooth load</td><td>You must know the limit, and share the bucket across threads or processes</td></tr>
+<tr><td>Both</td><td>Throttle, and still handle 429</td><td><b>The right answer</b>: limits change, and other clients may share your quota</td><td>More code</td></tr>
+<tr><td>Fewer calls</td><td>Batch endpoints, filters, caching, webhooks instead of polling</td><td>Cheapest request is the one not made</td><td>Needs vendor support</td></tr>
+</tbody></table></div>
+
+<h3 id="rl-bucket">A token bucket, with a clock you control</h3>
+<p>A token bucket holds up to <i>capacity</i> tokens and refills at <i>rate</i> tokens per second. Each request spends one token; with none left you must wait. It allows short bursts while enforcing an average. The clock is passed in as a function so the demo
+(and a test) can move time forward without sleeping. This shows the idea for one process; it is not a distributed rate limiter, and <code>take()</code> only reports a wait, it does not reserve the slot.</p>
+
+<div class="code" data-lang="python">
+<header><b>token_bucket.py</b></header>
+<pre><code>import time
+
+
+class TokenBucket:
+    """Client-side throttle: at most `rate` requests per second on average, bursts up to `capacity`."""
+
+    def __init__(self, rate, capacity, clock=time.monotonic):
+        self.rate, self.capacity, self.clock = rate, capacity, clock
+        self.tokens, self.last = float(capacity), clock()
+
+    def take(self):
+        """Return 0.0 if a request may go now, otherwise how many seconds to wait first."""
+        now = self.clock()
+        self.tokens = min(self.capacity, self.tokens + (now - self.last) * self.rate)   # refill for the time that passed
+        self.last = now
+        if self.tokens &gt;= 1:
+            self.tokens -= 1
+            return 0.0
+        return (1 - self.tokens) / self.rate
+
+
+t = [0.0]                                       # a fake clock: the demo runs instantly and is repeatable
+bucket = TokenBucket(rate=2, capacity=3, clock=lambda: t[0])   # 2 per second, burst of 3
+
+print([bucket.take() for _ in range(5)])        # [0.0, 0.0, 0.0, 0.5, 0.5]  burst of 3 passes, then you must wait
+t[0] += 1.0                                     # one second passes: 2 tokens refill
+print([bucket.take() for _ in range(3)])        # [0.0, 0.0, 0.5]</code></pre>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">In production &mdash; shared quotas</span>
+  <p>Five workers each throttling to 10 requests per second is 50 per second against a vendor that allows 10. A client-side bucket is per process. For a shared limit you need shared state (often Redis in a bigger system), or you divide the budget
+  by the number of workers, or you funnel calls through one queue-fed worker. And a vendor&rsquo;s limit is frequently per account, so another team&rsquo;s job can consume yours: that is why handling 429 correctly is not optional even when you throttle.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch and read &mdash; rate limiting</div>
+  <a class="r" href="https://www.youtube.com/watch?v=i8Rt18MU-EE" target="_blank" rel="noopener"><span>Code with GD &mdash; API Rate Limiting Algorithms: Token Bucket, Leaky Bucket, Fixed and Sliding Window<i>Four algorithms compared. You need token bucket today; the others help in design interviews.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/429" target="_blank" rel="noopener"><span>MDN &mdash; 429 Too Many Requests<i>What the status promises and what the client should do.</i></span><span class="dur">3 min</span></a>
+  <a class="r" href="https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api" target="_blank" rel="noopener"><span>GitHub docs &mdash; Rate limits for the REST API<i>A real vendor&rsquo;s limit headers and advice, as a model of what to look for in any vendor&rsquo;s docs.</i></span><span class="dur">10 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="rest">REST resource design and versioning</h2>
+<p class="sub">You are mostly a client this week, but you will build the other side in week 6, and a client that understands the conventions guesses a vendor&rsquo;s API correctly more often.</p>
+
+<h3 id="rest-rules">Nouns, plurals, methods, codes</h3>
+<div class="tw"><table>
+<thead><tr><th>Do</th><th>Instead of</th><th>Because</th></tr></thead>
+<tbody>
+<tr><td><code>GET /v1/requests</code></td><td><code>GET /getAllRequests</code></td><td>The method is the verb; the URL names the thing</td></tr>
+<tr><td>Plural collections: <code>/requests</code>, <code>/requests/req-1</code></td><td><code>/request</code> for some, <code>/requests</code> for others</td><td>One predictable pattern</td></tr>
+<tr><td><code>POST /v1/requests</code> &rarr; <code>201</code> + <code>Location</code></td><td><code>POST /createRequest</code> &rarr; <code>200</code> always</td><td>The status carries the meaning; clients can branch on it</td></tr>
+<tr><td><code>GET /v1/sites/BLR-01/requests</code></td><td>A ten-level path</td><td>Nest one level to show ownership; filter with the query string beyond that</td></tr>
+<tr><td><code>PUT /v1/requests/req-1</code> to replace</td><td><code>POST /v1/requests/req-1/update</code></td><td>PUT is idempotent and retry-safe</td></tr>
+<tr><td><code>POST /v1/requests/req-1/approve</code> for a real action</td><td>Hiding a business action inside a field update</td><td>An action that is not &ldquo;set a field&rdquo; may deserve its own verb URL; be consistent about it</td></tr>
+<tr><td>Errors as JSON with a code and message</td><td>An HTML error page</td><td>A client cannot parse a web page</td></tr>
+<tr><td>Consistent field names (snake_case <i>or</i> camelCase, not both)</td><td>Mixing styles</td><td>Mixed styles cost every consumer time and bugs</td></tr>
+</tbody></table></div>
+
+<h3 id="rest-idem">Idempotency keys: making POST safe to retry</h3>
+<p>The server remembers the <code>Idempotency-Key</code> of every create it has processed. A repeat with the same key does not create anything: it returns the stored answer. The client picks a key tied to <i>its own</i> unit of work (here, the request id) and reuses the <b>same key on every retry</b>.
+That is the standard defence against the &ldquo;timeout, did it happen?&rdquo; problem. The header name and the rules (how long keys are remembered, what happens when the body differs) vary by vendor; this block shows the idea with a fake server.</p>
+
+<div class="code" data-lang="python">
+<header><b>idempotency_key.py</b></header>
+<pre><code>import httpx
+
+created = {}                                     # the fake server: idempotency key -&gt; the answer it first gave
+
+def server(request):
+    key = request.headers.get("idempotency-key")
+    if key is None:
+        return httpx.Response(400, json={"error": "Idempotency-Key header required for POST"})
+    if key in created:                           # seen before: replay the stored answer, create nothing
+        return httpx.Response(200, json=created[key], headers={"Idempotent-Replay": "true"})
+    body = {"id": f"badge-{len(created) + 1}", "employee_id": "e-902"}
+    created[key] = body
+    return httpx.Response(201, json=body)
+
+c = httpx.Client(transport=httpx.MockTransport(server), base_url="https://vendor.example.test")
+key = "req-1-provision"                          # derived from YOUR request id: stable across retries
+
+first = c.post("/v1/badges", json={"employee_id": "e-902"}, headers={"Idempotency-Key": key})
+print(first.status_code, first.json())           # 201 {'id': 'badge-1', 'employee_id': 'e-902'}
+# ... imagine the connection dropped before the response was read. The client cannot tell whether the
+# badge was made, so it sends the SAME request with the SAME key:
+again = c.post("/v1/badges", json={"employee_id": "e-902"}, headers={"Idempotency-Key": key})
+print(again.status_code, again.json(), again.headers["idempotent-replay"])   # 200 {'id': 'badge-1', ...} true
+print("badges created:", len(created))           # 1, not 2</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; a new key per attempt defeats the point</span>
+  <p>Generating a fresh random key inside the retry loop gives every attempt a different key, so the server treats each as a new request and you create duplicates anyway. The key must be created <b>once, before the first attempt</b>, from something stable, and
+  stored with the work item so a restarted worker uses the same one.</p>
+</div>
+
+<h3 id="rest-ver">Versioning basics</h3>
+<div class="tw"><table>
+<thead><tr><th>Style</th><th>Example</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td>In the path</td><td><code>/v1/requests</code></td><td>Most common, visible in logs and curl. Easy to route and to test</td></tr>
+<tr><td>In a header</td><td><code>Accept: application/vnd.example.v2+json</code> or a custom <code>API-Version</code></td><td>Clean URLs, harder to try in a browser</td></tr>
+<tr><td>In a query parameter</td><td><code>?version=2</code></td><td>Easy, but easy to forget; caches may ignore it</td></tr>
+<tr><td>Date-pinned</td><td><code>Vendor-Version: 2026-10-01</code></td><td>Your account is pinned to a date; upgrades are explicit</td></tr>
+</tbody></table></div>
+<p>Rules that hold for all of them: <b>adding</b> a field or an endpoint is not a breaking change; <b>removing or renaming</b> a field, changing a type or tightening validation is. Pin the version in your client, read the vendor&rsquo;s changelog, and write your parser to
+ignore unknown fields so an additive change cannot break you.</p>
+
+<div class="res">
+  <div class="rh">Read &mdash; API design</div>
+  <a class="r" href="https://learn.microsoft.com/en-us/azure/architecture/best-practices/api-design" target="_blank" rel="noopener"><span>Microsoft Azure Architecture Center &mdash; Web API design<i>A thorough, vendor-neutral guide to resources, methods, status codes, versioning and pagination.</i></span><span class="dur">30 min</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=VsSBnLGM340" target="_blank" rel="noopener"><span>Merixstudio &mdash; 9 best practices of REST API development<i>A short checklist version of the table above.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://docs.stripe.com/api/idempotent_requests" target="_blank" rel="noopener"><span>Stripe docs &mdash; Idempotent requests<i>A widely copied real-world specification of idempotency keys: how long they last and what a mismatch does.</i></span><span class="dur">5 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="enterprise">Enterprise APIs: the reality</h2>
+<p class="sub">Public tutorial APIs are fast, consistent and free of surprises. The ones you will integrate for money are none of those.</p>
+
+<div class="panel panel--real">
+  <span class="ph">What I mean, kept generic on purpose</span>
+  <p>This section describes patterns from the kind of work you have done, with no product, tenant or client specifics, and you should keep it that way in interviews: say what you built and learned, never the confidential detail. Everything below is also true of public
+  APIs you can name freely.</p>
+</div>
+
+<div class="grid g2">
+  <div class="card"><span class="cm">Pattern 01</span><b class="ct">Slow and bursty</b>
+    <p>A ticketing or access-control vendor may answer in 200 ms at 10:00 and 20 s at 10:05 when a nightly job runs on their side. Read-timeouts chosen from a good day cause failures on a bad one. Measure the tail, not the average.</p></div>
+  <div class="card"><span class="cm">Pattern 02</span><b class="ct">Quirks are the norm</b>
+    <p>Dates in three formats. A <code>200</code> whose body says <code>"success": false</code>. Pagination by page number in one endpoint and by cursor in the next. An id that is a string in one place and a number in another. Wrap each quirk in <b>one</b> adapter function,
+    comment why, and test it, so the rest of the code sees clean data.</p></div>
+  <div class="card"><span class="cm">Pattern 03</span><b class="ct">Expiring credentials</b>
+    <p>Object stores and many SaaS APIs use short-lived signed URLs or tokens. A long upload that outlives its token fails halfway with a 403, and it looks like a permissions bug. Refresh before expiry (as in the OAuth block), and check the clock on your machine.</p></div>
+  <div class="card"><span class="cm">Pattern 04</span><b class="ct">Throttling you did not cause</b>
+    <p>The quota is shared per account or per tenant. Another job, another team, the vendor&rsquo;s own UI can burn it. Handle 429 properly even if you throttle, and log the remaining budget on each response so you can see it fall.</p></div>
+  <div class="card"><span class="cm">Pattern 05</span><b class="ct">Duplicates and replays</b>
+    <p>Webhooks are delivered at least once, so you will see the same event twice. Your retries cause duplicates on their side. Everything that writes needs an idempotency story: a key, a natural unique id, or a check-then-write that is itself safe.</p></div>
+  <div class="card"><span class="cm">Pattern 06</span><b class="ct">The contract drifts</b>
+    <p>Vendors add fields (harmless) and occasionally change or drop one (not). Parse tolerantly, validate the fields you depend on, and alert when one is missing, rather than letting <code>None</code> flow into a database.</p></div>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; &ldquo;it worked in the sandbox&rdquo;</span>
+  <p>Vendor sandboxes are usually fast, empty and lenient. They rarely reproduce rate limits, slow tails, pagination over thousands of rows, or expiring tokens. A client proven only against a sandbox has not been tested against the thing that fails in production.
+  Build the failure cases yourself with fakes (the next section), and treat the first week in production as part of the testing.</p>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p><b>&ldquo;Tell me about integrating with an unreliable third-party API.&rdquo;</b> Structure it as constraint, mechanism, proof. The vendor was slow and occasionally returned 5xx or 429. I set explicit connect and read timeouts from measured latency, retried only transient failures with capped, jittered backoff and
+  honoured <code>Retry-After</code>, made writes idempotent so a retry could not duplicate, paged with cursors under a loop guard, and kept the secret out of code and logs. I tested all of that with fakes, so every failure was reproducible without the vendor. Then say what you would monitor:
+  retry rate, 429 rate, tail latency. This answer needs no confidential detail, and it is the answer this week is building toward.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="testing">Testing an HTTP client without the network</h2>
+<p class="sub">A test that calls a real server is slow, flaky, rate-limited and unable to produce the failures you most need to test. Replace the server with a function you control.</p>
+
+<h3 id="te-why">Three layers of fake</h3>
+<div class="tw"><table>
+<thead><tr><th>Technique</th><th>What it replaces</th><th>Use it for</th><th>Cannot test</th></tr></thead>
+<tbody>
+<tr><td><code>httpx.MockTransport(handler)</code></td><td>The network: your function receives each <code>Request</code> and returns a <code>Response</code> or raises</td><td>Status handling, retries, headers sent, bodies, paging, timeouts (raise <code>httpx.ReadTimeout</code>)</td><td>Real TLS, real proxies, real timing, a vendor&rsquo;s actual quirks</td></tr>
+<tr><td>Injected <code>sleep</code> and <code>clock</code></td><td>Time</td><td>Backoff delays, token expiry, throttling without waiting</td><td>Anything that depends on real elapsed time</td></tr>
+<tr><td>A hand-written fake object (<code>FakePages</code>)</td><td>Your own collaborator</td><td>Pagination logic in isolation</td><td>That the real collaborator behaves like the fake</td></tr>
+<tr><td>A local server in a thread (sections 2 and 6)</td><td>The remote host, but with real sockets</td><td>Real timeouts, real slow responses</td><td>Cloud behaviour; keep these few, they are slower</td></tr>
+</tbody></table></div>
+
+<p>The pattern is the same in every test: arrange a handler that returns what you want, call your code, assert on both the <b>result</b> and on <b>what was sent</b> (the handler can record requests). The block is a complete, passing pytest file; the block runner runs it with pytest and it must pass.
+The tests are written first as tiny examples of each assertion shape: a value, a missing thing, an error, and a recorded request.</p>
+
+<div class="code" data-lang="python" data-run="pytest">
+<header><b>test_status_client.py</b></header>
+<pre><code>import httpx
+import pytest
+
+
+def get_request_status(client, request_id):
+    """Return the status string, or None when the request does not exist."""
+    r = client.get(f"/v1/requests/{request_id}")
+    if r.status_code == 404:
+        return None                       # a missing request is an answer, not a crash
+    r.raise_for_status()                  # any other 4xx/5xx is an error the caller must see
+    return r.json()["status"]
+
+
+def make_client(handler):
+    return httpx.Client(transport=httpx.MockTransport(handler), base_url="https://api.example.test")
+
+
+def test_returns_the_status_field():
+    client = make_client(lambda req: httpx.Response(200, json={"id": "req-1", "status": "approved"}))
+    assert get_request_status(client, "req-1") == "approved"
+
+
+def test_unknown_request_is_none_not_an_error():
+    client = make_client(lambda req: httpx.Response(404, json={"error": "no such request"}))
+    assert get_request_status(client, "req-9") is None
+
+
+@pytest.mark.parametrize("status", [500, 502, 503, 504])
+def test_server_errors_propagate(status):
+    client = make_client(lambda req: httpx.Response(status))
+    with pytest.raises(httpx.HTTPStatusError):
+        get_request_status(client, "req-1")
+
+
+def test_a_timeout_propagates_and_is_not_swallowed():
+    def handler(req):
+        raise httpx.ReadTimeout("simulated slow vendor", request=req)
+    with pytest.raises(httpx.TimeoutException):
+        get_request_status(make_client(handler), "req-1")
+
+
+def test_it_asks_for_the_right_url():
+    seen = []
+
+    def handler(req):
+        seen.append((req.method, req.url.path))
+        return httpx.Response(200, json={"status": "pending"})
+
+    get_request_status(make_client(handler), "req-7")
+    assert seen == [("GET", "/v1/requests/req-7")]</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; a mock only knows what you told it</span>
+  <p>A handler that returns <code>{"status": "approved"}</code> proves your code parses <i>that</i> shape. If the real vendor returns <code>{"state": "APPROVED"}</code>, every test is green and production is broken. A mock encodes your <b>assumption</b> about the vendor.
+  Keep a handful of recorded real responses (with secrets and personal data stripped) as test fixtures, run a small number of contract checks against the vendor&rsquo;s sandbox on a schedule, and update the fakes whenever production surprises you.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Watch and read &mdash; testing HTTP code</div>
+  <a class="r" href="https://www.python-httpx.org/advanced/transports/" target="_blank" rel="noopener"><span>HTTPX &mdash; Transports (MockTransport)<i>The official description of <code>MockTransport</code>, which this sheet and the lab use.</i></span><span class="dur">10 min</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=SO7m7nod0ts" target="_blank" rel="noopener"><span>Corey Schafer &mdash; Python FastAPI Tutorial (Part 17): Testing the API, Fixtures, Mocking External Services<i>Faking an outside service in tests. It is a FastAPI episode; take the mocking idea now, the FastAPI parts next week.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://docs.pytest.org/en/stable/how-to/monkeypatch.html" target="_blank" rel="noopener"><span>pytest &mdash; How to monkeypatch and mock<i>The other way to replace things in tests; compare it with injecting them, which this sheet prefers.</i></span><span class="dur">15 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="lab">The lab: python-lab/week05/</h2>
+<p class="sub">Eight small exercises that build one thing: a client that survives a bad vendor. No test touches the network.</p>
+
+<div class="code" data-lang="powershell">
+<header><b>from the engineering-roadmap folder, personal laptop</b></header>
+<pre><code>cd python-lab
+.\.venv\Scripts\Activate.ps1                       # the environment you made in week 1
+python -m pip install -r week05\requirements-week05.txt
+pytest week05 -q                                   # every test fails now: that is the starting line
+pytest week05 -k retry                             # only tests whose name contains "retry"
+pytest week05 -x                                   # stop at the first failure</code></pre>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Ex</th><th>Function</th><th>Day</th><th>What it teaches</th></tr></thead>
+<tbody>
+<tr><td>01</td><td><code>is_retryable_status</code></td><td>31</td><td>The retry/no-retry table as code</td></tr>
+<tr><td>02</td><td><code>backoff_delays</code></td><td>31</td><td>Doubling, cap, jitter after the cap</td></tr>
+<tr><td>03</td><td><code>parse_retry_after</code></td><td>33</td><td>Two header formats, dates, bad input returns <code>None</code></td></tr>
+<tr><td>04</td><td><code>call_with_retry</code></td><td>31</td><td>Injected <code>sleep</code> and <code>jitter</code>; no sleep after the last attempt; non-retryable errors pass through</td></tr>
+<tr><td>05</td><td><code>fetch_all</code></td><td>33</td><td>Cursor loop with a repeat guard and a page cap</td></tr>
+<tr><td>06</td><td><code>read_api_key</code></td><td>32</td><td>Fail loudly, never echo a value</td></tr>
+<tr><td>07</td><td><code>ResilientClient.get_json</code></td><td>30, 34</td><td>Headers, explicit timeout, classification, retries over an injected transport</td></tr>
+<tr><td>08</td><td><code>ResilientClient.get_page / get_all</code></td><td>34</td><td>Everything together, tested with <code>MockTransport</code></td></tr>
+</tbody></table></div>
+
+<p>The stub file <code>w05_http.py</code> has a docstring per function that is the full specification; <code>test_w05_http.py</code> has 82 test cases and must not be edited. Install is one line: <code>requirements-week05.txt</code> lists <code>httpx</code> and <code>pytest</code>.
+The tests are written so that an endless loop in your code fails quickly (a fake raises after 50 calls) instead of hanging your terminal; if a run still hangs, press <kbd>Ctrl</kbd>+<kbd>C</kbd> and look at your loop condition first.</p>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the rule from Sheet 23 still applies</span>
+  <p>Ask an assistant to explain <code>Retry-After</code> or why a test fails; do not ask it to write the function bodies. This week&rsquo;s Saturday question (what happens when the server takes 30 seconds?) is answered aloud, with no notes, and it is only convincing if you built the timeout and
+  retry logic yourself.</p>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">How this lab was checked</span>
+  <p>The author wrote a reference solution outside the repository and ran three checks: every test fails on the stubs (82 of 82 failed), every test passes on the reference (82 of 82 passed), and 21 deliberate mutations of the reference were each caught by at least one test
+  (for example: no cap on the backoff, linear instead of exponential, 429 dropped from the retry list, a sleep after the last attempt, no loop guard, a blank key accepted, <code>Retry-After</code> ignored, the auth header removed, a 404 retried).
+  That shows the tests notice those faults. It does not show the tests catch every possible bug; week 6 asks you to add tests of your own.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="connect">How the subtopics connect</h2>
+<p class="sub">One call to a slow vendor, handled well, uses every section of this sheet.</p>
+
+<div class="panel panel--real">
+  <span class="ph">What you ship: ResilientClient</span>
+  <p>A class that takes an injected transport, reads its key through <code>read_api_key</code>, sends it as a bearer header, sets explicit connect and read timeouts, classifies every outcome (section 7), retries only transient failures with capped, jittered backoff and the server&rsquo;s
+  <code>Retry-After</code> (section 8), pages with a cursor under a loop guard (section 10), and is tested end to end with <code>httpx.MockTransport</code> (section 14). The README documents the behaviour on each failure: what is retried, how many times, what the caller sees at the end.
+  That README is a portfolio sentence: &ldquo;the client survives vendor timeouts, 429s and duplicate pages, and here are the tests that prove it.&rdquo;</p>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Day</th><th>Theme</th><th>Section</th><th>Output you can show</th></tr></thead>
+<tbody>
+<tr><td>29 Sun</td><td>HTTP: request and response</td><td>1&ndash;4</td><td>A request and response drawn on paper; the same call in curl</td></tr>
+<tr><td>30 Mon</td><td>Calling an API from Python</td><td>5&ndash;6</td><td>A script with explicit timeouts that handles a non-200</td></tr>
+<tr><td>31 Tue</td><td>Errors, retries, backoff</td><td>7&ndash;8</td><td>Lab ex01, ex02, ex04 passing</td></tr>
+<tr><td>32 Wed</td><td>Authentication basics</td><td>9</td><td>Lab ex06; <code>.env</code> in <code>.gitignore</code></td></tr>
+<tr><td>33 Thu</td><td>Pagination and rate limits</td><td>10&ndash;11</td><td>Lab ex03 and ex05 passing</td></tr>
+<tr><td>34 Fri</td><td>Lab day: resilient client</td><td>14&ndash;15</td><td>Lab ex07 and ex08; README</td></tr>
+<tr><td>35 Sat</td><td>Checkpoint</td><td>6, 8</td><td>The 30-second question answered aloud in under 90 seconds</td></tr>
+</tbody></table></div>
+
+<p>Next: <a href="ai-python.html">Sheet 23</a> is the Python this sheet assumes, and the FastAPI week builds the <i>server</i> side of everything above. Plan context: <a href="ai-plan.html">Sheet 20</a>, today&rsquo;s tasks: <a href="ai-daily.html">Sheet 21</a>.
+The general REST and webhook background is on <a href="apis.html">Sheet 05</a>.</p>
+
+<!-- ===================================================================== -->
+<h2 id="drill">Drill book</h2>
+<p class="sub">Answer aloud first, then open the answer. Anything you cannot say without notes goes on your revise list.</p>
+
+<div class="drill">
+  <div class="dh">Drill &mdash; HTTP and API clients</div>
+  <details><summary>What is the difference between a safe method and an idempotent method? Give an example of each that is not the other.</summary>
+    <div class="ans"><p>Safe means the request does not change server state (GET, HEAD). Idempotent means repeating it leaves the same final state as doing it once (GET, PUT, DELETE). Every safe method is idempotent, but not the reverse: DELETE is idempotent and not safe. POST is neither, which is why a blind retry of a POST can create duplicates. Follow-up: &ldquo;the second DELETE returns 404, so is it not idempotent?&rdquo; It is: idempotency is about server state, which is the same, not about the response code.</p></div></details>
+  <details><summary>Why must every HTTP call from a service have a timeout, and what are the different kinds?</summary>
+    <div class="ans"><p>With no limit a stalled server or a dropped connection makes the call wait forever, which ties up a worker, a connection and a queue slot until the service stops. In httpx there are four limits: connect (opening the connection), read (silence between chunks of response), write (sending the body) and pool (waiting for a free connection). There is no built-in total, so a slow-drip response can outlast every per-read limit; I enforce a total deadline myself. Follow-up: &ldquo;what number?&rdquo; From measured latency: slightly above the 99th percentile for read, a few seconds for connect.</p></div></details>
+  <details><summary>The server takes 30 seconds to answer. Walk me through what your client does.</summary>
+    <div class="ans"><p>With a 10 s read timeout it raises <code>ReadTimeout</code> at 10 s, not 30. If the call is a GET I retry after a capped, jittered backoff, within a total deadline set by whoever is waiting. If it is a POST I only retry with an idempotency key, because the server may have finished the work behind my back, otherwise I check the resource&rsquo;s state first. The user gets a bounded wait and a clear message instead of a hang, and I log the timeout with the call, not the credentials. If it keeps happening I stop retrying and alert.</p></div></details>
+  <details><summary>Which failures should you retry and which should you not? Why?</summary>
+    <div class="ans"><p>Retry transient ones: network errors, timeouts, 408, 429, 500, 502, 503, 504, on calls that are safe to repeat. Do not retry 400, 401 (beyond one token refresh), 403, 404, 409 or 422, or a body that will not parse, or any exception from my own code, because the same request fails the same way and retrying burns quota and hides the bug. A POST needs an idempotency key before it joins the retry list. Follow-up: &ldquo;what about 500?&rdquo; Usually transient, so a few attempts, but a deterministic 500 on one input should be caught by a low attempt limit and reported.</p></div></details>
+  <details><summary>Explain exponential backoff with jitter. Why not a fixed delay, and why add randomness?</summary>
+    <div class="ans"><p>A fixed delay keeps hitting a struggling server at a steady rate. Exponential backoff doubles the wait each attempt (min(cap, base times 2 to the i)), giving it room to recover, and the cap stops the wait growing without limit. Without randomness, a thousand clients that failed together all retry at the same instant and form waves; jitter (a random wait between 0 and the computed delay) spreads them. And if the server sends <code>Retry-After</code> I use that instead, capped. Follow-up: &ldquo;what is a retry budget?&rdquo; A limit on retries as a share of total traffic so retries cannot multiply load during an outage.</p></div></details>
+  <details><summary>How do you make a POST safe to retry?</summary>
+    <div class="ans"><p>Send an idempotency key: a unique id the client generates once, from a stable source such as the work item id, before the first attempt, and reuses on every retry. The server stores the result against the key and replays it on a repeat instead of creating a second resource. If the vendor has no such feature I make the operation naturally idempotent (a PUT to a known id, or a lookup by my own reference before creating), or accept at-least-once and deduplicate afterwards. A fresh key per attempt defeats the whole mechanism.</p></div></details>
+  <details><summary>401 versus 403, and authentication versus authorisation.</summary>
+    <div class="ans"><p>Authentication is proving who you are; authorisation is what that identity may do. 401 means the server does not know who you are (missing, expired or wrong credentials): refresh or fix the credential. 403 means it knows you and refuses: change permissions or scopes, because retrying with the same identity cannot help. A valid token can still return 403. Follow-up: &ldquo;what do you do on a 401 with an OAuth token?&rdquo; Fetch a new token once and retry once; a second 401 is a configuration failure, so fail loudly.</p></div></details>
+  <details><summary>Where do secrets live, and what are the ways they leak?</summary>
+    <div class="ans"><p>In the process environment (environment variables, or a secrets manager), read once at start-up, failing immediately if missing. For local development a <code>.env</code> file that is in <code>.gitignore</code> before the first commit, plus a <code>.env.example</code> with fake values. They leak through source code and Git history, URLs and query strings, log lines and error messages, and screenshots. If one leaks, revoke and rotate it at once, since deleting it from the latest commit does not remove it from history.</p></div></details>
+  <details><summary>Offset versus cursor pagination: which would you pick to copy all records from a vendor, and what can go wrong with the loop?</summary>
+    <div class="ans"><p>Cursor, because the data changes while I read it, and offset then repeats or skips rows when something is inserted or deleted between pages, and gets slower on deep pages. The cost is that I can only go forward. The loop can run forever if the server repeats a cursor, so I remember cursors I have seen and stop with an error on a repeat, and I cap the page count. I also stop on the cursor being absent, not on an empty list, since some APIs return empty pages with a valid cursor.</p></div></details>
+  <details><summary>You get a 429 with <code>Retry-After: 30</code>. What do you do, and how do you stop it happening again?</summary>
+    <div class="ans"><p>Wait the 30 seconds (capped by my maximum so a huge value cannot park a worker), then retry, within my attempt budget and total deadline. The header may also be an HTTP date, so I parse both forms. To stop earning 429s I throttle on the client side with a token bucket below the documented limit, share the budget across workers (it is per account, so division or shared state), batch or cache to make fewer calls, and log remaining-quota headers if the vendor sends them. I still handle 429, because someone else can use up the quota.</p></div></details>
+  <details><summary>How do you test code that calls a flaky third-party API?</summary>
+    <div class="ans"><p>I inject the things that are slow, random or remote: the transport (<code>httpx.MockTransport</code> with a handler that returns scripted responses or raises timeouts), the sleep function, the clock and the jitter source. Then I can reproduce 503 then 200, a 429 with <code>Retry-After</code>, a timeout, a repeating cursor and invalid JSON in milliseconds, and assert both on results and on the requests that were sent. The limit is that a mock only encodes my assumptions, so I keep recorded real responses as fixtures and run a few contract checks against the vendor&rsquo;s sandbox.</p></div></details>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="signoff">Sign-off</h2>
+<p class="sub">Tick a box only when you did it yourself, on your own laptop, and could show it to someone.</p>
+
+<div class="signoff">
+  <div class="sh"><span>Week 05</span><span>Sheet 24</span></div>
+  <label><input type="checkbox"><span>I drew a request and a response on paper from memory, with method, URL, headers, status and body, and named which headers are mine and which the server&rsquo;s.</span></label>
+  <label><input type="checkbox"><span>I made a GET and a JSON POST with <code>curl.exe</code> (PowerShell) or <code>curl</code> (Git Bash), and read the status code and a header from the output.</span></label>
+  <label><input type="checkbox"><span>I can state from memory which of GET, PUT, POST, DELETE are safe and which are idempotent, and why a blind POST retry is dangerous.</span></label>
+  <label><input type="checkbox"><span>I wrote a script that calls a public JSON API with an explicit connect and read timeout, prints three fields, and exits with a clear message on a 404 and on a timeout.</span></label>
+  <label><input type="checkbox"><span>I reproduced the slow-drip case from section 6 and can explain why <code>read=1.0</code> did not stop it.</span></label>
+  <label><input type="checkbox"><span>I can list the status codes worth retrying and the ones that are not, without the table.</span></label>
+  <label><input type="checkbox"><span>Lab ex01, ex02 and ex04 pass, and I wrote the function bodies myself.</span></label>
+  <label><input type="checkbox"><span>I can explain, aloud, why jitter is applied after the cap and why the loop must not sleep after the final attempt.</span></label>
+  <label><input type="checkbox"><span>Lab ex06 passes, my own project has <code>.env</code> in <code>.gitignore</code> before its first commit, and <code>git status</code> shows no secret staged.</span></label>
+  <label><input type="checkbox"><span>I can explain authentication versus authorisation, and 401 versus 403, in two sentences each.</span></label>
+  <label><input type="checkbox"><span>Lab ex03 and ex05 pass; I can say why a cursor loop needs a repeat guard and a page cap.</span></label>
+  <label><input type="checkbox"><span>All 82 week 5 tests pass with no network, and I answered the 30-second-server question aloud in under 90 seconds covering timeout, retry and user impact.</span></label>
+</div>
+
+</div><!-- /sheetbody -->
+</main>
+
+<aside class="toc" aria-label="Contents"></aside>
+</div>
+
+<script src="assets/js/nav-data.js"></script>
+<script src="assets/js/sheet.js"></script>
+</body>
+</html>

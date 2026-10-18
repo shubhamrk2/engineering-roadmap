@@ -1,0 +1,369 @@
+{
+ "days": {
+  "43": {
+   "text": [
+    {
+     "t": "SQLBolt lesson 1: SELECT queries 101",
+     "u": "https://sqlbolt.com/lesson/select_queries_introduction",
+     "why": "Interactive first SELECT; start of lessons 1-6."
+    },
+    {
+     "t": "SQLBolt lesson 8: queries with NULLs",
+     "u": "https://sqlbolt.com/lesson/select_queries_with_nulls",
+     "why": "IS NULL practice (SQLBolt numbering)."
+    },
+    {
+     "t": "PostgreSQL docs: Concepts (tutorial)",
+     "u": "https://www.postgresql.org/docs/current/tutorial-concepts.html",
+     "why": "Tables, rows, databases in plain words."
+    },
+    {
+     "t": "PostgreSQL download for Windows",
+     "u": "https://www.postgresql.org/download/windows/",
+     "why": "Installer for your personal laptop; then open psql."
+    },
+    {
+     "t": "PostgreSQL docs: Comparison functions and operators (NULL rules)",
+     "u": "https://www.postgresql.org/docs/current/functions-comparison.html",
+     "why": "IS NULL, IS DISTINCT FROM, why = NULL fails."
+    }
+   ],
+   "video": [
+    {
+     "t": "Primary Key and Foreign Key Constraints in SQL",
+     "u": "https://www.youtube.com/watch?v=MR0PK0qkCD8",
+     "by": "Neso Academy",
+     "why": "Keys explained before you design tables."
+    },
+    {
+     "t": "Nulls and Three Valued Logic in SQL Programming",
+     "u": "https://www.youtube.com/watch?v=u2Kdw1raQJ4",
+     "by": "The SQL Professor",
+     "why": "TRUE, FALSE, UNKNOWN: the NULL rule."
+    }
+   ]
+  },
+  "44": {
+   "text": [
+    {
+     "t": "SQLBolt lesson 3: queries with constraints (part 2)",
+     "u": "https://sqlbolt.com/lesson/select_queries_with_constraints_pt_2",
+     "why": "LIKE, IN, BETWEEN practice (SQLBolt numbering)."
+    },
+    {
+     "t": "SQLBolt lesson 4: filtering and sorting query results",
+     "u": "https://sqlbolt.com/lesson/filtering_sorting_query_results",
+     "why": "DISTINCT, ORDER BY, LIMIT, OFFSET practice."
+    },
+    {
+     "t": "SQLBolt lesson 9: queries with expressions",
+     "u": "https://sqlbolt.com/lesson/select_queries_with_expressions",
+     "why": "Expressions and aliases with AS."
+    },
+    {
+     "t": "PostgreSQL docs: Pattern matching (LIKE)",
+     "u": "https://www.postgresql.org/docs/current/functions-matching.html",
+     "why": "LIKE and ILIKE wildcard rules."
+    },
+    {
+     "t": "PostgreSQL docs: Date/time functions and operators",
+     "u": "https://www.postgresql.org/docs/current/functions-datetime.html",
+     "why": "Intervals, date arithmetic, date_trunc."
+    },
+    {
+     "t": "PostgreSQL docs: Conditional expressions (CASE)",
+     "u": "https://www.postgresql.org/docs/current/functions-conditional.html",
+     "why": "CASE, COALESCE, NULLIF reference."
+    }
+   ],
+   "video": [
+    {
+     "t": "SQL WHERE Conditions (Visually Explained) | AND, OR, NOT, LIKE, BETWEEN, IN",
+     "u": "https://www.youtube.com/watch?v=cMUJFau5Wvg",
+     "by": "Data with Baraa",
+     "why": "Every filter operator, worked on screen."
+    },
+    {
+     "t": "SQL Dates and Times Explained: DATE, TIMESTAMP, INTERVAL, EXTRACT, DATE_TRUNC (PostgreSQL)",
+     "u": "https://www.youtube.com/watch?v=jybRiVxeaxM",
+     "by": "Prateek Goel",
+     "why": "Postgres date and interval syntax."
+    }
+   ]
+  },
+  "45": {
+   "text": [
+    {
+     "t": "SQLBolt lesson 6: multi-table queries with JOINs",
+     "u": "https://sqlbolt.com/lesson/select_queries_with_joins",
+     "why": "Interactive INNER JOIN exercises."
+    },
+    {
+     "t": "SQLBolt lesson 7: OUTER JOINs",
+     "u": "https://sqlbolt.com/lesson/select_queries_with_outer_joins",
+     "why": "LEFT/RIGHT/FULL and why NULLs appear."
+    },
+    {
+     "t": "PostgreSQL docs: Joins between tables (tutorial)",
+     "u": "https://www.postgresql.org/docs/current/tutorial-join.html",
+     "why": "Official join walkthrough with LEFT OUTER JOIN."
+    },
+    {
+     "t": "PostgreSQL docs: Foreign keys (tutorial)",
+     "u": "https://www.postgresql.org/docs/current/tutorial-fk.html",
+     "why": "Referential integrity in a few paragraphs."
+    }
+   ],
+   "video": [
+    {
+     "t": "SQL Joins Basics (Visually Explained) | INNER, LEFT, RIGHT, FULL",
+     "u": "https://www.youtube.com/watch?v=aY7z4HcHm5M",
+     "by": "Data with Baraa",
+     "why": "Long, visual join walkthrough; watch for row counts."
+    },
+    {
+     "t": "6 SQL Joins you MUST know! (Animated + Practice)",
+     "u": "https://www.youtube.com/watch?v=Yh4CrPHVBdE",
+     "by": "Anton Putra",
+     "why": "Short animated recap of join types."
+    }
+   ]
+  },
+  "46": {
+   "text": [
+    {
+     "t": "SQLBolt lesson 10: queries with aggregates",
+     "u": "https://sqlbolt.com/lesson/select_queries_with_aggregates",
+     "why": "COUNT, SUM, AVG, GROUP BY practice."
+    },
+    {
+     "t": "SQLBolt lesson 11: aggregates part 2 (HAVING)",
+     "u": "https://sqlbolt.com/lesson/select_queries_with_aggregates_pt_2",
+     "why": "HAVING versus WHERE with exercises."
+    },
+    {
+     "t": "PostgreSQL docs: Aggregate functions (tutorial)",
+     "u": "https://www.postgresql.org/docs/current/tutorial-agg.html",
+     "why": "GROUP BY, HAVING, WHERE vs HAVING in the official text."
+    }
+   ],
+   "video": [
+    {
+     "t": "GROUP BY and HAVING Clause in SQL",
+     "u": "https://www.youtube.com/watch?v=VQf0V6Wwbf4",
+     "by": "Neso Academy",
+     "why": "Grouping rows then filtering groups."
+    },
+    {
+     "t": "Having vs Where in MySQL | Beginner MySQL Series",
+     "u": "https://www.youtube.com/watch?v=dCNjUOc1cBY",
+     "by": "Alex The Analyst",
+     "why": "Short WHERE vs HAVING contrast; MySQL, same SQL."
+    }
+   ]
+  },
+  "47": {
+   "text": [
+    {
+     "t": "PostgreSQL docs: WITH queries (CTEs)",
+     "u": "https://www.postgresql.org/docs/current/queries-with.html",
+     "why": "Official CTE reference, including MATERIALIZED note."
+    },
+    {
+     "t": "PostgreSQL docs: Subquery expressions (IN, EXISTS)",
+     "u": "https://www.postgresql.org/docs/current/functions-subquery.html",
+     "why": "EXISTS, IN, ANY semantics precisely."
+    },
+    {
+     "t": "SQLBolt lesson 12: order of execution of a query",
+     "u": "https://sqlbolt.com/lesson/select_queries_order_of_execution",
+     "why": "Why WHERE runs before SELECT aliases exist."
+    }
+   ],
+   "video": [
+    {
+     "t": "SQL WITH Clause | Clearly Explained | CTEs vs Subqueries vs Temp Tables | Recursive CTEs",
+     "u": "https://www.youtube.com/watch?v=LJC8277LONg",
+     "by": "Maven Analytics",
+     "why": "CTE readability versus subqueries."
+    },
+    {
+     "t": "SQL Subquery using EXISTS and IN - SQL Tutorial #31",
+     "u": "https://www.youtube.com/watch?v=sP6MCZ9patk",
+     "by": "Data with Baraa",
+     "why": "IN versus EXISTS on screen."
+    }
+   ]
+  },
+  "48": {
+   "text": [
+    {
+     "t": "PostgreSQL docs: Constraints",
+     "u": "https://www.postgresql.org/docs/current/ddl-constraints.html",
+     "why": "CHECK, NOT NULL, UNIQUE, PRIMARY KEY, FOREIGN KEY."
+    },
+    {
+     "t": "PostgreSQL docs: Indexes, introduction",
+     "u": "https://www.postgresql.org/docs/current/indexes-intro.html",
+     "why": "What an index is and costs."
+    },
+    {
+     "t": "PostgreSQL docs: Using EXPLAIN",
+     "u": "https://www.postgresql.org/docs/current/using-explain.html",
+     "why": "Reading Seq Scan, Index Scan, cost and rows."
+    },
+    {
+     "t": "PostgreSQL docs: Multicolumn indexes",
+     "u": "https://www.postgresql.org/docs/current/indexes-multicolumn.html",
+     "why": "Column order in composite indexes."
+    }
+   ],
+   "video": [
+    {
+     "t": "Learn Database Normalization - 1NF, 2NF, 3NF, 4NF, 5NF",
+     "u": "https://www.youtube.com/watch?v=GFQaEYEc8_8",
+     "by": "Decomplexify",
+     "why": "Normal forms with examples; stop after 3NF."
+    },
+    {
+     "t": "Postgres Explain Explained - How Databases Prepare Optimal Query Plans to Execute SQL",
+     "u": "https://www.youtube.com/watch?v=P7EUFtjeAmI",
+     "by": "Hussein Nasser",
+     "why": "What EXPLAIN output means."
+    },
+    {
+     "t": "Understanding B-Trees: The Data Structure Behind Modern Databases",
+     "u": "https://www.youtube.com/watch?v=K1a2Bk8NrYQ",
+     "by": "Spanning Tree",
+     "why": "Why index lookups are logarithmic."
+    }
+   ]
+  },
+  "49": {
+   "text": [
+    {
+     "t": "PostgreSQL docs: Window functions (tutorial)",
+     "u": "https://www.postgresql.org/docs/current/tutorial-window.html",
+     "why": "OVER, PARTITION BY, ORDER BY basics."
+    },
+    {
+     "t": "PostgreSQL docs: Window function reference",
+     "u": "https://www.postgresql.org/docs/current/functions-window.html",
+     "why": "row_number, rank, lag lookup."
+    },
+    {
+     "t": "SQLBolt: order of execution (self-test warm-up)",
+     "u": "https://sqlbolt.com/lesson/select_queries_order_of_execution",
+     "why": "Warm-up before writing the self-test from memory."
+    }
+   ],
+   "video": [
+    {
+     "t": "SQL Window Functions | Clearly Explained | PARTITION BY, ORDER BY, ROW_NUMBER, RANK, DENSE_RANK",
+     "u": "https://www.youtube.com/watch?v=rIcB4zMYMas",
+     "by": "Maven Analytics",
+     "why": "Short window-function primer for catch-up."
+    }
+   ]
+  },
+  "50": {
+   "text": [
+    {
+     "t": "psycopg 3: Basic module usage",
+     "u": "https://www.psycopg.org/psycopg3/docs/basic/usage.html",
+     "why": "connect, cursor, with-blocks, fetch."
+    },
+    {
+     "t": "psycopg 3: Passing parameters to SQL queries",
+     "u": "https://www.psycopg.org/psycopg3/docs/basic/params.html",
+     "why": "%s placeholders; why not f-strings."
+    },
+    {
+     "t": "OWASP: SQL Injection",
+     "u": "https://owasp.org/www-community/attacks/SQL_Injection",
+     "why": "What injection is and the defences."
+    }
+   ],
+   "video": [
+    {
+     "t": "What Is SQL Injection?",
+     "u": "https://www.youtube.com/watch?v=wcaiKgQU6VE",
+     "by": "Hacksplaining",
+     "why": "2-minute picture of how injection works."
+    },
+    {
+     "t": "Step-by-Step Python and Postgres Tutorial with psycopg2",
+     "u": "https://www.youtube.com/watch?v=2PDkXviEMD0",
+     "by": "Hussein Nasser",
+     "why": "Uses psycopg2, the older package; ideas carry over to psycopg 3."
+    }
+   ]
+  },
+  "51": {
+   "text": [
+    {
+     "t": "PostgreSQL docs: Transactions (tutorial)",
+     "u": "https://www.postgresql.org/docs/current/tutorial-transactions.html",
+     "why": "BEGIN, COMMIT, ROLLBACK with a bank example."
+    },
+    {
+     "t": "PostgreSQL docs: Transaction isolation",
+     "u": "https://www.postgresql.org/docs/current/transaction-iso.html",
+     "why": "Which anomaly each isolation level prevents."
+    },
+    {
+     "t": "psycopg 3: Transaction management",
+     "u": "https://www.psycopg.org/psycopg3/docs/basic/transactions.html",
+     "why": "Connection context manager commits or rolls back."
+    }
+   ],
+   "video": [
+    {
+     "t": "ACID Properties in Databases With Examples",
+     "u": "https://www.youtube.com/watch?v=GAe5oB742dw",
+     "by": "ByteByteGo",
+     "why": "ACID in five minutes."
+    },
+    {
+     "t": "PostgreSQL Isolation Levels Explained in Terminal | Read Committed vs Repeatabe Read vs Serializable",
+     "u": "https://www.youtube.com/watch?v=Mkz6mmt0sWc",
+     "by": "Sri Tech Labs",
+     "why": "Two terminals showing each anomaly; long, skim."
+    }
+   ]
+  },
+  "52": {
+   "text": [
+    {
+     "t": "psycopg 3: Row factories",
+     "u": "https://www.psycopg.org/psycopg3/docs/advanced/rows.html",
+     "why": "dict_row, class_row: rows to objects."
+    },
+    {
+     "t": "psycopg 3: Connection pools",
+     "u": "https://www.psycopg.org/psycopg3/docs/advanced/pool.html",
+     "why": "Borrow a connection per request."
+    },
+    {
+     "t": "Pydantic: Models",
+     "u": "https://docs.pydantic.dev/latest/concepts/models/",
+     "why": "model_validate for rows from the database."
+    }
+   ],
+   "video": [
+    {
+     "t": "Pydantic & Psycopg: Clean & Fast PostgreSQL in Python",
+     "u": "https://www.youtube.com/watch?v=WfLC0rH1FIU",
+     "by": "Learn Python With Dan",
+     "why": "Rows into Pydantic models with psycopg."
+    },
+    {
+     "t": "Deep Dive Into the Repository Design Pattern in Python",
+     "u": "https://www.youtube.com/watch?v=9ymRLDfnDKg",
+     "by": "ArjanCodes",
+     "why": "Repository layer idea, database-agnostic."
+    }
+   ]
+  }
+ }
+}

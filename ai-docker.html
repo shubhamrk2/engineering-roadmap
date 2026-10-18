@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheet 27 — Docker, Compose and CI — Applied AI Roadmap</title>
+<link rel="stylesheet" href="assets/css/sheet.css">
+<link rel="stylesheet" href="assets/css/glass.css">
+</head>
+<body data-sheet="27" class="glass">
+<a class="skip" href="#main">Skip to sheet</a>
+<div class="wrap">
+<nav class="rail" aria-label="Sheet index"></nav>
+
+<main id="main">
+
+<header class="sheethead">
+  <div>
+    <div class="no">Sheet 27 &middot; Applied AI track &middot; Week 08 (days 53&ndash;56)</div>
+    <h1>Docker, Compose and CI<span>.</span></h1>
+    <p class="lede">You are not learning Docker to run a company&rsquo;s servers. You are learning it so that a stranger can
+    clone your portfolio repository, type <b>one command</b>, and see your project work, and so that a free CI job proves
+    your tests still pass. That is <b>reproducibility</b>: the thing hiring managers cannot get from a screenshot. Nothing
+    here costs money, and nothing here needs a cloud account.</p>
+  </div>
+  <div class="specs">
+    <div><span>Weeks</span><span>08 (days 53 &ndash; 56)</span></div>
+    <div><span>Hours</span><span>~ 14</span></div>
+    <div><span>Must know</span><span>Dockerfile, Compose, healthcheck</span></div>
+    <div><span>Nice to have</span><span>multi-stage, Actions cache</span></div>
+    <div><span>Ships</span><span>clean-clone README</span></div>
+  </div>
+</header>
+
+<div class="sheetbody">
+
+<div class="panel panel--trap">
+  <span class="ph">Read this first &mdash; what was and was not executed</span>
+  <p><b>Docker is not installed on the machine this sheet was written on</b> (<code>docker --version</code> returned &ldquo;command not found&rdquo;).
+  So <b>no Dockerfile, no compose file and no GitHub Actions workflow on this sheet was built or run</b>. Each of those blocks says
+  <b>NOT RUN</b> in its header. What I did instead is listed here so you can judge how far to trust each part.</p>
+  <p><b>Executed:</b> every Python block (with <code>tools/run-python-blocks.py</code>); the FastAPI app, which I started with
+  uvicorn and called over real HTTP, including the exact <code>urllib</code> one-liner the HEALTHCHECK uses; the lab in
+  <code>python-lab/week27/</code> (81 tests: all fail on the stub, all pass on my reference, 14 deliberate mutations caught). <b>Parsed, not run:</b> the compose file and the
+  workflow, loaded with PyYAML 6.0.3 and checked for structure against the official pages named beside them; the compose file also passes the
+  lab&rsquo;s own <code>validate_compose</code> rules. <b>Read, not run:</b> the Dockerfile instructions, checked against the
+  <a href="https://docs.docker.com/reference/dockerfile/" target="_blank" rel="noopener">Dockerfile reference</a>.</p>
+  <p><b>Therefore:</b> your first <code>docker build</code> is the real test. If it disagrees with this sheet, the tool wins and the
+  sheet has a bug. Tell me, and write down what the error said.</p>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">Tested with</span>
+  <p>Tested with: python 3.14.7, fastapi 0.143.3, starlette 1.8.0, pydantic 2.14.1, uvicorn 0.54.0, httpx 0.28.1, pytest 9.1.1,
+  PyYAML 6.0.3, psycopg 3.3.6 (installed and imported, never connected to a database) on 18 Oct 2026, Windows 11.
+  Installed starlette printed a <code>StarletteDeprecationWarning</code> saying <code>TestClient</code> with <code>httpx</code> is deprecated and
+  to install <code>httpx2</code>. It still worked; if the warning becomes an error in your version, the installed version wins, read its message.
+  Images named here (<code>python:3.14-slim</code>, <code>postgres:16</code>, <code>pgvector/pgvector</code>) were <b>not pulled</b>; confirm each tag exists on
+  its Docker Hub page before you rely on it.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="map">The one idea: a clean clone that runs</h2>
+<p class="sub">Everything on this sheet exists to remove the sentence &ldquo;it works on my machine&rdquo; from your portfolio.
+The test is brutal and simple: delete the folder, clone again, follow only the README.</p>
+
+<figure class="dwg dwg--hero">
+<svg viewBox="0 0 1200 430" role="img" aria-label="Left to right: a clean git clone, the learner copies .env.example to .env, runs docker compose up which builds the API image and starts the database, and both containers sit inside a Docker network. A browser or curl reaches the API on localhost port 8000. Below, a red box lists what usually breaks and a brass box lists the checks that prevent it.">
+  <defs>
+    <marker id="s27-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s27-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s27-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <rect class="box" x="30" y="70" width="190" height="84" rx="3"/>
+  <text class="t" x="46" y="96">clean clone</text>
+  <text class="m" x="46" y="118">Dockerfile</text>
+  <text class="m" x="46" y="136">compose.yaml</text>
+
+  <rect class="box-a" x="270" y="70" width="190" height="84" rx="3"/>
+  <text class="t b" x="286" y="96">.env</text>
+  <text class="m" x="286" y="118">copied from</text>
+  <text class="m" x="286" y="136">.env.example</text>
+
+  <rect class="box-c" x="510" y="70" width="190" height="84" rx="3"/>
+  <text class="t" x="526" y="96">compose up</text>
+  <text class="m" x="526" y="118">build api image</text>
+  <text class="m" x="526" y="136">start db, then api</text>
+
+  <rect class="zone" x="750" y="40" width="300" height="150" rx="6"/>
+  <text class="mm" x="766" y="62">DOCKER NETWORK</text>
+  <rect class="box-c" x="768" y="80" width="120" height="70" rx="3"/>
+  <text class="t" x="784" y="106">api</text>
+  <text class="m" x="784" y="126">:8000</text>
+  <rect class="box-c" x="912" y="80" width="120" height="70" rx="3"/>
+  <text class="t" x="928" y="106">db</text>
+  <text class="m" x="928" y="126">:5432</text>
+  <path class="flow" d="M892,115 H906" marker-end="url(#s27-ac)"/>
+
+  <rect class="box" x="1090" y="70" width="90" height="84" rx="3"/>
+  <text class="t" x="1104" y="96">you</text>
+  <text class="m" x="1104" y="118">curl</text>
+  <text class="m" x="1104" y="136">:8000</text>
+
+  <path class="flow" d="M224,112 H264" marker-end="url(#s27-ac)"/>
+  <path class="flow" d="M464,112 H504" marker-end="url(#s27-ac)"/>
+  <path class="flow" d="M704,112 H744" marker-end="url(#s27-ac)"/>
+  <path class="flow" d="M1135,158 V176 H828 V154" marker-end="url(#s27-ac)"/>
+
+  <rect class="box-r" x="30" y="250" width="540" height="140" rx="3"/>
+  <text class="t r" x="48" y="276">What breaks on someone else&rsquo;s machine</text>
+  <text class="m" x="48" y="300">.env missing: the app starts with no database URL</text>
+  <text class="m" x="48" y="320">port 8000 already used by something else</text>
+  <text class="m" x="48" y="340">api starts before Postgres accepts connections</text>
+  <text class="m" x="48" y="360">a stale image: you rebuilt, they did not</text>
+  <text class="m" x="48" y="380">a secret that only exists in your shell</text>
+
+  <rect class="box-a" x="620" y="250" width="560" height="140" rx="3"/>
+  <text class="t b" x="638" y="276">What prevents each one</text>
+  <text class="m" x="638" y="300">.env.example + a clear error naming the setting</text>
+  <text class="m" x="638" y="320">port taken: change the left number, say so in README</text>
+  <text class="m" x="638" y="340">healthcheck + depends_on condition: service_healthy</text>
+  <text class="m" x="638" y="360">docker compose up --build in the README</text>
+  <text class="m" x="638" y="380">no secrets in the repo, one variable per secret</text>
+
+  <circle class="bub" cx="125" cy="30" r="13"/><text class="bubt" x="125" y="34">1</text>
+  <path class="lead" d="M125,43 V66"/>
+  <circle class="bub" cx="365" cy="30" r="13"/><text class="bubt" x="365" y="34">2</text>
+  <path class="lead" d="M365,43 V66"/>
+  <circle class="bub" cx="605" cy="30" r="13"/><text class="bubt" x="605" y="34">3</text>
+  <path class="lead" d="M605,43 V66"/>
+  <circle class="bub" cx="900" cy="22" r="13"/><text class="bubt" x="900" y="26">4</text>
+  <path class="lead" d="M900,35 V40"/>
+  <circle class="bub" cx="1135" cy="30" r="13"/><text class="bubt" x="1135" y="34">5</text>
+  <path class="lead" d="M1135,43 V66"/>
+  <circle class="bub" cx="595" cy="320" r="13"/><text class="bubt" x="595" y="324">6</text>
+  <path class="lead" d="M582,320 H574"/>
+</svg>
+<figcaption>Drawing 27-A &mdash; the clean-clone test. <b>Cyan</b> = the request and build path. <b>Brass</b> = the thing you configure
+and the checks that protect you. <b>Red</b> = what breaks on a machine that is not yours.</figcaption>
+</figure>
+
+<div class="notes">
+  <div class="n"><b>1</b><div><b>The repo is the product.</b> A reviewer sees files, not your laptop. Everything needed to run the project must be
+  in the clone, or named in the README as a prerequisite.</div></div>
+  <div class="n"><b>2</b><div><b>Config lives outside the image and outside git.</b> <code>.env.example</code> is committed (fake values, every variable
+  listed). <code>.env</code> is private and git-ignored. That split is the twelve-factor idea (section 6).</div></div>
+  <div class="n"><b>3</b><div><b>One command.</b> <code>docker compose up --build</code> builds what is missing and starts everything, in order.
+  &ldquo;In order&rdquo; is the subtle part: section 5 shows that <code>depends_on</code> alone does not do it.</div></div>
+  <div class="n"><b>4</b><div><b>Containers find each other by service name.</b> Inside the network the API connects to <code>db:5432</code>, not
+  <code>localhost</code>. Inside the API container, <code>localhost</code> is the API container itself.</div></div>
+  <div class="n"><b>5</b><div><b>Only published ports reach your host.</b> <code>8000:8000</code> exposes the API. The database has no <code>ports</code>
+  line on purpose, so it is reachable only from inside the network.</div></div>
+  <div class="n"><b>6</b><div><b>Each failure has a cheap guard.</b> You will build all five guards on this sheet. A project that has them can be
+  cloned by a stranger; one that lacks them works for you and nobody else.</div></div>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why this is in an AI-engineer roadmap</span>
+  <p>Applied AI and forward-deployed roles are judged on whether you can put something in a customer&rsquo;s hands. An interviewer
+  who can run your project in two minutes remembers it. One who hits &ldquo;ModuleNotFoundError&rdquo; on step three does not. You will
+  use a synthetic ticket API plus Postgres as the example, and the same files will carry your two portfolio projects
+  (see <a href="ai-plan.html">Sheet 20</a>, week 8). Python itself is <a href="ai-python.html">Sheet 23</a>; this sheet assumes you can already run pytest.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="why">Why containers, honestly</h2>
+<p class="sub">A container is a normal Linux process that has been given its own view of files, processes and network. It is not a small
+computer. Knowing that one sentence answers most interview questions.</p>
+
+<h3 id="why-vm">Container versus virtual machine</h3>
+<div class="vs">
+  <div><div class="vh">Virtual machine</div>
+  <div class="vb">A full guest operating system, with its own kernel, running on a hypervisor. Strong isolation, minutes to boot,
+  gigabytes of disk. You patch the guest OS yourself.</div></div>
+  <div><div class="vh">Container</div>
+  <div class="vb">Your process plus its files, sharing the <b>host&rsquo;s kernel</b>. Starts in about a second, images are often tens to hundreds of
+  megabytes. Isolation is real but thinner: a kernel bug is shared by every container on the host.</div></div>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Dimension</th><th>Virtual machine</th><th>Container</th></tr></thead>
+<tbody>
+<tr><td>What is inside</td><td>Whole OS, kernel included</td><td>App, libraries, a minimal userland; <b>no kernel of its own</b></td></tr>
+<tr><td>Start time</td><td>Typically tens of seconds to minutes</td><td>Typically about a second (check on your machine, it varies)</td></tr>
+<tr><td>Disk size</td><td>Gigabytes</td><td>Tens to hundreds of MB for a slim Python image</td></tr>
+<tr><td>Isolation</td><td>Strong: separate kernels</td><td>Weaker: shared kernel, so a kernel flaw affects all of them</td></tr>
+<tr><td>Best at</td><td>Running a different OS; hard multi-tenant isolation</td><td>Packaging one app so it runs the same everywhere</td></tr>
+<tr><td>On your Windows laptop</td><td>Hyper-V, VirtualBox</td><td>Linux containers actually run inside a small Linux VM (WSL2 or Hyper-V), because Windows has no Linux kernel</td></tr>
+<tr><td>Typical mistake</td><td>Treating it as a pet to hand-patch</td><td>Treating it as a VM: SSH-ing in, editing files by hand, expecting them to survive</td></tr>
+</tbody></table></div>
+<p>Pick a container to ship an application; pick a VM when you need a different kernel or a strong security boundary. Note the honest
+Windows detail in the table: on your laptop a &ldquo;container&rdquo; is a Linux process inside a hidden Linux VM, so containers are cheap, but
+Docker on Windows is never free of that VM&rsquo;s memory cost.</p>
+
+<h3 id="why-img">Image, container, registry</h3>
+<div class="tw"><table>
+<thead><tr><th>Term</th><th>What it is</th><th>Analogy for you</th><th>Command that shows it</th></tr></thead>
+<tbody>
+<tr><td>Image</td><td>A read-only stack of filesystem layers plus start-up metadata (default command, env, exposed ports)</td><td>A compiled binary, or a class</td><td><code>docker images</code>, <code>docker history IMAGE</code></td></tr>
+<tr><td>Container</td><td>A running (or stopped) instance of an image, with one thin writable layer on top</td><td>A running process, or an object</td><td><code>docker ps</code>, <code>docker ps -a</code></td></tr>
+<tr><td>Registry</td><td>A server that stores and serves images by name and tag</td><td>A package index, like PyPI</td><td><code>docker pull</code>, <code>docker push</code></td></tr>
+<tr><td>Tag</td><td>A movable label on an image: <code>postgres:16</code>. <code>latest</code> is only a convention, not &ldquo;newest&rdquo;</td><td>A git branch name, not a commit</td><td><code>docker tag</code></td></tr>
+<tr><td>Digest</td><td>The immutable content hash: <code>postgres@sha256:...</code></td><td>A git commit hash</td><td><code>docker images --digests</code></td></tr>
+</tbody></table></div>
+<p>The writable layer of a container disappears when you remove the container. That single fact is why volumes exist (section 4).
+Docker Hub is the default registry; GitHub also hosts one (<code>ghcr.io</code>). You will only <b>pull</b> in this roadmap. Pushing to a registry is
+a deployment step you do not need for a portfolio, and registries have their own storage and pull-rate terms: check them yourself before you push anything.</p>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p><b>&ldquo;What is the difference between a container and a VM?&rdquo;</b> A VM virtualises hardware and runs its own kernel; a container
+  isolates a process using kernel features (namespaces for what it can see, cgroups for what it can use) and shares the host kernel. So containers are
+  lighter and faster to start but isolate less strongly. Follow-up: <b>&ldquo;then how does Docker run Linux containers on Windows?&rdquo;</b> Inside a lightweight Linux
+  VM (WSL2 or Hyper-V), so there is a VM underneath after all.</p>
+</div>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 500" role="img" aria-label="Two stacks of image layers compared. In the good order requirements are copied and installed before the application code, so after a code-only change only the last layer is rebuilt and the rest come from cache. In the bad order the whole folder is copied first, so a code change invalidates the pip install layer and every layer after it is rebuilt.">
+  <defs>
+    <marker id="s27-bc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s27-br" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+  <text class="t b" x="40" y="34">Good order</text>
+  <text class="mm" x="40" y="54">AFTER EDITING ONE LINE OF app/main.py</text>
+
+  <rect class="box-c" x="40" y="70" width="380" height="46" rx="3"/>
+  <text class="m" x="54" y="98">FROM python:3.14-slim</text><text class="mm end" x="406" y="98">CACHED</text>
+  <rect class="box-c" x="40" y="122" width="380" height="46" rx="3"/>
+  <text class="m" x="54" y="150">WORKDIR /app</text><text class="mm end" x="406" y="150">CACHED</text>
+  <rect class="box-c" x="40" y="174" width="380" height="46" rx="3"/>
+  <text class="m" x="54" y="202">COPY requirements.txt .</text><text class="mm end" x="406" y="202">CACHED</text>
+  <rect class="box-c" x="40" y="226" width="380" height="46" rx="3"/>
+  <text class="m" x="54" y="254">RUN pip install -r ...</text><text class="mm end" x="406" y="254">CACHED</text>
+  <rect class="box-r" x="40" y="278" width="380" height="46" rx="3"/>
+  <text class="m" x="54" y="306">COPY app ./app</text><text class="mm r end" x="406" y="306">REBUILT</text>
+
+  <text class="t r" x="480" y="34">Bad order</text>
+  <text class="mm" x="480" y="54">AFTER EDITING ONE LINE OF app/main.py</text>
+  <rect class="box-c" x="480" y="70" width="380" height="46" rx="3"/>
+  <text class="m" x="494" y="98">FROM python:3.14-slim</text><text class="mm end" x="846" y="98">CACHED</text>
+  <rect class="box-c" x="480" y="122" width="380" height="46" rx="3"/>
+  <text class="m" x="494" y="150">WORKDIR /app</text><text class="mm end" x="846" y="150">CACHED</text>
+  <rect class="box-r" x="480" y="174" width="380" height="46" rx="3"/>
+  <text class="m" x="494" y="202">COPY . .</text><text class="mm r end" x="846" y="202">REBUILT</text>
+  <rect class="box-r" x="480" y="226" width="380" height="46" rx="3"/>
+  <text class="m" x="494" y="254">RUN pip install -r ...</text><text class="mm r end" x="846" y="254">REBUILT, SLOW</text>
+
+  <rect class="box" x="900" y="70" width="280" height="202" rx="3"/>
+  <text class="t" x="916" y="96">The rule</text>
+  <text class="m" x="916" y="122">A layer is reused only if</text>
+  <text class="m" x="916" y="140">its instruction and its</text>
+  <text class="m" x="916" y="158">inputs are unchanged AND</text>
+  <text class="m" x="916" y="176">every layer above it was</text>
+  <text class="m" x="916" y="194">reused. One change</text>
+  <text class="m" x="916" y="212">invalidates everything</text>
+  <text class="m" x="916" y="230">after it.</text>
+
+  <rect class="box-a" x="40" y="360" width="1140" height="110" rx="3"/>
+  <text class="t b" x="58" y="386">So order instructions from least to most frequently changed</text>
+  <text class="m" x="58" y="410">base image, then dependency list, then install, then your code. Dependencies change a few times a week;</text>
+  <text class="m" x="58" y="430">code changes every minute. Copying requirements.txt alone first means a code edit rebuilds in about a second</text>
+  <text class="m" x="58" y="450">instead of re-downloading every package. Timings here are what the rule predicts, not something I measured.</text>
+</svg>
+<figcaption>Drawing 27-B &mdash; layers and the build cache. <b>Cyan</b> = reused from cache. <b>Red</b> = rebuilt. <b>Brass</b> = the rule to remember.</figcaption>
+</figure>
+
+<div class="res">
+  <div class="rh">Learn this &mdash; containers, images, layers</div>
+  <a class="r" href="https://www.youtube.com/watch?v=3c-iBn73dDE" target="_blank" rel="noopener"><span>TechWorld with Nana &mdash; Docker Tutorial for Beginners [FULL COURSE in 3 Hours]<i>Images vs containers, registries, ports, volumes. Watch the first chapters; skip Kubernetes talk.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://docs.docker.com/build/cache/" target="_blank" rel="noopener"><span>Docker Docs &mdash; Docker build cache<i>Official statement of the rule in the drawing: a changed layer rebuilds everything after it.</i></span><span class="dur">docs</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="dockerfile">The Dockerfile</h2>
+<p class="sub">A Dockerfile is a recipe of instructions; each one that changes the filesystem becomes a layer. We build a synthetic ticket
+API: a tiny FastAPI service that checks its database.</p>
+
+<h3 id="df-app">The app we are packaging</h3>
+<p>Two endpoints, deliberately different. <code>/health</code> is <b>liveness</b>: the process is alive, and it never touches the database. <code>/ready</code> is
+<b>readiness</b>: the service can do real work, so it checks Postgres. Containers and orchestrators ask these two questions separately, and
+mixing them is a classic bug (a database blip would make every instance look dead and get restarted). The block below ran on Python 3.14.7 with the
+versions in the &ldquo;Tested with&rdquo; panel. The Postgres half could not run here (no database), so the test replaces <code>db_ping</code> with a fake.</p>
+
+<div class="code" data-lang="python">
+<header><b>app/main.py</b> &mdash; executed; the database call itself was not (no Postgres here)</header>
+<pre><code>import os
+from fastapi import FastAPI, HTTPException
+
+app = FastAPI(title="ticket-api")          # a synthetic service: tickets, no real data
+
+
+def db_ping() -&gt; bool:
+    """True if Postgres answers SELECT 1. psycopg is imported inside the function so
+    the module imports (and /health works) even where the driver is not installed."""
+    import psycopg
+    with psycopg.connect(os.environ["DATABASE_URL"], connect_timeout=2) as conn:
+        conn.execute("SELECT 1")
+    return True
+
+
+@app.get("/health")                        # liveness: "the process is up". Never touches the database.
+def health():
+    return {"status": "ok"}
+
+
+@app.get("/ready")                         # readiness: "I can do real work". Checks the database.
+def ready():
+    try:
+        db_ping()
+    except Exception as exc:               # broad on purpose: any failure means "not ready"
+        raise HTTPException(status_code=503, detail=type(exc).__name__)
+    return {"status": "ready"}
+
+
+# ---- checks for this sheet; in a real repo these live in tests/test_health.py ----
+if __name__ == "__main__":
+    from fastapi.testclient import TestClient
+    client = TestClient(app)
+    assert client.get("/health").json() == {"status": "ok"}
+
+    os.environ.pop("DATABASE_URL", None)               # no database configured
+    r = client.get("/ready")
+    print(r.status_code, r.json())                     # 503 {'detail': 'KeyError'}
+    assert r.status_code == 503
+
+    db_ping = lambda: True                             # a fake database that always answers
+    r = client.get("/ready")
+    print(r.status_code, r.json())                     # 200 {'status': 'ready'}
+    assert r.status_code == 200
+    print("ok")
+</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">You must be able to explain this line</span>
+  <p><code>raise HTTPException(status_code=503, ...)</code> inside <code>except Exception</code>. The broad except is acceptable here because this is a
+  top-level boundary: any failure means &ldquo;not ready&rdquo;, and we return the exception <i>type</i> (not its message, which could contain the connection string).
+  Compare with <a href="ai-python.html">Sheet 23&rsquo;s</a> red-pencil on bare <code>except:</code>: the rule was never &ldquo;never catch broadly&rdquo;, it was &ldquo;do not swallow errors silently&rdquo;.</p>
+</div>
+
+<h3 id="df-file">The Dockerfile, line by line</h3>
+<div class="code" data-lang="text">
+<header><b>requirements.txt</b> and <b>requirements-dev.txt</b> &mdash; versions I installed and ran on Python 3.14.7</header>
+<pre><code># requirements.txt              (what the running service needs)
+fastapi==0.143.3
+uvicorn==0.54.0
+psycopg[binary]==3.3.6
+
+# requirements-dev.txt          (what only the tests need)
+pytest==9.1.1
+httpx==0.28.1</code></pre>
+</div>
+
+<div class="code" data-lang="dockerfile" data-run="no" data-why="Docker is not installed in the authoring environment">
+<header><b>Dockerfile</b> &mdash; NOT RUN (no Docker here); checked against the Dockerfile reference</header>
+<pre><code># Comments in a Dockerfile must sit on their own line: text after an instruction is treated as arguments.
+
+# Stage "base": everything both the tests and the service need.
+# slim = Debian without compilers and docs: smaller, fewer packages to patch.
+FROM python:3.14-slim AS base
+# PYTHONUNBUFFERED: print() and logs appear at once instead of sitting in a buffer.
+ENV PYTHONDONTWRITEBYTECODE=1     PYTHONUNBUFFERED=1
+# WORKDIR creates /app and makes it the current directory for what follows.
+WORKDIR /app
+# 1. copy ONLY the dependency list...
+COPY requirements.txt .
+# 2. ...so this slow layer is cached until requirements.txt changes.
+RUN pip install --no-cache-dir -r requirements.txt
+# 3. your code last: it changes most often.
+COPY app ./app
+
+# Stage "test": adds test tools. Build it with:  docker build --target test .
+FROM base AS test
+COPY requirements-dev.txt .
+RUN pip install --no-cache-dir -r requirements-dev.txt
+COPY tests ./tests
+CMD ["pytest", "-q"]
+
+# Stage "runtime": what you actually run. The LAST stage is the default build target.
+FROM base AS runtime
+# An unprivileged user. A fixed high user id (10001) avoids clashes with system users.
+RUN useradd --create-home --uid 10001 appuser
+# RUN, CMD and ENTRYPOINT from here on are not root.
+USER appuser
+# EXPOSE is documentation only: it publishes nothing.
+EXPOSE 8000
+HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3   CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]</code></pre>
+</div>
+
+<p><b>Not executed here.</b> What I did check: the instruction names and the exec-form syntax against the
+<a href="https://docs.docker.com/reference/dockerfile/" target="_blank" rel="noopener">Dockerfile reference</a>, the HEALTHCHECK flags and their defaults
+(30s interval, 30s timeout, 0s start period, 3 retries; I set them explicitly), and the healthcheck command itself: the same <code>urllib</code> one-liner, run against
+a real uvicorn on port 8765, printed <code>200</code> for <code>/health</code> and raised <code>HTTP Error 503</code> for <code>/ready</code>, which is exactly how a failing check should behave
+(<code>urlopen</code> raises on 4xx/5xx, so the process exits non-zero, which Docker reads as unhealthy). Not checked: that the image builds, that <code>python:3.14-slim</code> exists, and that
+<code>app.main:app</code> resolves inside the image (I ran it as <code>main:app</code> from inside the app folder). Also note the image has no <code>curl</code>, which is why the check uses Python.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Instruction</th><th>What it does</th><th>Layer?</th><th>What bites you</th></tr></thead>
+<tbody>
+<tr><td><code>FROM</code></td><td>Start from a base image. <code>AS name</code> names a build stage.</td><td>base layers</td><td><code>python:latest</code> changes under you. Pin a version.</td></tr>
+<tr><td><code>WORKDIR</code></td><td>Set (and create) the current directory.</td><td>yes (metadata)</td><td>Relative paths in <code>COPY</code> are relative to it.</td></tr>
+<tr><td><code>COPY src dest</code></td><td>Copy files from the build context into the image.</td><td>yes</td><td>The context is what you send to Docker; <code>COPY ../x</code> cannot escape it.</td></tr>
+<tr><td><code>RUN</code></td><td>Run a command <b>at build time</b>; result is committed.</td><td>yes</td><td>Deleting a file in a later <code>RUN</code> does not shrink the image; it is still in the earlier layer.</td></tr>
+<tr><td><code>ENV</code></td><td>Set an environment variable in the image, for build and run.</td><td>metadata</td><td>Anything in <code>ENV</code> is readable by anyone with the image. Never put a secret here.</td></tr>
+<tr><td><code>EXPOSE</code></td><td>Documents the port the app listens on.</td><td>metadata</td><td>It does <b>not</b> publish the port. <code>-p</code> does.</td></tr>
+<tr><td><code>USER</code></td><td>Sets the user for later <code>RUN</code>, <code>CMD</code>, <code>ENTRYPOINT</code>.</td><td>metadata</td><td>Files copied earlier are owned by root; the user may not be able to write them.</td></tr>
+<tr><td><code>HEALTHCHECK</code></td><td>A command Docker runs periodically; exit 0 healthy, 1 unhealthy.</td><td>metadata</td><td>No <code>curl</code> in slim images. Use the language you already have.</td></tr>
+<tr><td><code>CMD</code> / <code>ENTRYPOINT</code></td><td>What runs when the container starts.</td><td>metadata</td><td>Shell form versus exec form; see the next table.</td></tr>
+</tbody></table></div>
+
+<h3 id="df-cmd">CMD versus ENTRYPOINT</h3>
+<div class="vs">
+  <div><div class="vh">CMD &mdash; the default, easy to replace</div>
+<div class="code" data-lang="dockerfile" data-run="no" data-why="Docker is not installed in the authoring environment">
+<header><b>NOT RUN</b></header>
+<pre><code>CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0"]
+
+# docker run IMAGE            -&gt; runs uvicorn
+# docker run IMAGE pytest -q  -&gt; runs pytest INSTEAD</code></pre>
+</div></div>
+  <div><div class="vh">ENTRYPOINT &mdash; the fixed program, arguments added</div>
+<div class="code" data-lang="dockerfile" data-run="no" data-why="Docker is not installed in the authoring environment">
+<header><b>NOT RUN</b></header>
+<pre><code>ENTRYPOINT ["python", "-m", "app.cli"]
+CMD ["--help"]
+
+# docker run IMAGE            -&gt; python -m app.cli --help
+# docker run IMAGE load x.csv -&gt; python -m app.cli load x.csv</code></pre>
+</div></div>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Dimension</th><th>CMD</th><th>ENTRYPOINT</th></tr></thead>
+<tbody>
+<tr><td>Meaning</td><td>Default command or default arguments</td><td>The executable the container is built to run</td></tr>
+<tr><td>Replaced by <code>docker run IMAGE x y</code></td><td>Yes: <code>x y</code> becomes the command</td><td>No: <code>x y</code> is appended as arguments</td></tr>
+<tr><td>Replace anyway</td><td>just pass a command</td><td><code>docker run --entrypoint ...</code></td></tr>
+<tr><td>Together</td><td colspan="2">Exec-form <code>ENTRYPOINT</code> + exec-form <code>CMD</code>: the CMD supplies default arguments to the ENTRYPOINT</td></tr>
+<tr><td>Multiple lines</td><td colspan="2">Only the last of each takes effect</td></tr>
+<tr><td>Form</td><td colspan="2">Use <b>exec form</b> (JSON array). Shell form runs under <code>/bin/sh -c</code> and, per the reference, does not pass Unix signals, so <code>docker stop</code> cannot send your app a clean SIGTERM</td></tr>
+</tbody></table></div>
+<p>Pick <code>CMD</code> for a service (you want to be able to run <code>pytest</code> or a shell in the same image); pick <code>ENTRYPOINT</code> for an image that is
+a single tool, like a CLI. Our ticket API uses <code>CMD</code> only.</p>
+
+<h3 id="df-ignore">.dockerignore, secrets and size</h3>
+<p>When you run <code>docker build .</code>, the folder <code>.</code> is sent to Docker as the <b>build context</b>. Anything in it is available to <code>COPY</code>. A
+<code>.dockerignore</code> keeps junk and secrets out of the context, so they cannot be copied into a layer by accident.</p>
+
+<div class="code" data-lang="text">
+<header><b>.dockerignore</b> &mdash; NOT RUN (a plain text file; patterns like .gitignore; comments on their own lines)</header>
+<pre><code># Comment lines only: a "#" after a pattern would be read as part of the pattern.
+.git
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+# your real secrets: never in the build context
+.env
+.env.*
+# the template is safe
+!.env.example
+*.md</code></pre></code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the .dockerignore that breaks your build</span>
+  <p>A <code>.dockerignore</code> entry makes a file <i>invisible</i> to <code>COPY</code>. If you add <code>tests</code> to it, <code>COPY tests ./tests</code> in the test stage fails with a &ldquo;not found&rdquo; style error, because
+  the folder never reached the build. I expect that; I could not run it. The general lesson holds: &ldquo;file not found&rdquo; during a build usually means &ldquo;ignored&rdquo;, not &ldquo;missing&rdquo;. The reverse also bites: forgetting to ignore <code>.venv</code>
+  sends hundreds of megabytes to Docker on every build.</p>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; secrets baked into an image</span>
+  <p>Any of these puts a secret into the image, where anyone who can pull it can read it, <b>and deleting it in a later layer does not help</b> because the earlier layer still holds it:
+  <code>ENV API_KEY=abc123</code>, <code>COPY .env .</code>, a <code>RUN</code> that downloads with a token in the URL, and (visible in <code>docker history</code>) build arguments passed with
+  <code>--build-arg</code>. Pass secrets <b>at run time</b>: <code>docker run -e API_KEY ...</code> (value taken from your shell, never typed in the command), <code>--env-file .env</code>,
+  or Compose <code>environment:</code> with <code>${API_KEY}</code>. Docker also has build-time secret mounts for the rare case you need a secret during the build (search for
+  &ldquo;RUN --mount=type=secret&rdquo; in the Docker docs; I did not test it). If a real key ever lands in an image or a git commit, <b>rotate it</b>: treat it as published.</p>
+</div>
+
+<h3 id="df-multi">Multi-stage builds, slim images and non-root</h3>
+<p>The Dockerfile above already uses stages to keep test tools out of the runtime image. The other classic use is to keep <b>build tools</b> out. You build in one stage
+that has compilers, then copy only the result into a clean stage.</p>
+
+<div class="code" data-lang="dockerfile" data-run="no" data-why="Docker is not installed in the authoring environment">
+<header><b>Dockerfile (alternative)</b> &mdash; NOT RUN; the builder/runtime pattern with a virtualenv</header>
+<pre><code>FROM python:3.14-slim AS builder
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+COPY requirements.txt .
+# compilers (if you needed any) would live only in this stage
+RUN pip install --no-cache-dir -r requirements.txt
+
+FROM python:3.14-slim AS runtime
+# copy ONLY the installed packages from the builder stage
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+WORKDIR /app
+COPY app ./app
+RUN useradd --create-home --uid 10001 appuser
+USER appuser
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]</code></pre>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Choice</th><th>Why</th><th>Cost or caveat</th></tr></thead>
+<tbody>
+<tr><td><code>-slim</code> base</td><td>Smaller download, fewer packages to patch</td><td>No compilers or <code>curl</code>; a package needing C compilation may fail to install. <code>psycopg[binary]</code> ships a prebuilt wheel, which is why we chose it</td></tr>
+<tr><td><code>-alpine</code> base</td><td>Even smaller</td><td>Uses musl instead of glibc; many Python wheels are built for glibc, so installs can be slow or fail. For this roadmap, prefer slim</td></tr>
+<tr><td>Multi-stage</td><td>Runtime image contains no build tools or test tools</td><td>More lines, more to understand. Worth it when the build stage is heavy</td></tr>
+<tr><td>Non-root <code>USER</code></td><td>A hijacked process is not root inside the container</td><td>File ownership: files copied as root are readable but not writable by <code>appuser</code>. Use <code>COPY --chown</code> when it must write</td></tr>
+<tr><td>Pin versions</td><td>Same build tomorrow as today</td><td>You must bump them on purpose; add Dependabot or a reminder</td></tr>
+</tbody></table></div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p><b>&ldquo;Why do you COPY requirements.txt before the rest of the code?&rdquo;</b> Because of layer caching. A layer is reused only if its inputs and all layers
+  above it are unchanged. Dependencies change rarely and code changes constantly, so copying and installing dependencies first means a code edit reuses the slow
+  <code>pip install</code> layer. Follow-up: <b>&ldquo;what invalidates that cache anyway?&rdquo;</b> Editing <code>requirements.txt</code>, changing the base image tag, or building with <code>--no-cache</code>.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Reference &mdash; Dockerfile</div>
+  <a class="r" href="https://docs.docker.com/reference/dockerfile/" target="_blank" rel="noopener"><span>Docker Docs &mdash; Dockerfile reference<i>Look up every instruction here when a build surprises you. CMD vs ENTRYPOINT and HEALTHCHECK are on this page.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://docs.docker.com/build/building/best-practices/" target="_blank" rel="noopener"><span>Docker Docs &mdash; Building best practices<i>The official checklist: slim bases, multi-stage, .dockerignore, pinning, non-root.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=3c-iBn73dDE" target="_blank" rel="noopener"><span>TechWorld with Nana &mdash; Docker Tutorial for Beginners [FULL COURSE in 3 Hours]<i>Watch the Dockerfile and image chapters with your own file open beside it.</i></span><span class="dur">video</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="running">Running containers: commands, ports, environment, volumes, networks</h2>
+<p class="sub">Building an image changes nothing on your machine. <code>docker run</code> is what starts a process, and every flag on it answers one
+question: what can this container see, and what can see it?</p>
+
+<h3 id="run-cmds">The commands you will actually type</h3>
+<div class="code" data-lang="bash" data-run="no" data-why="Docker is not installed in the authoring environment">
+<header><b>terminal</b> &mdash; NOT RUN (no Docker here). Works in Git-Bash; in PowerShell replace the line continuations with a backtick</header>
+<pre><code>docker build -t ticket-api:dev .                 # build the image from ./Dockerfile; tag it
+docker run -d --name api -p 8000:8000 \
+  -e DATABASE_URL -e API_KEY ticket-api:dev      # start detached; publish host 8000 -&gt; container 8000
+docker ps                                         # running containers; STATUS shows (healthy) once the check passes
+docker ps -a                                      # include stopped ones
+docker logs -f --tail 50 api                      # follow the last 50 lines of stdout/stderr
+docker exec -it api sh                            # a shell INSIDE the running container (debugging only)
+docker stop api                                   # SIGTERM, then SIGKILL after a grace period
+docker rm api                                     # delete the stopped container (its writable layer goes with it)
+docker image ls                                   # images on disk
+docker system df                                  # how much disk Docker is using</code></pre>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Command</th><th>Question it answers</th><th>If it fails</th></tr></thead>
+<tbody>
+<tr><td><code>docker ps -a</code></td><td>Did it start, and did it exit straight away?</td><td>Status <code>Exited (1)</code>: read <code>docker logs</code>. Exit 137 usually means it was killed (out of memory or <code>docker kill</code>)</td></tr>
+<tr><td><code>docker logs NAME</code></td><td>What did the app print?</td><td>No output: the app logs to a file, or output was buffered (we set <code>PYTHONUNBUFFERED=1</code>)</td></tr>
+<tr><td><code>docker exec -it NAME sh</code></td><td>What does the world look like from inside?</td><td>&ldquo;executable not found&rdquo;: slim images may lack <code>bash</code>; use <code>sh</code></td></tr>
+<tr><td><code>docker inspect NAME</code></td><td>Exact env, mounts, network, health log</td><td>Long JSON: pipe to a file and search it</td></tr>
+<tr><td><code>docker stop</code> then <code>docker rm</code></td><td>Clean up</td><td>Name already in use: you forgot to <code>rm</code> the last one; <code>--rm</code> on <code>run</code> removes it automatically on exit</td></tr>
+</tbody></table></div>
+
+<p>Typing those flags by hand is how people leak secrets and mistype ports. The lab builds the command as a <b>list of strings</b>, which is also how you should call it from any
+program: a list is passed to the operating system as separate arguments, so spaces and quotes in values cannot change the command&rsquo;s meaning. This block ran.</p>
+
+<div class="code" data-lang="python">
+<header><b>run_cmd.py</b> &mdash; executed; it only builds and prints the command, it does not call Docker</header>
+<pre><code>import shlex
+
+def docker_run(image, name, ports, env_names):
+    cmd = ["docker", "run", "-d", "--name", name]
+    for host, container in sorted(ports.items()):
+        cmd += ["-p", f"{host}:{container}"]
+    for key in env_names:              # name only: Docker copies the value from YOUR shell
+        cmd += ["-e", key]
+    return cmd + [image]
+
+cmd = docker_run("ticket-api:dev", "api", {8000: 8000}, ["DATABASE_URL", "API_KEY"])
+print(cmd)
+print(shlex.join(cmd))                 # the same thing as one shell-safe string, for README or logs
+assert cmd[-1] == "ticket-api:dev"
+assert "API_KEY=" not in shlex.join(cmd)   # the secret VALUE never appears
+# To really run it:  subprocess.run(cmd, check=True)   (a list, never a string with shell=True)
+</code></pre>
+</div>
+
+<h3 id="run-ports">Ports, environment variables and logs</h3>
+<p><b>Ports.</b> <code>-p HOST:CONTAINER</code>. The container side is fixed by the app (uvicorn listens on 8000). The host side is yours to change when 8000 is taken:
+<code>-p 8080:8000</code> then browse <code>localhost:8080</code>. Another trap: inside a container the server must bind <code>0.0.0.0</code>, not <code>127.0.0.1</code>. Bound to loopback,
+the app is reachable only from inside its own container, so the published port appears to connect and then hangs or resets.</p>
+<p><b>Environment variables.</b> <code>-e KEY=value</code>, <code>-e KEY</code> (take it from my shell), or <code>--env-file .env</code> (one <code>KEY=value</code> per line; read the Docker docs for how quotes and comments are treated, as they are not
+identical to a shell). <b>Logs.</b> A container should log to <b>stdout and stderr</b> and nothing else; Docker collects them, so <code>docker logs</code> works and so does any log tool later. Do not write a log file inside the container: it
+vanishes with the container.</p>
+
+<h3 id="run-vol">Volumes and bind mounts</h3>
+<div class="vs">
+  <div><div class="vh">Named volume</div>
+<div class="code" data-lang="text" data-run="no" data-why="Docker is not installed in the authoring environment">
+<header><b>NOT RUN</b></header>
+<pre><code>docker run -v pgdata:/var/lib/postgresql/data postgres:16
+# Docker owns "pgdata" and stores it where it likes.
+# Survives docker rm. Removed by: docker volume rm pgdata</code></pre>
+</div></div>
+  <div><div class="vh">Bind mount</div>
+<div class="code" data-lang="text" data-run="no" data-why="Docker is not installed in the authoring environment">
+<header><b>NOT RUN</b></header>
+<pre><code>docker run -v ./src:/app/src ticket-api:dev
+# Your folder, shown inside the container. Edit on the host,
+# see it in the container at once. No Docker-managed copy.</code></pre>
+</div></div>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Dimension</th><th>Named volume</th><th>Bind mount</th></tr></thead>
+<tbody>
+<tr><td>Who owns the location</td><td>Docker</td><td>You (a path on your machine)</td></tr>
+<tr><td>Best for</td><td>Database files, anything the container produces and must keep</td><td>Source code during development, config files you edit</td></tr>
+<tr><td>Portable to another machine</td><td>Yes: the compose file just names it</td><td>No: depends on a path existing there</td></tr>
+<tr><td>Performance on Windows</td><td>Good (stays inside the Linux VM)</td><td>Can be slow if the folder lives on the Windows side and is mounted into the Linux VM; check on your setup</td></tr>
+<tr><td>File ownership issues</td><td>Rare</td><td>Common: host user vs container user</td></tr>
+<tr><td>Typical mistake</td><td>Deleting the volume and wondering where the data went (<code>docker compose down -v</code> removes volumes)</td><td>Mounting over a folder that held files in the image: the mount hides them</td></tr>
+</tbody></table></div>
+<p>Use a named volume for Postgres data and a bind mount for code you are actively editing. Never use a bind mount as the way your project is meant to run for a stranger; they will not have your path.</p>
+
+<h3 id="run-net">Networks</h3>
+<p>Containers on the same Docker network can reach each other by <b>service name</b>, because Docker runs a small DNS server for that network. The Compose docs say it creates one default
+bridge network per project and every service joins it. Two numbers in a <code>ports</code> line mean two different things: the <b>left</b> is for traffic from your host, the <b>right</b> is the
+container port that other containers use.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 440" role="img" aria-label="Container networking. A browser on the host reaches the api container through the published port 8000. Inside the Docker network the api container reaches the database by the name db on port 5432 using Docker DNS. The host cannot reach the database directly because no port is published for it. Using localhost inside the api container points at the api container itself and fails.">
+  <defs>
+    <marker id="s27-cc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s27-cb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s27-cr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+  <rect class="zone" x="20" y="20" width="250" height="400" rx="6"/>
+  <text class="mm" x="36" y="44">YOUR LAPTOP (HOST)</text>
+  <rect class="box" x="44" y="90" width="200" height="70" rx="3"/>
+  <text class="t" x="60" y="116">browser / curl</text>
+  <text class="m" x="60" y="136">localhost:8000</text>
+  <rect class="box" x="44" y="280" width="200" height="70" rx="3"/>
+  <text class="t" x="60" y="306">psql on host</text>
+  <text class="m" x="60" y="326">localhost:5432</text>
+
+  <rect class="zone" x="400" y="20" width="780" height="400" rx="6"/>
+  <text class="mm" x="416" y="44">DOCKER NETWORK  (compose default bridge)</text>
+  <rect class="box-c" x="440" y="90" width="220" height="90" rx="3"/>
+  <text class="t" x="456" y="116">api</text>
+  <text class="m" x="456" y="138">listens 0.0.0.0:8000</text>
+  <text class="mm" x="456" y="162">PUBLISHED 8000:8000</text>
+  <rect class="box-c" x="900" y="260" width="220" height="90" rx="3"/>
+  <text class="t" x="916" y="286">db</text>
+  <text class="m" x="916" y="308">postgres :5432</text>
+  <text class="mm" x="916" y="332">NO PORTS LINE</text>
+
+  <rect class="box-a" x="680" y="176" width="190" height="64" rx="3"/>
+  <text class="t b" x="696" y="202">Docker DNS</text>
+  <text class="m" x="696" y="222">db  -&gt; 172.x.x.x</text>
+
+  <path class="flow" d="M248,125 H436" marker-end="url(#s27-cc)"/>
+  <text class="mm" x="300" y="116">published port</text>
+  <path class="flow" d="M660,150 H900 V256" marker-end="url(#s27-cc)"/>
+  <text class="m" x="712" y="138">db:5432</text>
+  <path class="flow-r dash" d="M248,315 H896" marker-end="url(#s27-cr)"/>
+  <text class="mm r" x="420" y="306">NOT REACHABLE: db publishes nothing</text>
+  <path class="flow-r dash" d="M550,182 V240 H500" />
+  <text class="m r" x="440" y="262">localhost:5432</text>
+  <text class="m r" x="440" y="280">here = the api itself</text>
+
+  <circle class="bub" cx="340" cy="90" r="13"/><text class="bubt" x="340" y="94">1</text>
+  <circle class="bub" cx="780" cy="112" r="13"/><text class="bubt" x="780" y="116">2</text>
+  <circle class="bub" cx="640" cy="380" r="13"/><text class="bubt" x="640" y="384">3</text>
+  <text class="m" x="662" y="376">1 host to container: left number of -p.</text>
+  <text class="m" x="662" y="396">2 container to container: name + container port.</text>
+  <text class="m" x="662" y="416">3 a published port would also expose the db to your LAN.</text>
+</svg>
+<figcaption>Drawing 27-C &mdash; container networking. <b>Cyan</b> = traffic that works. <b>Brass</b> = Docker&rsquo;s name lookup. <b>Red dashed</b> = the two classic mistakes.</figcaption>
+</figure>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; &ldquo;connection refused&rdquo; to localhost:5432 inside a container</span>
+  <p>The single most common first-week Docker bug. Your <code>DATABASE_URL</code> says <code>localhost</code> because that is what worked on your laptop. Inside the API container <code>localhost</code> is the API container,
+  where nothing listens on 5432. The fix is the <b>service name</b>: <code>postgresql://app:...@db:5432/app</code>. The mirror-image bug: from your <i>host</i>, the name <code>db</code> does not resolve; use <code>localhost</code> and a published port.</p>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p><b>&ldquo;Your container exited immediately. How do you debug it?&rdquo;</b> <code>docker ps -a</code> for the exit code, <code>docker logs</code> for the last output, then run it again with <code>docker run -it --entrypoint sh IMAGE</code> to poke around.
+  Exit 0 with no logs often means the command finished (a script, not a server); exit 1 is an app error; 137 is a kill. Follow-up: <b>&ldquo;and if it runs but the browser cannot connect?&rdquo;</b> Check the port is published, and the server is bound to <code>0.0.0.0</code>.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Learn this &mdash; storage and networking</div>
+  <a class="r" href="https://www.youtube.com/watch?v=p2PH_YPCsis" target="_blank" rel="noopener"><span>TechWorld with Nana &mdash; Docker Volumes explained in 6 minutes<i>Named volumes versus bind mounts, short enough to watch twice.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://docs.docker.com/compose/how-tos/networking/" target="_blank" rel="noopener"><span>Docker Docs &mdash; Networking in Compose<i>Default network, service-name DNS, and why the host port is not the container port.</i></span><span class="dur">docs</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="compose">Docker Compose: API plus Postgres</h2>
+<p class="sub">Compose writes down, in one YAML file, the <code>docker run</code> commands, networks and volumes your project needs, so &ldquo;the whole stack&rdquo;
+is one command. The Compose docs name <code>compose.yaml</code> as the preferred file name.</p>
+
+<h3 id="cp-file">The compose file</h3>
+<div class="code" data-lang="yaml" data-run="no" data-why="Docker is not installed in the authoring environment">
+<header><b>compose.yaml</b> &mdash; NOT RUN (parsed with PyYAML and checked against the Compose docs; see below)</header>
+<pre><code>name: ticket-api                        # the Compose "project" name; prefixes network and volume names
+services:
+  db:
+    image: postgres:16                  # pinned major version. For vectors see the pgvector note below
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}   # refuse to start if unset
+      POSTGRES_DB: app
+    volumes:
+      - pgdata:/var/lib/postgresql/data # NAMED volume: survives "down", removed by "down -v"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    # no "ports:" on purpose: only the api can reach the database
+
+  api:
+    build:
+      context: .
+      target: runtime                   # the last stage of the Dockerfile
+    ports:
+      - "8000:8000"                     # HOST:CONTAINER. Change the left number if 8000 is taken
+    environment:
+      DATABASE_URL: postgresql://app:${DB_PASSWORD}@db:5432/app    # host is the SERVICE NAME "db"
+      API_KEY: ${API_KEY:?set API_KEY in .env}
+      LOG_LEVEL: ${LOG_LEVEL:-info}     # default when unset or empty
+    depends_on:
+      db:
+        condition: service_healthy      # wait for the HEALTHCHECK to pass, not merely for "started"
+
+  tests:                                # a one-shot job, not part of "up"
+    build:
+      context: .
+      target: test
+    profiles: ["test"]                  # only starts when asked for
+    environment:
+      DATABASE_URL: postgresql://app:${DB_PASSWORD}@db:5432/app
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:</code></pre>
+</div>
+
+<div class="code" data-lang="text">
+<header><b>.env.example</b> &mdash; committed; fake values. Copy to <b>.env</b> (git-ignored) and edit</header>
+<pre><code>DB_PASSWORD=change-me-locally
+API_KEY=change-me-too
+# LOG_LEVEL=debug</code></pre>
+</div>
+
+<div class="code" data-lang="bash" data-run="no" data-why="Docker is not installed in the authoring environment">
+<header><b>terminal</b> &mdash; NOT RUN</header>
+<pre><code>cp .env.example .env                       # PowerShell: Copy-Item .env.example .env
+docker compose up --build -d               # build, create network + volume, start db, wait healthy, start api
+docker compose ps                          # STATUS column shows (healthy)
+curl http://localhost:8000/health          # {"status":"ok"}
+curl http://localhost:8000/ready           # {"status":"ready"} only if the database answers
+docker compose logs -f api                 # follow one service
+docker compose run --rm tests              # runs the tests profile service once; its profile is enabled automatically
+docker compose down                        # stop and remove containers + network; KEEPS the volume
+docker compose down -v                     # ...and DELETES the volumes (your database)</code></pre>
+</div>
+
+<p><b>What I checked, since I could not run it.</b> The file parses with PyYAML 6.0.3 (script in the next block). From the Compose docs I confirmed:
+<code>depends_on</code> with <code>condition: service_healthy</code> and a Postgres <code>pg_isready</code> healthcheck are shown on the
+<a href="https://docs.docker.com/compose/how-tos/startup-order/" target="_blank" rel="noopener">startup-order page</a>; <code>${VAR:-default}</code> and <code>${VAR:?error}</code> on the
+<a href="https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/" target="_blank" rel="noopener">interpolation page</a> (the page does not document a bare <code>${VAR:?}</code>, so I always give a message);
+<code>profiles</code> and the rule that a service explicitly targeted by <code>run</code> has its profile started automatically on the
+<a href="https://docs.docker.com/compose/how-tos/profiles/" target="_blank" rel="noopener">profiles page</a>. <b>Not checked:</b> that it starts, that <code>name:</code> behaves as I describe on your Compose version, and
+that <code>pg_isready</code> exits 0 with these flags in the 16 image. Run <code>docker compose config</code> first: it prints the file with variables substituted and fails on a syntax error, without starting anything (documented Compose behaviour I
+am recalling, not one I ran).</p>
+
+<h3 id="cp-order">depends_on does not wait for readiness</h3>
+<p>Plain <code>depends_on: [db]</code> means &ldquo;start db first&rdquo;. It does not mean &ldquo;wait until db accepts connections&rdquo;. The Compose docs say it directly: Compose does not wait until a container is &ldquo;ready&rdquo;, only until it is running.
+Postgres takes a few seconds after the container starts to initialise and accept connections, so an API that connects on start-up crashes with &ldquo;connection refused&rdquo; on a fresh volume. There are three fixes, in order of preference:</p>
+<div class="tw"><table>
+<thead><tr><th>Fix</th><th>How</th><th>Trade-off</th></tr></thead>
+<tbody>
+<tr><td>Healthcheck + <code>condition: service_healthy</code></td><td>As in the file above</td><td>Compose handles it. You maintain a correct healthcheck</td></tr>
+<tr><td>Retry in the app</td><td>Try to connect N times with a short sleep, then fail loudly</td><td>Also protects you in production when the database restarts. Best done in addition</td></tr>
+<tr><td><code>restart: on-failure</code></td><td>Let it crash and be restarted until the database is up</td><td>Noisy logs, and hides real crashes behind restarts. A last resort</td></tr>
+</tbody></table></div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; service_healthy with no healthcheck</span>
+  <p><code>condition: service_healthy</code> needs the target service to <i>define</i> a <code>healthcheck</code>. Without one, there is nothing to become healthy. The lab&rsquo;s <code>validate_compose</code>
+  catches exactly this. And a healthcheck that is too eager (no <code>start_period</code>, tiny <code>retries</code>) marks a slow-starting database unhealthy and blocks the start; give it a start period and several retries.</p>
+</div>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 470" role="img" aria-label="Compose topology for an API plus Postgres. A dot-env file feeds environment variables to api and db. The api service waits on the db healthcheck through depends_on service_healthy and connects to db on port 5432. The db stores data in a named volume called pgdata. A tests service in the test profile runs pytest against the same database and does not start with a plain compose up. Only the api publishes a port to the host.">
+  <defs>
+    <marker id="s27-dc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s27-db" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s27-dr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+  <rect class="box-a" x="30" y="60" width="200" height="80" rx="3"/>
+  <text class="t b" x="46" y="86">.env</text>
+  <text class="m" x="46" y="108">DB_PASSWORD</text>
+  <text class="m" x="46" y="126">API_KEY</text>
+
+  <rect class="zone" x="300" y="30" width="880" height="410" rx="6"/>
+  <text class="mm" x="316" y="54">COMPOSE PROJECT "ticket-api"  (one default network)</text>
+
+  <rect class="box-c" x="340" y="80" width="230" height="100" rx="3"/>
+  <text class="t" x="356" y="106">api</text>
+  <text class="m" x="356" y="128">build target runtime</text>
+  <text class="m" x="356" y="146">ports 8000:8000</text>
+  <text class="mm" x="356" y="168">HEALTHCHECK /health</text>
+
+  <rect class="box-c" x="760" y="80" width="230" height="100" rx="3"/>
+  <text class="t" x="776" y="106">db</text>
+  <text class="m" x="776" y="128">postgres:16</text>
+  <text class="m" x="776" y="146">no published port</text>
+  <text class="mm" x="776" y="168">HEALTHCHECK pg_isready</text>
+
+  <rect class="box" x="760" y="260" width="230" height="70" rx="3"/>
+  <text class="t" x="776" y="286">volume pgdata</text>
+  <text class="m" x="776" y="306">survives compose down</text>
+
+  <rect class="box" x="340" y="260" width="230" height="100" rx="3"/>
+  <text class="t" x="356" y="286">tests</text>
+  <text class="m" x="356" y="308">profile: test</text>
+  <text class="m" x="356" y="326">build target test</text>
+  <text class="mm" x="356" y="348">RUN: compose run --rm tests</text>
+
+  <path class="flow" d="M574,130 H754" marker-end="url(#s27-dc)"/>
+  <text class="m" x="600" y="122">db:5432</text>
+  <path class="flow-b dash" d="M574,152 H754" marker-end="url(#s27-db)"/>
+  <text class="mm b" x="590" y="172">WAITS: service_healthy</text>
+  <path class="flow" d="M875,184 V254" marker-end="url(#s27-dc)"/>
+  <path class="flow" d="M456,264 V210 H800 V184" marker-end="url(#s27-dc)"/>
+  <path class="flow-b dash" d="M234,100 H334" marker-end="url(#s27-db)"/>
+  <text class="mm b" x="46" y="162">FEEDS api AND db</text>
+
+  <rect class="box-r" x="1030" y="260" width="130" height="100" rx="3"/>
+  <text class="t r" x="1044" y="286">down -v</text>
+  <text class="m" x="1044" y="308">deletes the</text>
+  <text class="m" x="1044" y="326">volume = all</text>
+  <text class="m" x="1044" y="344">your data</text>
+  <path class="flow-r dash" d="M1030,300 H994" marker-end="url(#s27-dr)"/>
+
+  <circle class="bub" cx="660" cy="100" r="13"/><text class="bubt" x="660" y="104">1</text>
+  <circle class="bub" cx="875" cy="230" r="13"/><text class="bubt" x="875" y="234">2</text>
+  <circle class="bub" cx="650" cy="230" r="13"/><text class="bubt" x="650" y="234">3</text>
+  <circle class="bub" cx="280" cy="80" r="13"/><text class="bubt" x="280" y="84">4</text>
+  <text class="m" x="340" y="400">1 api is started only after db is healthy.   2 data lives in the volume.</text>
+  <text class="m" x="340" y="420">3 tests joins the same network; not started by a plain up.   4 secrets arrive as variables.</text>
+</svg>
+<figcaption>Drawing 27-D &mdash; compose topology for API plus Postgres. <b>Cyan</b> = traffic. <b>Brass dashed</b> = ordering and configuration, not traffic. <b>Red</b> = the command that destroys data.</figcaption>
+</figure>
+
+<h3 id="cp-pg">Postgres, volumes and pgvector</h3>
+<p>The database files live in a <b>named volume</b>, so <code>docker compose down</code> keeps your data and <code>docker compose down -v</code> deletes it. The mount path
+<code>/var/lib/postgresql/data</code> is correct for the <code>postgres:16</code> image as I remember it; newer major versions of the official image may use a different data directory layout, so when you change the
+major version, read that image&rsquo;s Docker Hub page about where to mount. Also note: the <code>POSTGRES_*</code> variables are read <b>only the first time</b>, when the volume is empty. Change the password in <code>.env</code> later and nothing happens
+until you delete the volume, a favourite source of &ldquo;password authentication failed&rdquo;.</p>
+<p><b>pgvector.</b> The vector extension is not in the plain <code>postgres</code> image. The pgvector README (read on 18 Oct 2026) shows an image named <code>pgvector/pgvector</code> with tags such as <code>pg18-trixie</code>
+(replace the number with your Postgres version), and the one-line enable, run once per database. <b>Not run here:</b> I did not pull that image, so confirm the exact tag on Docker Hub.</p>
+<div class="code" data-lang="sql" data-run="no" data-why="PostgreSQL with the pgvector extension is required; not available in the authoring environment">
+<header><b>init/001-vector.sql</b> &mdash; NOT RUN (needs PostgreSQL + pgvector)</header>
+<pre><code>CREATE EXTENSION IF NOT EXISTS vector;     -- once per database; README shows "CREATE EXTENSION vector;"
+-- then, for example:  CREATE TABLE chunks (id bigserial PRIMARY KEY, body text, embedding vector(384));</code></pre>
+</div>
+<p>To use it: swap <code>image: postgres:16</code> for the pgvector image with a tag you verified, and put this file where the image runs init scripts (the official Postgres image runs <code>*.sql</code> files in
+<code>/docker-entrypoint-initdb.d</code> on first start, which I know from its documentation but did not test; again, only when the volume is empty). Vector search itself is the subject of a later sheet.</p>
+
+<h3 id="cp-test">Running tests in a container</h3>
+<p>The <code>test</code> stage and the <code>tests</code> service exist for one reason: &ldquo;the tests pass&rdquo; should mean &ldquo;they pass in the same environment a stranger will have&rdquo;, not
+&ldquo;in my virtualenv with the package I installed last Tuesday and forgot&rdquo;. <code>docker compose run --rm tests</code> builds the test stage, waits for a healthy database, runs <code>pytest -q</code> once and removes the container.
+The profile keeps the job out of a plain <code>docker compose up</code>. Fast unit tests, like the lab&rsquo;s, should still run on the host in a venv: it is faster. Use the container run as the <b>final check before you push</b>, and let CI do it for you.</p>
+
+<div class="code" data-lang="python">
+<header><b>check_compose.py</b> &mdash; executed (needs <code>pip install pyyaml</code>); the same idea the lab asks you to generalise</header>
+<pre><code>import yaml   # PyYAML; yaml.safe_load turns YAML text into dicts and lists
+
+COMPOSE = """
+services:
+  db:
+    image: postgres:16
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app"]
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+"""
+
+def unhealthy_dependencies(doc):
+    """Services that wait for service_healthy on something with no healthcheck."""
+    services = doc["services"]
+    problems = []
+    for name, spec in services.items():
+        deps = spec.get("depends_on", {})
+        if isinstance(deps, list):                 # short form: ["db"] has no conditions
+            continue
+        for target, cfg in deps.items():
+            if cfg.get("condition") == "service_healthy" and "healthcheck" not in services[target]:
+                problems.append(f"{name} waits for {target}, which has no healthcheck")
+    return problems
+
+doc = yaml.safe_load(COMPOSE)
+print(unhealthy_dependencies(doc))                 # []
+del doc["services"]["db"]["healthcheck"]
+print(unhealthy_dependencies(doc))                 # ['api waits for db, which has no healthcheck']
+assert unhealthy_dependencies(doc)
+</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p><b>&ldquo;Your API crashes on first docker compose up but works on the second. Why?&rdquo;</b> The database was started but not ready: <code>depends_on</code> only orders start-up. On the second run the volume already
+  exists, so Postgres starts faster. Fix: a healthcheck on <code>db</code> and <code>depends_on: condition: service_healthy</code>, plus a connection retry in the app. Follow-up: <b>&ldquo;what does liveness versus readiness mean?&rdquo;</b>
+  Liveness: should this process be restarted? Readiness: should it receive traffic right now? The database check belongs in readiness.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Learn this &mdash; Compose</div>
+  <a class="r" href="https://www.youtube.com/watch?v=SXwC9fSwct8" target="_blank" rel="noopener"><span>TechWorld with Nana &mdash; Ultimate Docker Compose Tutorial<i>Services, networks and volumes from nothing; watch it before writing your own file.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=jp9Rso0TsQM" target="_blank" rel="noopener"><span>Under The Hood Tech &mdash; docker compose depends_on doesn&rsquo;t wait for your database<i>Exactly the trap above and the healthcheck fix. Watch when your API dies on first start.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://docs.docker.com/compose/how-tos/startup-order/" target="_blank" rel="noopener"><span>Docker Docs &mdash; Control startup and shutdown order in Compose<i>The official statement that Compose does not wait for readiness, with the pg_isready example.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://docs.docker.com/compose/how-tos/profiles/" target="_blank" rel="noopener"><span>Docker Docs &mdash; Using profiles with Compose<i>How the tests service stays out of a plain up, and the auto-enable rule for run.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://github.com/pgvector/pgvector" target="_blank" rel="noopener"><span>pgvector README<i>Docker image name and CREATE EXTENSION. Check the tag on Docker Hub.</i></span><span class="dur">docs</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="config">Configuration, local development and the README</h2>
+<p class="sub">The same image must run on your laptop, in CI and on a stranger&rsquo;s machine. So the image holds code; the <b>environment</b>
+holds everything that differs: database address, keys, log level.</p>
+
+<h3 id="cf-12">Twelve-factor configuration</h3>
+<p>The twelve-factor app rule for config is: store it in <b>environment variables</b>, strictly separate from code. Concretely: one variable per setting, no config files with secrets
+committed, a default only where a wrong default is harmless (<code>LOG_LEVEL</code>, <code>PORT</code>), and <b>no default at all</b> for anything secret or environment-specific. A missing required setting
+should stop the program at start-up with an error naming the setting, not fail ten minutes later with <code>NoneType</code>. Environment variables are always <b>strings</b>, so
+parsing is your job, and <code>bool("false")</code> is <code>True</code>. This block ran.</p>
+
+<div class="code" data-lang="python">
+<header><b>config_by_hand.py</b> &mdash; executed</header>
+<pre><code>import os
+
+class ConfigError(Exception):
+    """A setting is missing or invalid. The message names the setting."""
+
+def required(name, env=os.environ):
+    value = env.get(name, "").strip()      # missing and blank both count as unset
+    if not value:
+        raise ConfigError(f"{name} is required")
+    return value
+
+def as_bool(text):
+    t = text.strip().lower()
+    if t in ("1", "true", "yes", "on"):
+        return True
+    if t in ("0", "false", "no", "off"):
+        return False
+    raise ConfigError(f"not a boolean: {text!r}")
+
+def redact(url):
+    """postgresql://app:secret@db/app -&gt; postgresql://app:***@db/app"""
+    import re
+    return re.sub(r"(://[^:/@]+):[^@/]*@", r"\1:***@", url)
+
+env = {"DATABASE_URL": "postgresql://app:s3cret@db:5432/app", "DEBUG": "false", "PORT": "8080"}
+print(bool(env["DEBUG"]))                  # True   &lt;-- the trap: any non-empty string is truthy
+print(as_bool(env["DEBUG"]))               # False  &lt;-- what you meant
+print(int(env.get("PORT", "8000")) + 1)    # 8081   (convert once, at start-up)
+print(redact(required("DATABASE_URL", env)))   # postgresql://app:***@db:5432/app
+try:
+    required("API_KEY", env)
+except ConfigError as err:
+    print("start-up stopped:", err)        # start-up stopped: API_KEY is required
+</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">You must be able to explain this line</span>
+  <p><code>env.get(name, "").strip()</code> then <code>if not value</code>. Compose and shells often give an <b>empty string</b> for an unset variable rather than a missing key, so a
+  check for <code>None</code> alone lets an empty <code>API_KEY</code> through. Treating blank as unset is the safer rule, and the lab tests it. Also: the <code>redact</code> function exists because the
+  database URL embeds the password, and a <code>print(settings)</code> in a log line is how secrets reach a log aggregator.</p>
+</div>
+
+<h3 id="cf-lab">Lab: python-lab/week27 (no Docker needed)</h3>
+<p>The lab turns this section into code you write: <code>get_env</code>, <code>to_bool</code>, <code>to_int</code> with bounds, <code>redact_url</code>, a <code>Settings</code> object whose
+<code>repr</code> never prints a secret, <code>load_settings</code>, a <code>validate_compose</code> that implements the rules from the previous section (unpinned image, hard-coded secret, <code>service_healthy</code> without a healthcheck, undeclared volume, bad port,
+unknown dependency) and <code>build_run_command</code>, which returns the <code>docker run</code> list. Open the stub, read the docstrings (they are the spec), and make the tests pass. Run from <code>python-lab/</code>:</p>
+<div class="code" data-lang="powershell">
+<header><b>PowerShell, in python-lab/</b></header>
+<pre><code>python -m pytest week27 -q        # all 81 fail on the stub, with NotImplementedError
+# implement a function, rerun, watch the count of failures drop
+# (the shared pytest.ini only lists weeks 1-4, so name week27 explicitly)</code></pre>
+</div>
+<p>Authoring record: on the stub, 81 of 81 tests fail; on my reference solution (kept outside the repo), 81 of 81 pass; 14 deliberate bugs in the reference (leaking the key in <code>repr</code>, <code>bool(text)</code>,
+off-by-one on the port minimum, inclusive upper bound broken, blank counted as set, <code>latest</code> accepted, healthcheck rule dropped, unsorted env, secret value printed for <code>-e KEY</code>,
+case-sensitive secret match, undeclared volume ignored, ignored <code>detach</code> flag, bool accepted as a port, URL redaction removed) were each caught by at least one test. That proves the tests have teeth, not that they are complete.
+The only dependency is pytest (<code>requirements-week27.txt</code>).</p>
+
+<h3 id="cf-dev">Local development: venv or container?</h3>
+<div class="tw"><table>
+<thead><tr><th>Dimension</th><th>Virtualenv (<code>.venv</code>)</th><th>Container (Compose)</th></tr></thead>
+<tbody>
+<tr><td>What it isolates</td><td>Python packages only</td><td>The whole userland: OS packages, Python, packages, environment</td></tr>
+<tr><td>Speed of the edit-run loop</td><td>Instant</td><td>Rebuild per change, or a bind mount plus a reload server</td></tr>
+<tr><td>Needs Docker</td><td>No</td><td>Yes (and its memory and licence considerations)</td></tr>
+<tr><td>Catches &ldquo;works only on my machine&rdquo;</td><td>Partly: system libraries and env differences slip through</td><td>Yes: this is its purpose</td></tr>
+<tr><td>Debugging in your editor</td><td>Simple</td><td>Possible, needs setup</td></tr>
+<tr><td>Best for</td><td>Daily coding and unit tests</td><td>Running the whole stack; the final check; what a stranger runs</td></tr>
+</tbody></table></div>
+<p>Do both, deliberately: code and run unit tests in a venv all day; run the whole stack in Compose before you push and let CI repeat it. Don&rsquo;t develop only inside containers until you are comfortable; debugging two new things at once is slow.</p>
+
+<h3 id="cf-readme">Reproducibility and the README</h3>
+<p>The README is the interface of your project. Test it by following it, literally, in a fresh folder, preferably on a different machine or in a new Windows user profile. Each step you have to improvise is a bug in the README.
+A README that passes the clean-clone test has these parts, in this order:</p>
+<div class="code" data-lang="text">
+<header><b>README.md skeleton</b> &mdash; a template; fill in your project&rsquo;s real commands</header>
+<pre><code># Project name: one sentence on what it does and for whom
+
+## Prerequisites
+- Docker with Compose v2 (the `docker compose` command), or Python 3.12+ for the venv route.
+  Windows: Docker Desktop (check its licence terms for your situation) or Docker Engine inside WSL2.
+- Free ports: 8000 (api). If busy, change the left number in compose.yaml.
+
+## Quick start (about 2 minutes)
+1. `git clone ...` and `cd` into it
+2. `cp .env.example .env`   (edit the two placeholder values)
+3. `docker compose up --build`
+4. `curl http://localhost:8000/health`   expected:  {"status":"ok"}
+
+## Try it
+(2-3 copy-pasteable requests and their real output)
+
+## Run the tests
+`docker compose run --rm tests`      or      `python -m venv .venv`, activate, `pip install -r requirements-dev.txt`, `pytest`
+
+## Stop and clean up
+`docker compose down`   (add -v to delete the database volume)
+
+## Troubleshooting
+- "port is already allocated": ...
+- API restarts at first start: ...
+- password authentication failed after changing .env: delete the volume (`down -v`)
+
+## How it works / design notes / limits (honest)</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the README you wrote from memory</span>
+  <p>Authors skip the steps they do automatically: &ldquo;copy .env&rdquo;, &ldquo;start Docker Desktop first&rdquo;, &ldquo;wait 20 seconds&rdquo;, &ldquo;use Python 3.12 not 3.9&rdquo;. Write the README <i>while</i> you do a fresh clone, copying
+  commands from your terminal history, and put the <b>expected output</b> after each command so a reader can tell success from failure. No employer or client data goes in a portfolio repo, in the README or the examples: use synthetic data like the tickets here.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Reference &mdash; configuration</div>
+  <a class="r" href="https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/" target="_blank" rel="noopener"><span>Docker Docs &mdash; Set, use, and manage variables in a Compose file with interpolation<i>${VAR:-default}, ${VAR:?error}, and where .env is read from.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="ai-python.html"><span>Sheet 23 &mdash; Python from zero<i>Virtual environments, requirements.txt and pytest, the host-side half of this section.</i></span><span class="dur">sheet</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="ci">CI/CD and GitHub Actions</h2>
+<p class="sub"><b>Continuous integration</b> means: every time code is pushed, a machine you did not touch checks it out fresh, installs it and runs the tests. It is the clean-clone test, automated.
+Your hands cannot forget a step the robot has to follow.</p>
+
+<h3 id="ci-concepts">The concepts, in plain words</h3>
+<div class="tw"><table>
+<thead><tr><th>Term</th><th>Meaning</th><th>In GitHub Actions</th></tr></thead>
+<tbody>
+<tr><td>CI (integration)</td><td>Build and test every change automatically</td><td>A workflow triggered by <code>push</code> and <code>pull_request</code></td></tr>
+<tr><td>CD (delivery / deployment)</td><td>Delivery: produce a deployable artefact automatically. Deployment: also release it automatically</td><td>Extra jobs that build and publish an image, deploy. <b>Not needed for your portfolio</b></td></tr>
+<tr><td>Trigger</td><td>The event that starts a run</td><td>The <code>on:</code> key</td></tr>
+<tr><td>Job</td><td>A set of steps run on one fresh machine; jobs run in parallel unless one <code>needs</code> another</td><td><code>jobs.&lt;id&gt;</code></td></tr>
+<tr><td>Step</td><td>One action (<code>uses</code>) or one shell command (<code>run</code>)</td><td><code>steps:</code> list</td></tr>
+<tr><td>Runner</td><td>The machine that runs a job</td><td><code>runs-on: ubuntu-latest</code></td></tr>
+<tr><td>Artefact / cache</td><td>Files kept after a run / files reused between runs to save time</td><td>upload-artifact / <code>cache: pip</code></td></tr>
+</tbody></table></div>
+
+<h3 id="ci-yaml">A workflow that installs and runs pytest</h3>
+<div class="code" data-lang="yaml" data-run="no" data-why="GitHub Actions cannot run here; the workflow was parsed with PyYAML and checked against the GitHub Docs">
+<header><b>.github/workflows/ci.yml</b> &mdash; NOT RUN (it only runs on GitHub); parsed with PyYAML and checked against the docs</header>
+<pre><code>name: ci
+on:
+  push:
+    branches: [main]                 # run when main changes...
+  pull_request:                      # ...and on every pull request
+permissions:
+  contents: read                     # least privilege for the automatic GITHUB_TOKEN
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6    # versions as shown on the GitHub docs page on 18 Oct 2026; re-check
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"     # match the Dockerfile; check that setup-python offers it
+          cache: pip                 # reuse downloaded packages between runs (keyed on requirements files)
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+      - name: Test
+        run: python -m pytest -q
+
+  docker-build:
+    needs: test                      # only if the tests passed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build the image (not pushed anywhere)
+        run: docker build --target runtime -t ticket-api:ci .</code></pre>
+</div>
+
+<p><b>What I checked, and what I did not.</b> The file parses with PyYAML 6.0.3 and its structure matches the pages
+<a href="https://docs.github.com/en/actions/tutorials/build-and-test-code/python" target="_blank" rel="noopener">Building and testing Python</a> and
+<a href="https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax" target="_blank" rel="noopener">Workflow syntax</a>: top-level <code>name</code>, <code>on</code>, <code>permissions</code>, <code>jobs</code>;
+each job has <code>runs-on</code> and <code>steps</code>; each step has <code>uses</code> or <code>run</code>; <code>on.push.branches</code> as a list; the pytest install-then-run sequence; <code>cache: pip</code> under <code>setup-python</code>; the action versions are those shown on that page
+(<code>checkout@v6</code>, <code>setup-python@v5</code>). A scripted check of those structural rules passed. (One quirk I hit: PyYAML follows YAML 1.1 and loads the bare key <code>on</code> as the boolean <code>True</code>; GitHub reads it as the trigger key, so this is a loader quirk, not a bug in the file.) <b>Not checked:</b> that GitHub accepts and runs it, that Python 3.14 is available to
+<code>setup-python</code>, and that the Ubuntu runner can <code>docker build</code> (the hosted runners are commonly listed as including Docker, which I did not verify). A syntax error shows up as a red mark on the repository&rsquo;s Actions tab.
+GitHub offers a free allowance for hosted runners, with different terms for public and private repositories; <b>verify the current terms yourself</b> before relying on it, and prefer a public portfolio repository.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 400" role="img" aria-label="A CI pipeline. A push or pull request triggers a workflow. A fresh Ubuntu runner checks out the repository, sets up Python with a pip cache, installs requirements, runs pytest and then builds the Docker image. A passing run shows a green check on the pull request; a failing step stops the job and shows a red cross. Secrets from the repository settings are injected only as environment variables into the steps that need them.">
+  <defs>
+    <marker id="s27-ec" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s27-eb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s27-er" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+  <rect class="box-a" x="30" y="90" width="150" height="80" rx="3"/>
+  <text class="t b" x="46" y="116">trigger</text>
+  <text class="m" x="46" y="138">push or</text>
+  <text class="m" x="46" y="156">pull_request</text>
+
+  <rect class="zone" x="220" y="50" width="760" height="160" rx="6"/>
+  <text class="mm" x="236" y="72">JOB "test"  on a fresh ubuntu-latest runner</text>
+  <rect class="box-c" x="240" y="96" width="130" height="80" rx="3"/>
+  <text class="t" x="254" y="122">checkout</text>
+  <text class="m" x="254" y="144">clean copy</text>
+  <rect class="box-c" x="390" y="96" width="140" height="80" rx="3"/>
+  <text class="t" x="404" y="122">setup-python</text>
+  <text class="m" x="404" y="144">+ pip cache</text>
+  <rect class="box-c" x="550" y="96" width="130" height="80" rx="3"/>
+  <text class="t" x="564" y="122">install</text>
+  <text class="m" x="564" y="144">pip -r ...</text>
+  <rect class="box-c" x="700" y="96" width="110" height="80" rx="3"/>
+  <text class="t" x="714" y="122">pytest</text>
+  <text class="m" x="714" y="144">-q</text>
+  <rect class="box-c" x="830" y="96" width="130" height="80" rx="3"/>
+  <text class="t" x="844" y="122">docker</text>
+  <text class="m" x="844" y="144">build only</text>
+
+  <path class="flow" d="M184,130 H214" marker-end="url(#s27-ec)"/>
+  <path class="flow" d="M374,136 H384" marker-end="url(#s27-ec)"/>
+  <path class="flow" d="M534,136 H544" marker-end="url(#s27-ec)"/>
+  <path class="flow" d="M684,136 H694" marker-end="url(#s27-ec)"/>
+  <path class="flow" d="M814,136 H824" marker-end="url(#s27-ec)"/>
+
+  <rect class="box-c" x="1030" y="60" width="140" height="60" rx="3"/>
+  <text class="t" x="1046" y="86">green check</text>
+  <text class="m" x="1046" y="106">merge is safe</text>
+  <rect class="box-r" x="1030" y="140" width="140" height="60" rx="3"/>
+  <text class="t r" x="1046" y="166">red cross</text>
+  <text class="m" x="1046" y="186">read the log</text>
+  <path class="flow" d="M984,110 H1024" marker-end="url(#s27-ec)"/>
+  <path class="flow-r dash" d="M760,180 V228 H1000 V170 H1024" marker-end="url(#s27-er)"/>
+  <text class="mm r" x="780" y="224">ANY STEP EXITS NON-ZERO: JOB STOPS</text>
+
+  <rect class="box-a" x="240" y="270" width="420" height="100" rx="3"/>
+  <text class="t b" x="256" y="296">Secrets</text>
+  <text class="m" x="256" y="318">stored in repo settings, read as</text>
+  <text class="m" x="256" y="336">${{ secrets.NAME }} into env: of ONE step.</text>
+  <text class="m" x="256" y="354">Never echo. Forks do not receive them.</text>
+  <path class="flow-b dash" d="M450,266 V180" marker-end="url(#s27-eb)"/>
+
+  <rect class="box" x="700" y="270" width="470" height="100" rx="3"/>
+  <text class="t" x="716" y="296">Better: tests that need no secret</text>
+  <text class="m" x="716" y="318">use fakes for the model and the API, so a fork or a</text>
+  <text class="m" x="716" y="336">stranger can run the same tests. Keep real-key</text>
+  <text class="m" x="716" y="354">checks as a manual step, not in CI.</text>
+</svg>
+<figcaption>Drawing 27-E &mdash; the CI pipeline. <b>Cyan</b> = the steps in order. <b>Brass</b> = trigger and secrets. <b>Red</b> = the failure path.</figcaption>
+</figure>
+
+<h3 id="ci-secrets">Secrets in Actions, caching and what not to do</h3>
+<p><b>Secrets.</b> Add them in the repository settings, then reference them as <code>${{ secrets.NAME }}</code> and pass them to the one step that needs them through <code>env:</code>. Per the
+<a href="https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets" target="_blank" rel="noopener">GitHub docs on secrets</a>: secrets are not passed to workflows triggered from forks (except the automatic
+<code>GITHUB_TOKEN</code>); an unset secret evaluates to an empty string; you cannot use a secret directly in an <code>if:</code>; avoid passing secrets on a command line because other users may see process lists, so prefer environment variables. GitHub masks registered secret values in logs, but masking is a last line of defence, not permission to print.</p>
+
+<div class="code" data-lang="yaml" data-run="no" data-why="GitHub Actions cannot run here; parsed with PyYAML only">
+<header><b>step fragment</b> &mdash; NOT RUN; right and wrong ways to use a secret</header>
+<pre><code># RIGHT: scoped to one step, passed through the environment, never printed
+- name: Smoke-test against the real service
+  env:
+    API_KEY: ${{ secrets.API_KEY }}
+  run: python scripts/smoke.py          # the script reads os.environ["API_KEY"]
+
+# WRONG: prints the secret (masking may hide it, but a transformed value is NOT masked)
+- run: echo "key is ${{ secrets.API_KEY }}"
+- run: echo ${{ secrets.API_KEY }} | base64        # the base64 text is a different string: it will not be masked
+# WRONG: debug step left in
+- run: env | sort</code></pre>
+</div>
+<p>The two WRONG lines are my own illustration of why masking is not a plan. I did not run them; the docs warn that GitHub cannot redact values you transform or print in unusual forms, and the safe habit does not depend on that detail.</p>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; CI green, laptop red</span>
+  <p>Or the reverse. The usual causes: a file that is in git-ignore but your code needs; a package you installed by hand and never added to <code>requirements.txt</code>; tests that depend on order or on today&rsquo;s date;
+  a secret that exists in your shell but not on the runner; a different Python version. This is exactly why CI exists: when it fails, it found a real reproducibility bug. Read the log from the <b>first red line</b>, not from the bottom.
+  And a cache can lie: if a build behaves oddly, re-run with the cache cleared before blaming your code.</p>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p><b>&ldquo;What is the difference between CI and CD?&rdquo;</b> CI runs build and tests on every change so integration problems appear within minutes. CD takes a passing build and delivers it (continuous delivery: ready to release by a click) or releases it automatically (continuous deployment). CI is about <i>confidence</i>, CD about <i>release</i>.
+  Follow-up: <b>&ldquo;where do secrets go?&rdquo;</b> In the CI system&rsquo;s secret store, injected as environment variables to the one step that needs them, never in the repository or in logs. Better still, design tests that do not need real keys.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Learn this &mdash; GitHub Actions</div>
+  <a class="r" href="https://docs.github.com/en/actions/tutorials/build-and-test-code/python" target="_blank" rel="noopener"><span>GitHub Docs &mdash; Building and testing Python<i>The official workflow: install dependencies, run pytest, cache pip, matrix of versions.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax" target="_blank" rel="noopener"><span>GitHub Docs &mdash; Workflow syntax for GitHub Actions<i>Look up on, jobs, steps, permissions when the YAML is rejected. Long; use search.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets" target="_blank" rel="noopener"><span>GitHub Docs &mdash; Using secrets in GitHub Actions<i>Read before you add your first secret: masking limits, forks, command-line exposure.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=DhUpxWjOhME" target="_blank" rel="noopener"><span>mCoding &mdash; Automated Testing in Python with pytest, tox, and GitHub Actions<i>A working CI that runs pytest on push; skim the tox part, it is optional for you.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=UEOtZvTCmDo" target="_blank" rel="noopener"><span>Tech With Tim &mdash; GitHub Actions (Branch Protection, Automated Testing) - Full Tutorial<i>Run tests on pull requests and block merges when they fail.</i></span><span class="dur">video</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=9PQmd_aoRWA" target="_blank" rel="noopener"><span>Infisical &mdash; How to Manage Secrets in GitHub Actions<i>The secrets half; note the channel sells a secrets product, take the concepts, not the pitch.</i></span><span class="dur">video</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="deploy">Deployment without spending money, and container security</h2>
+<p class="sub">&ldquo;Deploy&rdquo; only means &ldquo;make the software run somewhere other than where you wrote it&rdquo;. For a portfolio that somewhere can be a stranger&rsquo;s laptop.
+You do not need a cloud account, and on a zero budget you should not create one.</p>
+
+<h3 id="dp-what">What deploy means, and your free options</h3>
+<div class="tw"><table>
+<thead><tr><th>Option</th><th>What it is</th><th>Cost risk</th><th>Verdict for you</th></tr></thead>
+<tbody>
+<tr><td>Clone-and-run (this sheet)</td><td>Reviewer runs <code>docker compose up</code> locally</td><td>None</td><td><b>The primary deliverable.</b> Fully reproducible</td></tr>
+<tr><td>Recorded demo</td><td>A 2&ndash;3 minute screen recording plus screenshots in the README, for people who will not run anything</td><td>None</td><td><b>Do this too.</b> It is what a busy reviewer actually looks at first</td></tr>
+<tr><td>CI as proof</td><td>The green check from GitHub Actions on a public repository</td><td>Check current Actions terms</td><td>Cheap credibility</td></tr>
+<tr><td>Static site hosting</td><td>For a front-end only (HTML/JS). Your API and Postgres cannot run there</td><td>Check current terms</td><td>Optional, only for a demo page</td></tr>
+<tr><td>Container hosts with a free tier</td><td>Platforms that run a container for you</td><td>Free tiers change, may require a card, may stop or sleep your app. <b>Verify current free-tier terms yourself</b></td><td>Awareness only. Do not do this unless you have read the terms and set spending alerts</td></tr>
+<tr><td>A cloud VM you rent</td><td>You install Docker on a server</td><td>You pay for forgetting to stop it</td><td>Not for this roadmap</td></tr>
+</tbody></table></div>
+<p>I have not verified any provider&rsquo;s current free-tier limits and I deliberately name none. Whatever you consider, check the provider&rsquo;s own pricing page the same day, whether a payment card is required, and what happens when the free allowance runs out.
+If an AI-assisted setup guide tells you a service is free, treat that as a claim to verify, not a fact. Your AWS cost-guard habits from the earlier AWS work (see <a href="aws.html">the AWS sheet</a>) apply doubly here.</p>
+
+<h3 id="dp-lic">Docker Desktop licensing and the alternatives</h3>
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; do not assume Docker Desktop is free for you</span>
+  <p>Docker Desktop is a product with licence terms that depend on who you are and how you use it. I have <b>not</b> verified what the current terms say, and they change, so I will not tell you whether your situation is covered.
+  <b>Read Docker&rsquo;s current page yourself</b> before you install it: <a href="https://docs.docker.com/subscription-billing/desktop-license/" target="_blank" rel="noopener">Docker Desktop license agreement</a> (this is where that address redirected on 18 Oct 2026), and decide for your own circumstances.
+  A <b>personal</b> laptop and a <b>corporate</b> laptop are different questions: on a company machine, installing it is usually a decision for your employer&rsquo;s IT and licensing, not for you (see the two-machine note in <a href="setup.html">the setup sheet</a>).</p>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Route</th><th>What it is</th><th>Trade-off</th></tr></thead>
+<tbody>
+<tr><td>Docker Desktop</td><td>The GUI app, with Docker Engine, Compose and a VM bundled</td><td>Easiest start on Windows; licence terms to read</td></tr>
+<tr><td>Docker Engine inside WSL2</td><td>Install a Linux distribution under WSL2, then install Docker Engine there by the Linux instructions (<a href="https://docs.docker.com/engine/install/ubuntu/" target="_blank" rel="noopener">install on Ubuntu</a>)</td><td>No Desktop app; you work in the WSL terminal; needs admin rights once to enable WSL2 (personal laptop: fine)</td></tr>
+<tr><td>Podman</td><td>A daemonless, largely Docker-compatible container tool (<code>podman run</code>, <code>podman build</code>), with its own Compose handling</td><td>Command compatibility is high but not total; the Compose and networking behaviour in this sheet is described for Docker, so expect to adapt. I did not test any of it</td></tr>
+</tbody></table></div>
+<p>Everything on this sheet uses plain <code>docker</code> and <code>docker compose</code> commands, so it works with Docker Engine in WSL2 as written. On Windows, keep your project <b>inside the WSL filesystem</b> (for example <code>~/projects</code>) if you use WSL2: file access
+across the Windows/Linux boundary is slower. That last point is general WSL2 behaviour I am recalling, not something I measured.</p>
+
+<h3 id="dp-sec">Container security fundamentals</h3>
+<p>Awareness level: you should be able to name these and do the first two. I did not run any scanner for this sheet.</p>
+<div class="tw"><table>
+<thead><tr><th>Idea</th><th>What to do</th><th>What it prevents</th></tr></thead>
+<tbody>
+<tr><td>Least privilege</td><td>Non-root <code>USER</code>; do not use <code>--privileged</code>; never mount the Docker socket into a container; publish only the ports you need (the db has none)</td><td>A compromised app turning into a compromised host</td></tr>
+<tr><td>Small attack surface</td><td>Slim base, multi-stage so compilers and test tools are not in the runtime image</td><td>Fewer packages, fewer vulnerabilities to patch</td></tr>
+<tr><td>No secrets in images or git</td><td>Run-time env vars or env-file; <code>.dockerignore</code> for <code>.env</code>; rotate anything that leaked</td><td>Anyone who pulls the image reading your keys</td></tr>
+<tr><td>Image provenance</td><td>Prefer official or verified-publisher images; pin tags (or digests); know what you are pulling and from where</td><td>A look-alike or silently changed image running in your stack</td></tr>
+<tr><td>Dependency scanning (awareness)</td><td>Tools exist that check <code>requirements.txt</code> and image contents against known-vulnerability databases: <code>pip-audit</code> for Python packages, Trivy or Docker Scout for images, GitHub Dependabot for update pull requests. Check each tool&rsquo;s current terms and limits before relying on it</td><td>Shipping a library with a published exploit</td></tr>
+<tr><td>Keep it updated</td><td>Rebuild periodically so base-image fixes arrive; a container does not patch itself</td><td>Months-old known vulnerabilities</td></tr>
+</tbody></table></div>
+
+<div class="panel panel--real">
+  <span class="ph">In production</span>
+  <p>Real teams add an image scan to CI, sign images, pull from a private registry and run containers with a read-only root filesystem and dropped capabilities. For your portfolio, the honest, defensible subset is: non-root, slim, pinned, no secrets, <code>.env.example</code>, one scan run
+  once by hand if you want to mention it. State in the README what you did <i>not</i> do: an honest &ldquo;not hardened for production&rdquo; beats an implied claim you cannot defend.</p>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p><b>&ldquo;How would you make this image safer?&rdquo;</b> Run as a non-root user, use a slim pinned base and multi-stage to drop build tools, keep secrets out of layers and pass them at run time, publish only the needed ports, scan dependencies and the image in CI, and rebuild regularly for base-image patches. Follow-up: <b>&ldquo;does non-root make a container secure?&rdquo;</b>
+  No: it limits damage. The kernel is still shared, so a kernel exploit or a mounted Docker socket can still reach the host.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Read the real terms and docs yourself</div>
+  <a class="r" href="https://docs.docker.com/subscription-billing/desktop-license/" target="_blank" rel="noopener"><span>Docker Docs &mdash; Docker Desktop license agreement<i>Read the current terms for your own situation. This sheet does not interpret them.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://docs.docker.com/engine/install/ubuntu/" target="_blank" rel="noopener"><span>Docker Docs &mdash; Install Docker Engine on Ubuntu<i>The route for Docker Engine inside a WSL2 Ubuntu distribution.</i></span><span class="dur">docs</span></a>
+  <a class="r" href="https://docs.docker.com/build/building/best-practices/" target="_blank" rel="noopener"><span>Docker Docs &mdash; Building best practices<i>Official guidance behind most of the security table: slim, pinned, non-root, multi-stage.</i></span><span class="dur">docs</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="connect">How the subtopics connect</h2>
+<p class="sub">The whole sheet is one chain: a Dockerfile makes an image, Compose wires images into a stack, configuration enters from outside, CI proves it from a fresh checkout, and the README tells a stranger the one command.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Day</th><th>Date</th><th>You do</th><th>Done when</th></tr></thead>
+<tbody>
+<tr><td>53</td><td>Wed 23 Dec</td><td>Write the Dockerfile for your API; build, run, call it from a browser; reorder lines and watch the cache</td><td>The container answers, and you can name which lines are cached after a code-only change</td></tr>
+<tr><td>54</td><td>Thu 24 Dec</td><td>compose.yaml for API plus Postgres with a healthcheck and <code>service_healthy</code></td><td><code>docker compose up</code> from a clean checkout gives a working API with a database</td></tr>
+<tr><td>55</td><td>Fri 25 Dec</td><td>Lab day: the week27 lab; the tests service; .env.example; first CI workflow if you have a GitHub repo</td><td>81 lab tests green; CI shows a green check (or you wrote down the error)</td></tr>
+<tr><td>56</td><td>Sat 26 Dec</td><td>Checkpoint: fresh folder, follow only your README; fix every improvised step</td><td>Someone else, or you in a fresh folder, can follow the README with no questions</td></tr>
+</tbody></table></div>
+<p>The daily plan (<a href="ai-daily.html">Sheet 21</a>) says to drop DSA before Docker in Christmas week. Take that literally. If a day went wrong, the Saturday README test is what you must still do. Your two portfolio
+projects (<a href="ai-plan.html">Sheet 20</a>) reuse these three files unchanged apart from the service names.</p>
+
+<div class="code" data-lang="text">
+<header><b>the file set you ship</b></header>
+<pre><code>ticket-api/
+  app/main.py                 the service (executed, section 3)
+  tests/test_health.py        what CI and the test stage run
+  requirements.txt            pinned runtime deps
+  requirements-dev.txt        pinned test deps
+  Dockerfile                  base / test / runtime stages (NOT RUN here)
+  .dockerignore               keeps .env, .git, .venv out of the build context
+  compose.yaml                db + api + tests profile (NOT RUN here)
+  .env.example                committed template; .env is git-ignored
+  .github/workflows/ci.yml    install + pytest + docker build (NOT RUN here)
+  README.md                   the clean-clone path, with expected outputs</code></pre>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why it counts for a hiring panel</span>
+  <p>Docker skill in an AI portfolio is rarely tested by questions; it is tested by whether your repository runs. A repository with <code>.env.example</code>, a healthcheck, a CI badge and an honest limitations section signals that you have shipped
+  something to a user at least once, which is the whole point of the forward-deployed roles. Related reading on APIs: <a href="apis.html">Sheet 05</a>; on databases: <a href="databases.html">Sheet 06</a>.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="drill">Drill book</h2>
+<p class="sub">Answer aloud first, then open the answer. If you cannot say it without notes, it goes on your revise list.</p>
+
+<div class="drill">
+  <div class="dh">Drill &mdash; Docker, Compose and CI</div>
+  <details><summary>What is the difference between an image and a container?</summary>
+    <div class="ans"><p>An image is a read-only stack of layers plus metadata (default command, environment, ports): the template. A container is a running or stopped instance of an image, with a thin writable layer on top that is lost when the container is removed. You can start many containers from one image. Follow-up: &ldquo;where should data that must survive go?&rdquo; In a volume, not the container&rsquo;s writable layer.</p></div></details>
+  <details><summary>Why copy requirements.txt before the application code?</summary>
+    <div class="ans"><p>Layer cache. A layer is reused only if its instruction and inputs are unchanged and every layer above it was reused. Dependencies change rarely, code changes constantly. Copy and install dependencies first so a code edit leaves that slow layer cached; copy code last. Follow-up: what busts the cache anyway? Changing requirements, changing the base tag, <code>--no-cache</code>, or an earlier <code>COPY . .</code>.</p></div></details>
+  <details><summary>CMD versus ENTRYPOINT?</summary>
+    <div class="ans"><p>CMD is the default command and is replaced entirely by arguments to <code>docker run IMAGE ...</code>. ENTRYPOINT is the fixed executable and run-time arguments are appended to it. Together, an exec-form ENTRYPOINT plus exec-form CMD makes the CMD the default arguments. Use exec (JSON array) form; shell form runs under <code>/bin/sh -c</code> and the Dockerfile reference notes it does not pass signals, so <code>docker stop</code> cannot shut the app down cleanly.</p></div></details>
+  <details><summary>Your API in a container cannot reach Postgres at localhost:5432. Why, and what is the fix?</summary>
+    <div class="ans"><p>Inside the API container, <code>localhost</code> is the API container itself. Containers on a Compose network reach each other by service name, so use <code>db:5432</code>. From the host, you would use <code>localhost</code> and a published port instead. Follow-up: &ldquo;should the db publish a port?&rdquo; Not unless you need host access; leaving it unpublished keeps it reachable only from inside the network.</p></div></details>
+  <details><summary>Does depends_on wait for the database to be ready?</summary>
+    <div class="ans"><p>No. By default it only controls start order: Compose waits until the dependency is running, not ready. To wait for readiness give the database a healthcheck (for Postgres, <code>pg_isready</code>) and use <code>depends_on</code> with <code>condition: service_healthy</code>. Also make the app retry its first connection, which also helps when the database restarts in production.</p></div></details>
+  <details><summary>Named volume or bind mount, and for what?</summary>
+    <div class="ans"><p>Named volume: Docker-managed storage, portable via the compose file, best for database files. Bind mount: a host folder mapped into the container, best for editing source during development, but it depends on a host path and can have ownership and speed problems. Follow-up: &ldquo;what does <code>docker compose down -v</code> do?&rdquo; It also deletes the named volumes, so you lose the database.</p></div></details>
+  <details><summary>How do you keep secrets out of an image and out of git?</summary>
+    <div class="ans"><p>Never <code>ENV</code> or <code>COPY</code> a secret; list <code>.env</code> in both <code>.gitignore</code> and <code>.dockerignore</code>; commit a <code>.env.example</code> with fake values; pass real values at run time via <code>-e</code>, <code>--env-file</code> or Compose <code>${VAR}</code> with <code>${VAR:?message}</code> to fail fast. In CI use the secret store. If one leaks, rotate it, because deleting a layer or commit does not un-publish it.</p></div></details>
+  <details><summary>Why run as a non-root user, and what is the catch?</summary>
+    <div class="ans"><p>If the app is compromised, the attacker is not root inside the container, limiting what they can change. It does not make the container a security boundary by itself, since the kernel is shared. The catch is file ownership: files copied as root may not be writable by the app user, so use <code>COPY --chown</code> or write only to directories the user owns.</p></div></details>
+  <details><summary>Liveness versus readiness: which one should check the database?</summary>
+    <div class="ans"><p>Readiness. Liveness asks &ldquo;should this process be restarted?&rdquo; and should not depend on external services, or a database outage would trigger pointless restarts of every instance. Readiness asks &ldquo;can it serve traffic now?&rdquo; and may check dependencies. Our <code>/health</code> is liveness, <code>/ready</code> is readiness; the container HEALTHCHECK uses <code>/health</code>.</p></div></details>
+  <details><summary>Walk me through a GitHub Actions workflow that tests a Python project.</summary>
+    <div class="ans"><p>The <code>on</code> key sets triggers (push to main, pull requests). One job on <code>ubuntu-latest</code> runs steps: <code>actions/checkout</code>, <code>actions/setup-python</code> with a version and <code>cache: pip</code>, a <code>run</code> step to install requirements, and a <code>run</code> step for <code>pytest</code>. A non-zero exit fails the step and job and shows a red cross. Secrets come from <code>${{ secrets.X }}</code> into one step&rsquo;s <code>env</code>, never echoed. Follow-up: &ldquo;does a green check prove it works?&rdquo; Only that the tests passed on that environment.</p></div></details>
+  <details><summary>The tests pass locally and fail in CI. What do you check?</summary>
+    <div class="ans"><p>Differences between the two environments: Python version, a dependency installed by hand but missing from requirements, a file excluded by git-ignore that the code needs, a secret or env var set only locally, test order or date dependence, case-sensitive file names (CI is Linux, you may be on Windows). Read the log from the first failure and reproduce it in a fresh clone or the test container. Do not &ldquo;fix&rdquo; it by re-running until it passes.</p></div></details>
+  <details><summary>Your project needs hosting for a portfolio but you have no budget. What do you do?</summary>
+    <div class="ans"><p>Make it reproducible instead: <code>docker compose up</code> from a clean clone, a README with expected outputs, a recorded demo, and CI on a public repository. If I consider any hosted option I read that provider&rsquo;s current free-tier terms the same day, check whether a card is needed and what happens at the limit, and set spending alerts. I do not assume anything is free from memory.</p></div></details>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="signoff">Sign-off</h2>
+<p class="sub">Tick a box only when you did it, on a real machine, and can show the output. Boxes about Docker need Docker installed; if you could not install it, leave them unticked and write down why.</p>
+
+<div class="signoff">
+  <div class="sh"><span>Week 08</span><span>Sheet 27</span></div>
+  <label><input type="checkbox"><span>I ran <code>docker --version</code> and <code>docker compose version</code> on my personal laptop, and I read Docker&rsquo;s current Desktop licence page (or chose Docker Engine in WSL2 or Podman) and can say why.</span></label>
+  <label><input type="checkbox"><span>I built an image of my API with a Dockerfile I wrote, ran it, and called <code>/health</code> from my browser.</span></label>
+  <label><input type="checkbox"><span>I changed one line of code, rebuilt, and can point to which build steps said CACHED and which ran again.</span></label>
+  <label><input type="checkbox"><span>I can explain CMD versus ENTRYPOINT and why exec form matters, without notes.</span></label>
+  <label><input type="checkbox"><span>My image runs as a non-root user (I checked with <code>docker exec ... id</code>) and has a <code>.dockerignore</code> that excludes <code>.env</code>.</span></label>
+  <label><input type="checkbox"><span>I ran <code>docker history</code> or <code>docker inspect</code> on my image and confirmed no secret appears in it.</span></label>
+  <label><input type="checkbox"><span>My <code>compose.yaml</code> starts the API and Postgres with a healthcheck and <code>condition: service_healthy</code>, and <code>docker compose up</code> works from a fresh clone.</span></label>
+  <label><input type="checkbox"><span>I deliberately removed the healthcheck wait, saw the API fail on the first start, and can explain why depends_on alone did not wait.</span></label>
+  <label><input type="checkbox"><span>I created a <code>.env.example</code>, my real <code>.env</code> is git-ignored, and a missing required variable stops the app with a message that names it.</span></label>
+  <label><input type="checkbox"><span>All 81 tests in <code>python-lab/week27</code> pass, and I wrote every function body myself.</span></label>
+  <label><input type="checkbox"><span>I ran my tests inside a container with <code>docker compose run --rm tests</code>.</span></label>
+  <label><input type="checkbox"><span>My repository has a GitHub Actions workflow that installs requirements and runs pytest, and I saw it go green (and saw it go red once on purpose).</span></label>
+  <label><input type="checkbox"><span>I followed my own README in a fresh folder with no improvising, and fixed every step that needed a guess.</span></label>
+  <label><input type="checkbox"><span>I can name three things I have <b>not</b> done for security (for example image scanning) and wrote them under &ldquo;limits&rdquo; in the README.</span></label>
+</div>
+
+</div><!-- /sheetbody -->
+</main>
+
+<aside class="toc" aria-label="Contents"></aside>
+</div>
+
+<script src="assets/js/nav-data.js"></script>
+<script src="assets/js/sheet.js"></script>
+</body>
+</html>

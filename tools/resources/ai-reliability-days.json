@@ -1,0 +1,195 @@
+{
+ "days": {
+  "57": {
+   "text": [
+    {
+     "t": "OWASP API Security Top 10 (2023)",
+     "u": "https://owasp.org/API-Security/editions/2023/en/0x11-t10/",
+     "why": "The ten API risks; read API1, API2 and API5 today."
+    },
+    {
+     "t": "OWASP Authorization Cheat Sheet",
+     "u": "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html",
+     "why": "Least privilege, deny by default, check on every request."
+    },
+    {
+     "t": "RFC 6749: The OAuth 2.0 Authorization Framework",
+     "u": "https://datatracker.ietf.org/doc/html/rfc6749",
+     "why": "The source for roles, grant types and scopes; skim sections 1 and 4."
+    }
+   ],
+   "video": [
+    {
+     "t": "OAuth and OpenID Connect in Plain English",
+     "u": "https://www.youtube.com/watch?v=sSy5-3IkXHE",
+     "by": "GOTO Conferences",
+     "why": "Grant types, tokens, scopes and OIDC in one talk."
+    },
+    {
+     "t": "An Illustrated Guide to OAuth and OpenID Connect",
+     "u": "https://www.youtube.com/watch?v=t18YB3xDfXI",
+     "by": "OktaDev",
+     "why": "Picture-led walkthrough of the flows; pairs with the PKCE section."
+    }
+   ]
+  },
+  "58": {
+   "text": [
+    {
+     "t": "Timeouts, retries and backoff with jitter (Amazon Builders' Library)",
+     "u": "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/",
+     "why": "Why retries amplify outages and how jitter and caps fix it."
+    },
+    {
+     "t": "Circuit Breaker pattern (Azure Architecture Center)",
+     "u": "https://learn.microsoft.com/en-us/azure/architecture/patterns/circuit-breaker",
+     "why": "Closed, open and half-open states with guidance on when to use it."
+    },
+    {
+     "t": "Exponential Backoff And Jitter (AWS Architecture Blog)",
+     "u": "https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/",
+     "why": "The full-jitter derivation the lab uses, with simulations."
+    }
+   ],
+   "video": [
+    {
+     "t": "Retry Storms Explained: How Exponential Backoff with Jitter Prevents System Meltdowns",
+     "u": "https://www.youtube.com/watch?v=WjEmM1Jy79M",
+     "by": "SystemDR - Scalable System Design",
+     "why": "Why synchronised retries melt a recovering service; jitter fix."
+    }
+   ]
+  },
+  "59": {
+   "text": [
+    {
+     "t": "Idempotent requests (Stripe API reference)",
+     "u": "https://docs.stripe.com/api/idempotent_requests",
+     "why": "A real provider's idempotency-key contract, including key reuse rules."
+    },
+    {
+     "t": "The Idempotency-Key HTTP Header Field (IETF draft)",
+     "u": "https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/",
+     "why": "Draft standard for idempotency keys; note it is a draft."
+    }
+   ],
+   "video": [
+    {
+     "t": "Idempotency in APIs: you should be aware of this!",
+     "u": "https://www.youtube.com/watch?v=t99NvIazD68",
+     "by": "Software Developer Diaries",
+     "why": "Why POST retries duplicate work and what to do."
+    },
+    {
+     "t": "Idempotency - What it is and How to Implement it",
+     "u": "https://www.youtube.com/watch?v=XAccGbtl3Z8",
+     "by": "Alex Hyett",
+     "why": "Implementation options for an idempotent endpoint."
+    }
+   ]
+  },
+  "60": {
+   "text": [
+    {
+     "t": "Validating webhook deliveries (GitHub Docs)",
+     "u": "https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries",
+     "why": "HMAC-SHA256 over the raw body with constant-time compare."
+    },
+    {
+     "t": "Receive Stripe events in your webhook endpoint",
+     "u": "https://docs.stripe.com/webhooks",
+     "why": "Timestamp tolerance, replay protection, acknowledge fast, retries."
+    }
+   ],
+   "video": [
+    {
+     "t": "Implementing Signature Verification for Webhooks (GitHub HMAC verification)",
+     "u": "https://www.youtube.com/watch?v=I2ZYUulreI4",
+     "by": "Hookdeck",
+     "why": "Walks through HMAC verification of a real webhook."
+    }
+   ]
+  },
+  "61": {
+   "text": [
+    {
+     "t": "unittest.mock (Python documentation)",
+     "u": "https://docs.python.org/3/library/unittest.mock.html",
+     "why": "Mock, patch and side_effect for simulating timeouts."
+    },
+    {
+     "t": "Mocks Aren't Stubs (Martin Fowler)",
+     "u": "https://martinfowler.com/articles/mocksArentStubs.html",
+     "why": "Fakes, stubs and mocks defined; state vs behaviour verification."
+    },
+    {
+     "t": "pytest: how to monkeypatch/mock modules and environments",
+     "u": "https://docs.pytest.org/en/stable/how-to/monkeypatch.html",
+     "why": "Replace the clock, env vars and HTTP calls in tests."
+    }
+   ],
+   "video": [
+    {
+     "t": "How to use Python's unittest.mock.patch",
+     "u": "https://www.youtube.com/watch?v=WFRljVPHrkE",
+     "by": "redshiftzero",
+     "why": "Where to patch and the three ways to use it."
+    }
+   ]
+  },
+  "62": {
+   "text": [
+    {
+     "t": "Transactional outbox (microservices.io)",
+     "u": "https://microservices.io/patterns/data/transactional-outbox.html",
+     "why": "The dual-write problem and the outbox solution."
+    },
+    {
+     "t": "Amazon SQS visibility timeout",
+     "u": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html",
+     "why": "How a queue hides a message while a worker processes it."
+    },
+    {
+     "t": "Using dead-letter queues in Amazon SQS",
+     "u": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html",
+     "why": "Max receives, redrive and why poison messages need a parking place."
+    }
+   ],
+   "video": [
+    {
+     "t": "What is the Transactional Outbox Pattern? | Designing Event-Driven Microservices",
+     "u": "https://www.youtube.com/watch?v=5YLpjPmsPCA",
+     "by": "Confluent",
+     "why": "Diagrams the outbox table and relay."
+    }
+   ]
+  },
+  "63": {
+   "text": [
+    {
+     "t": "Scaling your API with rate limiters (Stripe)",
+     "u": "https://stripe.com/blog/rate-limiters",
+     "why": "Token bucket and why four kinds of limiter are used together."
+    },
+    {
+     "t": "OWASP API4:2023 Unrestricted Resource Consumption",
+     "u": "https://owasp.org/API-Security/editions/2023/en/0xa4-unrestricted-resource-consumption/",
+     "why": "Rate, size and cost limits as a security control."
+    },
+    {
+     "t": "hmac: Keyed-Hashing for Message Authentication (Python docs)",
+     "u": "https://docs.python.org/3/library/hmac.html",
+     "why": "hmac.new and compare_digest for the Gate 2 receiver."
+    }
+   ],
+   "video": [
+    {
+     "t": "System Design Interview: Rate Limiting Algorithms That Get You Hired",
+     "u": "https://www.youtube.com/watch?v=cs_orOjuaPM",
+     "by": "Witty Coder",
+     "why": "Token bucket vs window algorithms for the Gate 2 explanation."
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,396 @@
+{
+  "days": {
+    "92": {
+      "text": [
+        {
+          "t": "Tool use with Claude",
+          "u": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview",
+          "why": "The tool_use and tool_result round trip, defined."
+        },
+        {
+          "t": "Tool calling - Ollama",
+          "u": "https://docs.ollama.com/capabilities/tool-calling",
+          "why": "Same idea against a free local model."
+        }
+      ],
+      "video": [
+        {
+          "t": "What is Tool Calling? Connecting LLMs to Your Data",
+          "u": "https://www.youtube.com/watch?v=h8gMhXYAv1k",
+          "by": "IBM Technology",
+          "why": "Short orientation: the model asks, your code runs."
+        },
+        {
+          "t": "How to Connect an LLM to Python Functions (Tool Calling Tutorial)",
+          "u": "https://www.youtube.com/watch?v=liV0bfZ5Wu0",
+          "by": "Dataquest",
+          "why": "Hands-on tool calling in Python; check SDK version."
+        }
+      ]
+    },
+    "93": {
+      "text": [
+        {
+          "t": "Building Effective AI Agents",
+          "u": "https://www.anthropic.com/engineering/building-effective-agents",
+          "why": "Workflows versus agents, and the loop with stop conditions."
+        },
+        {
+          "t": "Tutorial: Build a tool-using agent",
+          "u": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/build-a-tool-using-agent",
+          "why": "From one tool call to a production-shaped loop."
+        }
+      ],
+      "video": [
+        {
+          "t": "Stop Using Frameworks: Build an AI Agent From First Principles",
+          "u": "https://www.youtube.com/watch?v=TdcAslNDCGc",
+          "by": "VinciBits",
+          "why": "The loop without a framework; verify its SDK version."
+        },
+        {
+          "t": "How We Build Effective Agents: Barry Zhang, Anthropic",
+          "u": "https://www.youtube.com/watch?v=D7_ipDqhtwk",
+          "by": "AI Engineer",
+          "why": "The essay authors on when agents are worth it."
+        }
+      ]
+    },
+    "94": {
+      "text": [
+        {
+          "t": "Models | Pydantic Docs",
+          "u": "https://pydantic.dev/docs/validation/latest/concepts/models/",
+          "why": "BaseModel, constraints, model_dump: the validation used today."
+        },
+        {
+          "t": "JSON Schema | Pydantic Docs",
+          "u": "https://pydantic.dev/docs/validation/latest/concepts/json_schema/",
+          "why": "How a model becomes a tool's parameters schema."
+        },
+        {
+          "t": "LLM05:2025 Improper Output Handling",
+          "u": "https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/",
+          "why": "Why model output is untrusted until validated."
+        }
+      ],
+      "video": [
+        {
+          "t": "Pydantic Tutorial • Solving Python's Biggest Problem",
+          "u": "https://www.youtube.com/watch?v=XIdQ6gO3Anc",
+          "by": "pixegami",
+          "why": "Pydantic basics; check it uses v2 method names."
+        },
+        {
+          "t": "Pydantic Tutorial EP2 - Field Validators",
+          "u": "https://www.youtube.com/watch?v=QM98ehowhsQ",
+          "by": "James Clare",
+          "why": "Constraints and custom checks on single fields."
+        }
+      ]
+    },
+    "95": {
+      "text": [
+        {
+          "t": "Timeouts, retries, and backoff with jitter",
+          "u": "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/",
+          "why": "Standard reference for retry policy in tools."
+        },
+        {
+          "t": "Idempotent requests | Stripe API Reference",
+          "u": "https://docs.stripe.com/api/idempotent_requests",
+          "why": "A real idempotency-key contract to copy."
+        },
+        {
+          "t": "concurrent.futures",
+          "u": "https://docs.python.org/3/library/concurrent.futures.html",
+          "why": "Thread timeouts with future.result(timeout=...)."
+        }
+      ],
+      "video": [
+        {
+          "t": "Retries & Exponential Backoff - Deep Dive",
+          "u": "https://www.youtube.com/watch?v=EW2Cc0r2mbc",
+          "by": "glich.stream",
+          "why": "Backoff explained in more depth."
+        },
+        {
+          "t": "Idempotency in APIs: How to Handle Retries Safely (Python Example)",
+          "u": "https://www.youtube.com/watch?v=yJUKwWl7klQ",
+          "by": "José Cruz (IT Architect)",
+          "why": "Idempotency keys with Python code."
+        },
+        {
+          "t": "Production-Ready Agents: Automatic Tool Retries with Exponential Backoff",
+          "u": "https://www.youtube.com/watch?v=7tjAWFE55tM",
+          "by": "LangChain",
+          "why": "Framework version of tool retries."
+        }
+      ]
+    },
+    "96": {
+      "text": [
+        {
+          "t": "LLM06:2025 Excessive Agency",
+          "u": "https://genai.owasp.org/llmrisk/llm062025-excessive-agency/",
+          "why": "Too much functionality, permission, autonomy: the risk surface."
+        },
+        {
+          "t": "Logging HOWTO",
+          "u": "https://docs.python.org/3/howto/logging.html",
+          "why": "Structured logging for the step-by-step trace."
+        }
+      ],
+      "video": [
+        {
+          "t": "Tips for building AI agents",
+          "u": "https://www.youtube.com/watch?v=LP5OCa20Zpg",
+          "by": "Anthropic",
+          "why": "Practical agent-building advice from Anthropic staff."
+        }
+      ]
+    },
+    "97": {
+      "text": [
+        {
+          "t": "Demystifying evals for AI agents",
+          "u": "https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents",
+          "why": "Scenario design and graders for agents."
+        },
+        {
+          "t": "Your AI Product Needs Evals",
+          "u": "https://hamel.dev/blog/posts/evals/",
+          "why": "Start with simple assertions over real traces."
+        },
+        {
+          "t": "How to monkeypatch/mock modules and environments",
+          "u": "https://docs.pytest.org/en/stable/how-to/monkeypatch.html",
+          "why": "Faking clocks and services in tests."
+        }
+      ],
+      "video": [
+        {
+          "t": "Evals, error analysis, and better prompts: A systematic approach to improving your AI products",
+          "u": "https://www.youtube.com/watch?v=PgzOBNse2EA",
+          "by": "How I AI",
+          "why": "Interview on error analysis and evals."
+        }
+      ]
+    },
+    "98": {
+      "text": [
+        {
+          "t": "Building Effective AI Agents",
+          "u": "https://www.anthropic.com/engineering/building-effective-agents",
+          "why": "Re-read; list where your scenarios were really workflows."
+        },
+        {
+          "t": "The lethal trifecta for AI agents",
+          "u": "https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/",
+          "why": "A review lens for the tool set you built."
+        }
+      ],
+      "video": [
+        {
+          "t": "Building more effective AI agents",
+          "u": "https://www.youtube.com/watch?v=uhJJgc-0iTQ",
+          "by": "Anthropic",
+          "why": "Anthropic staff discuss what makes agents effective."
+        },
+        {
+          "t": "Anthropic's Advice to Build Better AI Agents",
+          "u": "https://www.youtube.com/watch?v=VQqbl45tmRA",
+          "by": "Greg Baugues",
+          "why": "Third-party recap of the same advice."
+        }
+      ]
+    },
+    "99": {
+      "text": [
+        {
+          "t": "Workflows and agents - Docs by LangChain",
+          "u": "https://docs.langchain.com/oss/python/langgraph/workflows-agents",
+          "why": "Workflow patterns as graphs, beside agents."
+        },
+        {
+          "t": "Building Effective AI Agents",
+          "u": "https://www.anthropic.com/engineering/building-effective-agents",
+          "why": "Source of the workflow-versus-agent decision rule."
+        }
+      ],
+      "video": [
+        {
+          "t": "Building Effective Agents with LangGraph",
+          "u": "https://www.youtube.com/watch?v=aHCDrAbH_go",
+          "by": "LangChain",
+          "why": "The essay's patterns in LangGraph; check video date."
+        }
+      ]
+    },
+    "100": {
+      "text": [
+        {
+          "t": "enum - Support for enumerations",
+          "u": "https://docs.python.org/3/library/enum.html",
+          "why": "Enum and the str mixin for state names."
+        },
+        {
+          "t": "Thinking in LangGraph - Docs by LangChain",
+          "u": "https://docs.langchain.com/oss/python/langgraph/thinking-in-langgraph",
+          "why": "Breaking a task into nodes and state."
+        },
+        {
+          "t": "sqlite3 - DB-API 2.0 interface",
+          "u": "https://docs.python.org/3/library/sqlite3.html",
+          "why": "Persisting state without installing a database."
+        }
+      ],
+      "video": [
+        {
+          "t": "PGS #01 Python Finite State Machines using Enums",
+          "u": "https://www.youtube.com/watch?v=YfcdfjG4yGE",
+          "by": "AtiByte",
+          "why": "Enum state machine in Python; game-flavoured examples."
+        }
+      ]
+    },
+    "101": {
+      "text": [
+        {
+          "t": "Interrupts - Docs by LangChain",
+          "u": "https://docs.langchain.com/oss/python/langgraph/interrupts",
+          "why": "interrupt() and resume: framework human approval."
+        },
+        {
+          "t": "LLM06:2025 Excessive Agency",
+          "u": "https://genai.owasp.org/llmrisk/llm062025-excessive-agency/",
+          "why": "Human approval of high-impact actions as mitigation."
+        }
+      ],
+      "video": [
+        {
+          "t": "LangGraph interrupt: Making it easier to build human-in-the-loop agents",
+          "u": "https://www.youtube.com/watch?v=6t7YJcEFUIY",
+          "by": "LangChain",
+          "why": "Official walkthrough of interrupt(); check API date."
+        },
+        {
+          "t": "LangGraph - Persistence & Human-in-the-Loop Workflow",
+          "u": "https://www.youtube.com/watch?v=9BPCV5TYPmg",
+          "by": "Coding Crash Courses",
+          "why": "Checkpoints enabling pause and resume; verify version."
+        }
+      ]
+    },
+    "102": {
+      "text": [
+        {
+          "t": "LangGraph overview - Docs by LangChain",
+          "u": "https://docs.langchain.com/oss/python/langgraph/overview",
+          "why": "What LangGraph is for, and install."
+        },
+        {
+          "t": "Graph API overview - Docs by LangChain",
+          "u": "https://docs.langchain.com/oss/python/langgraph/graph-api",
+          "why": "State, nodes, edges, conditional edges reference."
+        },
+        {
+          "t": "Persistence - Docs by LangChain",
+          "u": "https://docs.langchain.com/oss/python/langgraph/persistence",
+          "why": "Checkpointers, threads, get_state and history."
+        }
+      ],
+      "video": [
+        {
+          "t": "LangGraph Core Concepts: Nodes, Edges, and State Management",
+          "u": "https://www.youtube.com/watch?v=HGUe8p7yUqg",
+          "by": "Analytics Vidhya",
+          "why": "Beginner pass over the core terms; verify names."
+        },
+        {
+          "t": "LangGraph: Persistence",
+          "u": "https://www.youtube.com/watch?v=YE6A5d8kNp4",
+          "by": "LangChain",
+          "why": "Official channel on checkpoints; check date, APIs renamed."
+        }
+      ]
+    },
+    "103": {
+      "text": [
+        {
+          "t": "Agents - Docs by LangChain",
+          "u": "https://docs.langchain.com/oss/python/langchain/agents",
+          "why": "The framework's abstraction to compare with your loop."
+        },
+        {
+          "t": "Don't Build Multi-Agents",
+          "u": "https://cognition.com/blog/dont-build-multi-agents",
+          "why": "The sceptical case for one agent with shared context."
+        },
+        {
+          "t": "How we built our multi-agent research system",
+          "u": "https://www.anthropic.com/engineering/multi-agent-research-system",
+          "why": "The case for multi-agent, with costs stated."
+        }
+      ],
+      "video": [
+        {
+          "t": "When Should You Use LangChain?",
+          "u": "https://www.youtube.com/watch?v=d2-R_o5I5FQ",
+          "by": "James Briggs",
+          "why": "Practitioner view on framework versus direct code."
+        }
+      ]
+    },
+    "104": {
+      "text": [
+        {
+          "t": "Generative AI semantic conventions - OpenTelemetry",
+          "u": "https://opentelemetry.io/docs/specs/semconv/gen-ai/",
+          "why": "Standard names for model and tool spans."
+        },
+        {
+          "t": "Logging HOWTO",
+          "u": "https://docs.python.org/3/howto/logging.html",
+          "why": "Structured handlers for the audit log."
+        }
+      ],
+      "video": [
+        {
+          "t": "LLM Observability with Langfuse: Debugging a Broken RAG Agent",
+          "u": "https://www.youtube.com/watch?v=I2HhkwlXw8c",
+          "by": "Langfuse",
+          "why": "Tracing an agent to debug it; vendor demo."
+        }
+      ]
+    },
+    "105": {
+      "text": [
+        {
+          "t": "LLM01:2025 Prompt Injection",
+          "u": "https://genai.owasp.org/llmrisk/llm01-prompt-injection/",
+          "why": "Top LLM risk, direct and indirect, with mitigations."
+        },
+        {
+          "t": "Test - Docs by LangChain",
+          "u": "https://docs.langchain.com/oss/python/langgraph/test",
+          "why": "Testing graphs and nodes for the comparison note."
+        }
+      ],
+      "video": [
+        {
+          "t": "Generative AI's Greatest Flaw - Computerphile",
+          "u": "https://www.youtube.com/watch?v=rAEqP9VEhe8",
+          "by": "Computerphile",
+          "why": "Accessible explanation of indirect prompt injection."
+        },
+        {
+          "t": "Prompt Injection, explained",
+          "u": "https://www.youtube.com/watch?v=FgxwCaL6UTA",
+          "by": "Simon Willison",
+          "why": "Talk by the person who named prompt injection."
+        }
+      ]
+    }
+  }
+}

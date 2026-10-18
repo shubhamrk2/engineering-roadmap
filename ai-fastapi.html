@@ -1,0 +1,2455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheet 25 — FastAPI and Pydantic — Applied AI Roadmap</title>
+<link rel="stylesheet" href="assets/css/sheet.css">
+<link rel="stylesheet" href="assets/css/glass.css">
+</head>
+<body data-sheet="25" class="glass">
+<a class="skip" href="#main">Skip to sheet</a>
+<div class="wrap">
+<nav class="rail" aria-label="Sheet index"></nav>
+
+<main id="main">
+
+<header class="sheethead">
+  <div>
+    <div class="no">Sheet 25 &middot; Applied AI track &middot; Week 06</div>
+    <h1>FastAPI and Pydantic<span>.</span></h1>
+    <p class="lede">A web API is a function with a <b>contract</b> bolted to the front and the back. Pydantic is the contract: it turns
+    type hints into <b>checks on everything that comes in and a filter on everything that goes out</b>. FastAPI is the machinery that
+    reads your hints, runs the checks, calls your function and writes the answer. Both portfolio projects (the knowledge assistant and
+    the operations assistant) are exactly this shape, so this week is the one the rest of the roadmap leans on.</p>
+  </div>
+  <div class="specs">
+    <div><span>Weeks</span><span>06</span></div>
+    <div><span>Hours</span><span>~ 30</span></div>
+    <div><span>Must know</span><span>Routes, 422, models, Depends</span></div>
+    <div><span>Nice to have</span><span>OAuth2 and JWT detail</span></div>
+    <div><span>Ships</span><span>tested requests API</span></div>
+  </div>
+</header>
+
+<div class="sheetbody">
+
+<div class="panel panel--real">
+  <span class="ph">Tested with</span>
+  <p><b>Tested with: Python 3.14.7, fastapi 0.143.3, starlette 1.8.0, pydantic 2.14.1, pydantic-settings 2.16.0, uvicorn 0.54.0,
+  httpx2 2.13.1, pytest 9.1.1 on 18 Oct 2026.</b> Every <code>python</code> code block below was executed against exactly these
+  versions with <code>tools/run-python-blocks.py</code>. Where the installed version disagreed with older tutorials, the installed
+  version is what this sheet describes. If your versions are much older or newer, run the block and trust the output over the page.
+  Do the installs on your <b>personal</b> laptop (<code>pip</code> into a virtual environment needs no admin rights); the setup is on
+  <a href="setup.html">the setup sheet</a> and the lab folder is described in <a href="#lab">The lab</a>.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="map">One request, end to end</h2>
+<p class="sub">Every behaviour on this sheet (404, 405, 422, 401, 403, 201, your own error shape) happens at a specific box on this
+path. Learn the path and the rest is looking things up.</p>
+
+<figure class="dwg dwg--hero">
+<svg viewBox="0 0 1200 440" role="img" aria-label="The life of one HTTP request through a FastAPI application. Row one, left to right: the client sends a request, uvicorn parses it, middleware wraps it, the router matches path and method, and FastAPI resolves dependencies and validates parameters and body. Row two, right to left: your function runs, response_model filters and serialises the result, outgoing middleware adds headers, uvicorn writes the bytes, and the client receives the response. A red path from the validation box skips the function and returns a 422, 401, 403 or 404 JSON error straight to outgoing middleware.">
+  <defs>
+    <marker id="s25-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s25-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s25-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <rect class="box" x="30" y="70" width="195" height="70" rx="3"/>
+  <text class="t" x="48" y="94">Client</text>
+  <text class="mm" x="48" y="110">CURL, BROWSER, TEST</text>
+
+  <rect class="box-c" x="260" y="70" width="195" height="70" rx="3"/>
+  <text class="t" x="278" y="94">uvicorn</text>
+  <text class="mm" x="278" y="110">ASGI SERVER</text>
+
+  <rect class="box-c" x="490" y="70" width="195" height="70" rx="3"/>
+  <text class="t" x="508" y="94">Middleware</text>
+  <text class="mm" x="508" y="110">CORS, LOGGING, IDS</text>
+
+  <rect class="box-c" x="720" y="70" width="195" height="70" rx="3"/>
+  <text class="t" x="738" y="94">Router</text>
+  <text class="mm" x="738" y="110">PATH + METHOD</text>
+
+  <rect class="box-a" x="950" y="70" width="195" height="70" rx="3"/>
+  <text class="t b" x="968" y="94">Depends + validate</text>
+  <text class="mm" x="968" y="110">PARAMS, BODY, AUTH</text>
+
+  <rect class="box-a" x="950" y="250" width="195" height="70" rx="3"/>
+  <text class="t b" x="968" y="274">Your function</text>
+  <text class="mm" x="968" y="290">PLAIN PYTHON</text>
+
+  <rect class="box-a" x="720" y="250" width="195" height="70" rx="3"/>
+  <text class="t b" x="738" y="274">response_model</text>
+  <text class="mm" x="738" y="290">FILTER + SERIALISE</text>
+
+  <rect class="box-c" x="490" y="250" width="195" height="70" rx="3"/>
+  <text class="t" x="508" y="274">Middleware out</text>
+  <text class="mm" x="508" y="290">HEADERS, TIMING</text>
+
+  <rect class="box-c" x="260" y="250" width="195" height="70" rx="3"/>
+  <text class="t" x="278" y="274">uvicorn</text>
+  <text class="mm" x="278" y="290">WRITES THE BYTES</text>
+
+  <rect class="box" x="30" y="250" width="195" height="70" rx="3"/>
+  <text class="t" x="48" y="274">Client</text>
+  <text class="mm" x="48" y="290">200, 201, 4xx JSON</text>
+
+  <rect class="box-r" x="520" y="170" width="380" height="46" rx="3"/>
+  <text class="t r" x="538" y="190">422 / 401 / 403 / 404 error</text>
+  <text class="mm r" x="538" y="207">HANDLER NEVER RUNS</text>
+
+  <path class="flow" d="M229,105 H254" marker-end="url(#s25-ac)"/>
+  <path class="flow" d="M459,105 H484" marker-end="url(#s25-ac)"/>
+  <path class="flow" d="M689,105 H714" marker-end="url(#s25-ac)"/>
+  <path class="flow" d="M919,105 H944" marker-end="url(#s25-ac)"/>
+  <path class="flow" d="M1047,144 V244" marker-end="url(#s25-ac)"/>
+  <path class="flow" d="M944,285 H921" marker-end="url(#s25-ac)"/>
+  <path class="flow" d="M714,285 H691" marker-end="url(#s25-ac)"/>
+  <path class="flow" d="M484,285 H461" marker-end="url(#s25-ac)"/>
+  <path class="flow" d="M254,285 H231" marker-end="url(#s25-ac)"/>
+  <path class="flow-r" d="M990,144 V193 H906" marker-end="url(#s25-ar)"/>
+  <path class="flow-r" d="M650,218 V244" marker-end="url(#s25-ar)"/>
+
+  <circle class="bub" cx="357" cy="40" r="13"/><text class="bubt" x="357" y="44">1</text>
+  <path class="lead" d="M357,53 V66"/>
+  <circle class="bub" cx="587" cy="40" r="13"/><text class="bubt" x="587" y="44">2</text>
+  <path class="lead" d="M587,53 V66"/>
+  <circle class="bub" cx="817" cy="40" r="13"/><text class="bubt" x="817" y="44">3</text>
+  <path class="lead" d="M817,53 V66"/>
+  <circle class="bub" cx="1047" cy="40" r="13"/><text class="bubt" x="1047" y="44">4</text>
+  <path class="lead" d="M1047,53 V66"/>
+  <circle class="bub" cx="1047" cy="360" r="13"/><text class="bubt" x="1047" y="364">5</text>
+  <path class="lead" d="M1047,347 V324"/>
+  <circle class="bub" cx="817" cy="360" r="13"/><text class="bubt" x="817" y="364">6</text>
+  <path class="lead" d="M817,347 V324"/>
+
+  <text class="mm b" x="30" y="415">BRASS = THE PARTS YOU WRITE: MODELS, DEPENDENCIES, THE FUNCTION, THE RESPONSE MODEL</text>
+</svg>
+<figcaption>Drawing 25-A &mdash; one request through a FastAPI app. <b>Cyan</b> = the request and response travelling, someone is
+waiting. <b>Brass</b> = code you write. <b>Red</b> = the short-circuit: bad input never reaches your function.</figcaption>
+</figure>
+
+<div class="notes">
+  <div class="n"><b>1</b><div><b>uvicorn speaks HTTP so your code does not have to.</b> It owns the socket, parses the bytes, and calls your
+  application through a tiny standard interface called <b>ASGI</b>. FastAPI never touches a network connection.</div></div>
+  <div class="n"><b>2</b><div><b>Middleware wraps the whole app like layers of an onion.</b> It sees the request first and the response last, so it
+  is the right place for things that apply to every route: CORS headers, a request id, timing, logging. The last middleware you add is
+  the outermost.</div></div>
+  <div class="n"><b>3</b><div><b>The router matches a path and a method before any of your code runs.</b> No path matches: 404. The path exists
+  but not for that method: 405. Both are produced by the framework, in its own shape, until you override it.</div></div>
+  <div class="n"><b>4</b><div><b>FastAPI reads your function signature once, at start-up.</b> Each parameter becomes a rule: this one comes from the
+  path, that one from the query string, this one from the JSON body, this one is a <code>Depends</code>. Per request it gathers
+  those values, validates them with Pydantic, and runs your dependencies. Any failure follows the red arrow.</div></div>
+  <div class="n"><b>5</b><div><b>Your function runs only with valid, typed inputs.</b> That is the whole payoff: no <code>if "days" not in body</code>
+  at the top of every handler. A plain <code>def</code> is run in a worker thread; <code>async def</code> runs on the event loop
+  (see <a href="#async">sync versus async</a>).</div></div>
+  <div class="n"><b>6</b><div><b>The response model is a second check, pointed outwards.</b> Whatever you return is validated against it and everything not
+  declared is dropped. A field you stored (an internal note, a password hash) cannot leak unless you declared it.</div></div>
+</div>
+
+<div class="panel panel--why">
+  <span class="ph">Why this sheet teaches the mechanism first</span>
+  <p>In an interview, &ldquo;I used FastAPI&rdquo; means nothing; &ldquo;a request with <code>days=abc</code> never reaches my handler because FastAPI
+  validates against the signature and returns 422 with a field-level body, and I replaced that body with our standard error shape&rdquo; means
+  you understand it. Each section writes the mechanism by hand where that is short (raw ASGI, a hand-signed token, a hand-written
+  validation loop), then shows the library, then says when the library is the wrong choice.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="stack">The four layers: ASGI, uvicorn, Starlette, FastAPI</h2>
+<p class="sub">Four names that blur together on day one. Each does one job; knowing which job tells you where to look when something breaks.</p>
+
+<h3 id="stack-layers">Who does what</h3>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 400" role="img" aria-label="A stack of five layers, bottom to top. The network and operating system; uvicorn, an ASGI server that parses HTTP; the ASGI interface, a three-argument async function; Starlette, which provides routing, middleware, requests and responses; FastAPI, which adds parameter extraction, Pydantic validation, dependencies and OpenAPI docs; and at the top your handler functions and models. A side column says which layer produces which behaviour.">
+  <defs>
+    <marker id="s25-fc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  </defs>
+  <rect class="box-a" x="30" y="30" width="560" height="56" rx="3"/>
+  <text class="t b" x="48" y="54">Your code</text>
+  <text class="mm" x="48" y="72">HANDLERS, PYDANTIC MODELS, DEPENDENCIES</text>
+  <rect class="box-a" x="30" y="100" width="560" height="56" rx="3"/>
+  <text class="t b" x="48" y="124">FastAPI</text>
+  <text class="mm" x="48" y="142">SIGNATURE READING, VALIDATION, DEPENDS, OPENAPI, /docs</text>
+  <rect class="box-c" x="30" y="170" width="560" height="56" rx="3"/>
+  <text class="t" x="48" y="194">Starlette</text>
+  <text class="mm" x="48" y="212">ROUTING, MIDDLEWARE, REQUEST, RESPONSE, TESTCLIENT</text>
+  <rect class="box" x="30" y="240" width="560" height="56" rx="3"/>
+  <text class="t" x="48" y="264">ASGI</text>
+  <text class="mm" x="48" y="282">async def app(scope, receive, send)  -  A CONTRACT, NOT CODE</text>
+  <rect class="box-c" x="30" y="310" width="560" height="56" rx="3"/>
+  <text class="t" x="48" y="334">uvicorn</text>
+  <text class="mm" x="48" y="352">SOCKETS, HTTP PARSING, --reload, WORKERS</text>
+
+  <path class="flow" d="M610,338 H650" marker-end="url(#s25-fc)"/>
+  <text class="m" x="665" y="60">404 / 405 &rarr; Starlette router</text>
+  <text class="m" x="665" y="100">422 + field errors &rarr; FastAPI + Pydantic</text>
+  <text class="m" x="665" y="140">CORS headers &rarr; Starlette middleware</text>
+  <text class="m" x="665" y="180">/docs, /openapi.json &rarr; FastAPI</text>
+  <text class="m" x="665" y="220">ModuleNotFoundError at start &rarr; your import path</text>
+  <text class="m" x="665" y="260">Address already in use &rarr; uvicorn / the port</text>
+  <text class="m" x="665" y="300">Slow under load &rarr; blocking call in async def</text>
+  <text class="m" x="665" y="340">500 Internal Server Error &rarr; your function raised</text>
+  <text class="mm g" x="665" y="378">WHERE TO LOOK WHEN IT BREAKS</text>
+</svg>
+<figcaption>Drawing 25-B &mdash; the stack. <b>Brass</b> = the layers you write against. <b>Cyan</b> = the layers that carry the
+request. The right-hand column is a debugging index: find the symptom, then the layer.</figcaption>
+</figure>
+
+<div class="tw"><table>
+<thead><tr><th>Layer</th><th>What it is</th><th>You normally touch it by&hellip;</th></tr></thead>
+<tbody>
+<tr><td><b>ASGI</b></td><td>A specification: an application is an async callable taking <code>scope</code>, <code>receive</code>, <code>send</code>. It replaces the older synchronous WSGI so one process can hold many connections open.</td><td>Never directly. It is why uvicorn can run any compliant framework.</td></tr>
+<tr><td><b>uvicorn</b></td><td>The server process. Listens on a port, parses HTTP, calls your app, writes the response. The same role as <code>gunicorn</code> or <code>nginx</code> in other stacks.</td><td><code>uvicorn module:app --reload</code>; workers and host in production.</td></tr>
+<tr><td><b>Starlette</b></td><td>A small ASGI toolkit: routing, middleware, request and response objects, static files, a test client. FastAPI is built on it.</td><td>Importing <code>HTTPException</code> or <code>TestClient</code>; middleware; the error-handler hook for 404 and 405.</td></tr>
+<tr><td><b>FastAPI</b></td><td>Starlette plus: read the type hints, extract and validate parameters, dependency injection, generate an OpenAPI schema and the <code>/docs</code> page.</td><td>Decorators, <code>Depends</code>, <code>Query</code>, <code>Header</code>, <code>response_model</code>.</td></tr>
+<tr><td><b>Pydantic</b></td><td>A validation and serialisation library, independent of web. FastAPI delegates all checking to it.</td><td>Every model you write; also usable in scripts, config and LLM-output parsing.</td></tr>
+</tbody></table></div>
+
+<p>You do not have to take the claim that FastAPI is &ldquo;just an ASGI callable&rdquo; on trust. The block below is a complete ASGI
+application with no framework at all, called through Starlette&rsquo;s test client.</p>
+
+<div class="code" data-lang="python">
+<header><b>raw_asgi.py</b></header>
+<pre><code>from starlette.testclient import TestClient
+
+async def app(scope, receive, send):         # the entire ASGI contract: three arguments
+    assert scope["type"] == "http"           # scope: who is calling (method, path, headers...)
+    await send({"type": "http.response.start", "status": 200,
+                "headers": [(b"content-type", b"text/plain")]})
+    await send({"type": "http.response.body", "body": b"hello from raw ASGI"})
+
+r = TestClient(app).get("/anything")
+print(r.status_code, r.text)                 # 200 hello from raw ASGI
+# FastAPI(...) instances are exactly this kind of callable. uvicorn does not know or care which one it was given.
+</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p><b>&ldquo;What is the difference between FastAPI, Starlette and uvicorn?&rdquo;</b> uvicorn is the server: it owns the socket and speaks HTTP. Starlette is
+  the toolkit that provides routing, middleware and request/response objects. FastAPI sits on Starlette and adds type-hint based parameter
+  handling, Pydantic validation, dependency injection and generated OpenAPI docs. ASGI is the interface that lets the server call the
+  app. Follow-up they will ask: &ldquo;why not run it with <code>python main.py</code>?&rdquo; Because a FastAPI object is not a server; something must
+  listen on a port, and that something is uvicorn (or another ASGI server).</p>
+</div>
+
+<h3 id="stack-run">Running it, and auto-reload</h3>
+<p>Save the file below as <code>main.py</code>. The command line says &ldquo;import the module <code>main</code>, take the object called
+<code>app</code> from it&rdquo;; that is the <code>main:app</code>.</p>
+
+<div class="code" data-lang="python">
+<header><b>main.py</b></header>
+<pre><code>from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+app = FastAPI(title="Access desk")           # the ASGI application object uvicorn will import
+
+@app.get("/health")                          # decorator: register GET /health -&gt; this function
+def health():
+    return {"status": "ok"}                  # a dict becomes a JSON body with status 200
+
+if __name__ == "__main__":                   # only when run as a script, never when uvicorn imports it
+    client = TestClient(app)                 # calls the app in-process: no server, no port
+    r = client.get("/health")
+    print(r.status_code, r.json())           # 200 {'status': 'ok'}
+    print(client.get("/nope").status_code, client.get("/nope").json())   # 404 {'detail': 'Not Found'}
+    print(client.post("/health").status_code)                            # 405: the path exists, the method does not
+    print(r.headers["content-type"])         # application/json
+</code></pre>
+</div>
+
+<div class="code" data-lang="powershell">
+<header><b>personal laptop, project folder, venv active</b></header>
+<pre><code>python -m pip install fastapi uvicorn      # the lab file requirements-week06.txt installs everything for the week
+python -m uvicorn main:app --reload        # http://127.0.0.1:8000 ; docs at /docs and /redoc
+# --reload watches your files and restarts the worker on every save. Development only: it costs CPU
+# and a restart drops in-flight requests. Never use it in a container or on a server.
+python -m uvicorn main:app --host 0.0.0.0 --port 8080   # 0.0.0.0 = reachable from other machines; 127.0.0.1 = this one only
+</code></pre>
+</div>
+
+<p>The uvicorn commands above were also run for real while writing this sheet (server started on a spare port; <code>/health</code>,
+<code>/docs</code>, <code>/redoc</code> and <code>/openapi.json</code> all returned 200; the log printed
+<code>StatReload detected changes in 'main.py'. Reloading...</code> after an edit). A shell block is not executed by the sheet checker, which is
+why this paragraph says so. The docs also describe a <code>fastapi dev</code> command that needs the <code>fastapi-cli</code> package; it
+was not exercised for this sheet, so use <code>python -m uvicorn</code>, which was.</p>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; /docs is blank offline</span>
+  <p>The <code>/docs</code> (Swagger UI) and <code>/redoc</code> pages are tiny HTML shells that load their JavaScript and CSS from a public CDN
+  (the ReDoc page served here pointed at <code>cdn.jsdelivr.net</code>). Offline, or behind a corporate proxy that blocks that host, you get a blank
+  page while <code>/openapi.json</code> still works. The API is fine; the viewer is not reachable. Use the test client or <code>curl</code>
+  and confirm with <code>/openapi.json</code>.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Official reading and video &mdash; layers and first app</div>
+  <a class="r" href="https://fastapi.tiangolo.com/tutorial/first-steps/" target="_blank" rel="noopener"><span>FastAPI &mdash; First steps<i>The decorator, the path operation, running uvicorn, the interactive docs. Do it before reading further.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://www.uvicorn.dev/" target="_blank" rel="noopener"><span>Uvicorn documentation<i>What the server does, the <code>--reload</code> and <code>--workers</code> options, and deployment notes.</i></span><span class="dur">reference</span></a>
+  <a class="r" href="https://asgi.readthedocs.io/en/latest/" target="_blank" rel="noopener"><span>ASGI specification<i>The three-argument contract used in the raw example. Skim the introduction only.</i></span><span class="dur">10 min</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=7AMjmCTumuo" target="_blank" rel="noopener"><span>Corey Schafer &mdash; Python FastAPI Tutorial (Part 1): Getting Started<i>A calm, current walk through install, first routes and the generated docs.</i></span><span class="dur">video</span></a>
+</div>
+
+<h3 id="stack-routes">Route decorators and path operations</h3>
+<p>FastAPI calls each <code>(method, path, function)</code> triple a <b>path operation</b>. The decorator names the HTTP method; the
+function is the <b>handler</b>. Methods carry meaning that clients, caches and retry logic rely on, so choose them on purpose.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Decorator</th><th>Meaning</th><th>Safe?</th><th>Idempotent?</th><th>Typical status</th></tr></thead>
+<tbody>
+<tr><td><code>@app.get</code></td><td>Read. Must not change state.</td><td>yes</td><td>yes</td><td>200</td></tr>
+<tr><td><code>@app.post</code></td><td>Create, or run an action.</td><td>no</td><td><b>no</b></td><td>201 (created), 200/202</td></tr>
+<tr><td><code>@app.put</code></td><td>Replace a whole resource.</td><td>no</td><td>yes</td><td>200, 204</td></tr>
+<tr><td><code>@app.patch</code></td><td>Change some fields.</td><td>no</td><td>depends on the patch</td><td>200</td></tr>
+<tr><td><code>@app.delete</code></td><td>Remove.</td><td>no</td><td>yes (the end state is the same)</td><td>204</td></tr>
+</tbody></table></div>
+
+<p>Routes are matched <b>in the order you declare them</b>. This is the classic first bug: a general pattern declared before a specific one swallows it.</p>
+
+<div class="code" data-lang="python">
+<header><b>route_order.py</b></header>
+<pre><code>from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+app = FastAPI()
+
+@app.get("/requests/{request_id}", tags=["requests"], summary="Fetch one request")
+def by_id(request_id: str):
+    return {"matched": "by_id", "id": request_id}
+
+@app.get("/requests/mine")                   # declared SECOND: never reached
+def mine():
+    return {"matched": "mine"}
+
+c = TestClient(app)
+print(c.get("/requests/mine").json())        # {'matched': 'by_id', 'id': 'mine'}   &lt;- the trap
+
+# Fix: declare the fixed path first. Rebuild to prove it.
+app2 = FastAPI()
+
+@app2.get("/requests/mine")
+def mine2():
+    return {"matched": "mine"}
+
+@app2.get("/requests/{request_id}")
+def by_id2(request_id: str):
+    return {"matched": "by_id", "id": request_id}
+
+c2 = TestClient(app2)
+print(c2.get("/requests/mine").json())       # {'matched': 'mine'}
+print(c2.get("/requests/req-1").json())      # {'matched': 'by_id', 'id': 'req-1'}
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; GET that changes state</span>
+  <p>A <code>GET /requests/{id}/approve</code> is a bug waiting for a link-preview bot, a browser prefetch or a crawler to approve things by
+  looking at them. Anything that changes state is POST, PUT, PATCH or DELETE. Put the verb in the method, not only in the URL.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Reading &mdash; methods and status</div>
+  <a class="r" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods" target="_blank" rel="noopener"><span>MDN &mdash; HTTP request methods<i>Safe and idempotent explained with the full list. Reread before the idempotency discussion in week 9.</i></span><span class="dur">15 min</span></a>
+  <a class="r" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Status" target="_blank" rel="noopener"><span>MDN &mdash; HTTP response status codes<i>The reference for every code used on this sheet.</i></span><span class="dur">reference</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="params">Parameters: path, query, header, body</h2>
+<p class="sub">FastAPI decides where each argument comes from by looking at its name and its type. Get the four sources straight and
+the automatic 422 stops being mysterious.</p>
+
+<h3 id="params-sources">Four places a value can come from</h3>
+
+<div class="tw"><table>
+<thead><tr><th>Source</th><th>How FastAPI recognises it</th><th>Example request</th><th>Typical use</th></tr></thead>
+<tbody>
+<tr><td><b>Path</b></td><td>The name appears in the path template <code>{request_id}</code></td><td><code>GET /requests/17</code></td><td>Which resource: an identity</td></tr>
+<tr><td><b>Query</b></td><td>A scalar type (<code>int</code>, <code>str</code>, <code>bool</code>&hellip;) that is <i>not</i> in the path</td><td><code>GET /requests?site=BLR-01&amp;limit=10</code></td><td>Filter, sort, page: options on a read</td></tr>
+<tr><td><b>Header</b></td><td>Explicitly marked <code>Header()</code>; underscores in the name become hyphens</td><td><code>X-API-Key: abc</code></td><td>Credentials, trace ids, idempotency keys</td></tr>
+<tr><td><b>Body</b></td><td>A Pydantic model (or <code>dict</code>, <code>list</code> of models)</td><td><code>POST</code> with a JSON document</td><td>The thing being created or replaced</td></tr>
+</tbody></table></div>
+
+<div class="code" data-lang="python">
+<header><b>param_sources.py</b></header>
+<pre><code>from typing import Annotated
+from fastapi import FastAPI, Header, Path, Query
+from fastapi.testclient import TestClient
+from pydantic import BaseModel
+
+app = FastAPI()
+
+class Note(BaseModel):                                   # a model type =&gt; read from the JSON body
+    text: str
+
+@app.post("/sites/{site_id}/requests/{request_id}/notes")
+def add_note(
+    site_id: Annotated[str, Path(pattern=r"^[A-Z]{3}-\d{2}$")],   # PATH, with a pattern
+    request_id: int,                                              # PATH, converted to int
+    note: Note,                                                   # BODY
+    urgent: bool = False,                                         # QUERY: has a default, so optional
+    limit: Annotated[int, Query(ge=1, le=50)] = 10,               # QUERY with bounds
+    x_trace_id: Annotated[str | None, Header()] = None,           # HEADER: x_trace_id &lt;-&gt; X-Trace-Id
+):
+    return {"site": site_id, "id": request_id, "text": note.text,
+            "urgent": urgent, "limit": limit, "trace": x_trace_id}
+
+c = TestClient(app)
+r = c.post("/sites/BLR-01/requests/17/notes?urgent=true&amp;limit=5",
+           json={"text": "badge printed"}, headers={"X-Trace-Id": "t-1"})
+print(r.status_code, r.json())
+# 200 {'site': 'BLR-01', 'id': 17, 'text': 'badge printed', 'urgent': True, 'limit': 5, 'trace': 't-1'}
+
+r = c.post("/sites/BLR-01/requests/17/notes", json={"text": "x"})
+print(r.json()["urgent"], r.json()["limit"], r.json()["trace"])   # False 10 None   (the defaults)
+</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Predict, then reveal</span>
+  <p>You add a parameter <code>tags: list[str] = []</code> to a GET handler and send <code>?tags=a&amp;tags=b</code>. What happens?</p>
+  <details><summary>Open the answer</summary>
+    <div class="ans"><p>FastAPI treats a plain <code>list[str]</code> as a <b>body</b>, not a query parameter, so the query string is ignored and a GET
+    would be expecting a JSON body. To read repeated query values you must mark it explicitly:
+    <code>tags: Annotated[list[str], Query()] = []</code>. The rule to remember: scalars default to query, collections default to body, and
+    <code>Query()</code> overrides the guess.</p></div></details>
+</div>
+
+<h3 id="params-422">Typed parameters and the automatic 422</h3>
+<p>Type hints are not decoration here. <code>request_id: int</code> means &ldquo;convert to an integer or reject the request&rdquo;. The
+rejection is a <b>422 Unprocessable Content</b> (older docs say &ldquo;Unprocessable Entity&rdquo;): the request was well-formed HTTP but its content
+broke the contract. Your function is never called. Contrast the others you will see:</p>
+
+<div class="tw"><table>
+<thead><tr><th>Code</th><th>Means</th><th>Who is at fault</th><th>Example here</th></tr></thead>
+<tbody>
+<tr><td><b>400</b></td><td>Malformed or nonsensical request your handler decided to refuse</td><td>client</td><td>You raise it yourself</td></tr>
+<tr><td><b>404</b></td><td>No such path, or no such resource</td><td>client</td><td>Unknown route, or <code>req-99</code> not found</td></tr>
+<tr><td><b>405</b></td><td>The path exists, the method does not</td><td>client</td><td><code>DELETE /health</code></td></tr>
+<tr><td><b>409</b></td><td>Valid request, but conflicts with the current state</td><td>client (state)</td><td>Approving an already approved request</td></tr>
+<tr><td><b>422</b></td><td>Syntactically valid, fails validation</td><td>client</td><td><code>limit=abc</code>, missing field</td></tr>
+<tr><td><b>500</b></td><td>Your code raised an exception nobody handled</td><td><b>you</b></td><td>A bug</td></tr>
+</tbody></table></div>
+
+<h3 id="params-body">Reading the validation error body</h3>
+<p>The default 422 body is a JSON object with one key, <code>detail</code>, holding a <b>list of every problem at once</b>, not just the first.
+Learn to read it; you will do it daily.</p>
+
+<div class="code" data-lang="python">
+<header><b>read_422.py</b></header>
+<pre><code>import json
+from typing import Annotated
+from fastapi import FastAPI, Query
+from fastapi.testclient import TestClient
+
+app = FastAPI()
+
+@app.get("/requests/{request_id}")
+def one(request_id: int, limit: Annotated[int, Query(ge=1, le=50)] = 10):
+    return {"id": request_id, "limit": limit}
+
+c = TestClient(app)
+r = c.get("/requests/abc?limit=0")
+print(r.status_code)                         # 422
+print(json.dumps(r.json(), indent=1))
+# {
+#  "detail": [
+#   {"type": "int_parsing",            "loc": ["path", "request_id"], "msg": "Input should be a valid integer, unable to parse string as an integer", "input": "abc"},
+#   {"type": "greater_than_equal",     "loc": ["query", "limit"],      "msg": "Input should be greater than or equal to 1", "input": "0", "ctx": {"ge": 1}}
+#  ]
+# }
+
+# A reader for humans and logs: field path, then message.
+for err in r.json()["detail"]:
+    where = ".".join(str(part) for part in err["loc"])   # loc is a list: where the value came from, then the field
+    print(f"{where}: {err['msg']}")
+# path.request_id: Input should be a valid integer, unable to parse string as an integer
+# query.limit: Input should be greater than or equal to 1
+</code></pre>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Key</th><th>What it tells you</th></tr></thead>
+<tbody>
+<tr><td><code>loc</code></td><td>The <b>address</b> of the bad value. First element is the source (<code>path</code>, <code>query</code>, <code>header</code>, <code>body</code>), the rest is the path inside it: <code>["body", "attachments", 1, "size_kb"]</code> means the second attachment&rsquo;s size.</td></tr>
+<tr><td><code>type</code></td><td>A stable machine-readable code (<code>int_parsing</code>, <code>missing</code>, <code>string_too_short</code>). Branch on this, never on <code>msg</code>.</td></tr>
+<tr><td><code>msg</code></td><td>A human sentence. Wording can change between versions.</td></tr>
+<tr><td><code>input</code></td><td>What the client actually sent. Useful in debugging; <b>do not echo it back or log it for sensitive fields</b>.</td></tr>
+<tr><td><code>ctx</code></td><td>The limits that were violated (<code>ge: 1</code>, <code>pattern</code>&hellip;), when there are any.</td></tr>
+</tbody></table></div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the 422 you did not expect</span>
+  <p>Two classic causes. (1) You send JSON but forget the <code>Content-Type: application/json</code> header from a hand-rolled client, so the
+  body arrives as a plain string and FastAPI answers <code>model_attributes_type</code> with <code>loc</code> <code>["body"]</code> (checked here with a <code>text/plain</code> header). (2) You declared a body model and your client sends the fields as query parameters, or the
+  other way round. Read <code>loc</code>: it says <code>body</code> or <code>query</code>, which tells you which side is wrong in ten seconds. Also
+  check the JSON itself: a malformed document gives a <code>json_invalid</code> error with <code>loc</code> pointing into <code>body</code>.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Official reading and video &mdash; parameters</div>
+  <a class="r" href="https://fastapi.tiangolo.com/tutorial/path-params/" target="_blank" rel="noopener"><span>FastAPI &mdash; Path parameters<i>Types, enums for fixed choices, and the order trap shown above.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://fastapi.tiangolo.com/tutorial/query-params/" target="_blank" rel="noopener"><span>FastAPI &mdash; Query parameters<i>Defaults, optional parameters, booleans.</i></span><span class="dur">15 min</span></a>
+  <a class="r" href="https://fastapi.tiangolo.com/tutorial/query-params-str-validations/" target="_blank" rel="noopener"><span>FastAPI &mdash; Query parameters and string validations<i><code>Query(ge=..., le=..., pattern=...)</code> and lists in the query string.</i></span><span class="dur">25 min</span></a>
+  <a class="r" href="https://fastapi.tiangolo.com/tutorial/header-params/" target="_blank" rel="noopener"><span>FastAPI &mdash; Header parameters<i>The underscore-to-hyphen rule and repeated headers.</i></span><span class="dur">10 min</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=WRjXIA5pMtk" target="_blank" rel="noopener"><span>Corey Schafer &mdash; Python FastAPI Tutorial (Part 3): Path Parameters, Validation and Error Handling<i>Watch the error bodies appear as he breaks requests on purpose.</i></span><span class="dur">video</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="pydantic">Pydantic v2: the contract</h2>
+<p class="sub">Pydantic checks data against a class made of type hints, and tells you exactly what is wrong. It works on its own, with no web
+server, which is how you will test it on day 38.</p>
+
+<h3 id="pyd-hand">What it replaces: validation by hand</h3>
+<p>Write the checks yourself once, so you know what you are buying. Even for two fields it is long, and it stops at the first thing you
+remembered to check.</p>
+
+<div class="code" data-lang="python">
+<header><b>by_hand_vs_pydantic.py</b></header>
+<pre><code>import re
+from pydantic import BaseModel, Field, ValidationError
+
+def check_by_hand(data):
+    errors = []
+    emp = data.get("employee_id")
+    if not isinstance(emp, str) or not re.fullmatch(r"e-\d+", emp):
+        errors.append("employee_id must look like e-902")
+    try:
+        days = int(data.get("days"))
+    except (TypeError, ValueError):
+        errors.append("days must be a whole number")
+    else:
+        if not 1 &lt;= days &lt;= 30:
+            errors.append("days must be between 1 and 30")
+    return errors
+
+class Visit(BaseModel):                                  # the same rules, declared
+    employee_id: str = Field(pattern=r"^e-\d+$")
+    days: int = Field(ge=1, le=30)
+
+bad = {"employee_id": "902", "days": "abc"}
+print(check_by_hand(bad))
+# ['employee_id must look like e-902', 'days must be a whole number']
+
+try:
+    Visit.model_validate(bad)                            # model_validate: dict in, validated object out
+except ValidationError as e:
+    print(e.error_count(), [(x["loc"], x["type"]) for x in e.errors()])
+    # 2 [(('employee_id',), 'string_pattern_mismatch'), (('days',), 'int_parsing')]
+
+v = Visit.model_validate({"employee_id": "e-902", "days": "5"})
+print(v, type(v.days))                                   # employee_id='e-902' days=5 &lt;class 'int'&gt;   (the string "5" became 5)
+</code></pre>
+</div>
+
+<h3 id="pyd-model">BaseModel, Field constraints, validators</h3>
+<p>A <code>BaseModel</code> subclass is a schema. Annotations give types; <code>Field(...)</code> adds constraints, defaults and descriptions;
+validators add rules a constraint cannot express. In v2 the decorators are <code>field_validator</code> (one field) and
+<code>model_validator</code> (several fields together). The v1 names <code>validator</code> and <code>root_validator</code> are the ones to
+distrust when an old tutorial shows them.</p>
+
+<div class="code" data-lang="python">
+<header><b>ticket_model.py</b></header>
+<pre><code>from datetime import date
+from enum import Enum
+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
+
+class Priority(str, Enum):                               # str mixin: serialises as the plain string
+    LOW = "low"
+    HIGH = "high"
+    URGENT = "urgent"
+
+class TicketIn(BaseModel):
+    title: str = Field(min_length=3, max_length=80)      # constraints live on the field
+    priority: Priority = Priority.LOW                    # a default makes it optional
+    assignee: str | None = None                          # may be None AND has a default
+    due: date | None = None
+
+    @field_validator("title")                            # runs after the type check, on this field only
+    @classmethod
+    def tidy_title(cls, v: str) -&gt; str:
+        v = " ".join(v.split())                          # collapse runs of whitespace
+        if not v:
+            raise ValueError("title must not be blank")
+        return v                                         # whatever you return becomes the stored value
+
+    @model_validator(mode="after")                       # runs when ALL fields are valid; sees the whole object
+    def urgent_needs_owner(self):
+        if self.priority is Priority.URGENT and self.assignee is None:
+            raise ValueError("urgent tickets need an assignee")
+        return self
+
+t = TicketIn(title="  Badge   reader   offline ", priority="high")   # keyword args work like model_validate
+print(repr(t.title), t.priority)                         # 'Badge reader offline' Priority.HIGH
+
+try:
+    TicketIn(title="ok", priority="urgent")              # title too short AND urgent without assignee
+except ValidationError as e:
+    for err in e.errors():
+        print(err["loc"], err["type"])
+    # ('title',) string_too_short        &lt;- field errors stop the model validator from running
+try:
+    TicketIn(title="Gate stuck", priority="urgent")
+except ValidationError as e:
+    print(e.errors()[0]["loc"], e.errors()[0]["type"])   # () value_error   (loc is empty: the whole model)
+    print(e.errors()[0]["msg"])                          # Value error, urgent tickets need an assignee
+</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">You must be able to explain this</span>
+  <p>Why did the first failure report only the title error, and not the &ldquo;urgent needs an assignee&rdquo; rule as well? Because a
+  <code>mode="after"</code> model validator runs on a fully built object, which only exists when every field passed. If you need cross-field
+  rules to report alongside field errors, you have to use <code>mode="before"</code> and work on the raw dictionary. Say this in an
+  interview and you have shown you have actually read a <code>ValidationError</code>.</p>
+</div>
+
+<h3 id="pyd-lax">Validation, serialisation, and strict versus lax</h3>
+<p>Two directions, two verbs. <b>Validation</b> (<code>model_validate</code>, <code>model_validate_json</code>, or just calling the class)
+turns untrusted input into a trusted object. <b>Serialisation</b> (<code>model_dump</code>, <code>model_dump_json</code>) turns the object back
+into plain data for a response, a file or a log line. By default validation is <b>lax</b>: it converts sensibly (<code>"5"</code> to
+<code>5</code>, <code>"2026-12-07"</code> to a <code>date</code>, <code>"yes"</code> to <code>True</code>). <b>Strict</b> mode refuses to convert.</p>
+
+<div class="code" data-lang="python">
+<header><b>lax_strict_dump.py</b></header>
+<pre><code>from datetime import date
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
+
+class Reading(BaseModel):
+    count: int
+    seen_on: date
+    ok: bool = False
+
+# LAX (the default): the usual JSON-ish inputs are converted
+r = Reading.model_validate({"count": "3", "seen_on": "2026-12-07", "ok": "yes"})
+print(r)                                       # count=3 seen_on=datetime.date(2026, 12, 7) ok=True
+try:
+    Reading.model_validate({"count": 3.5, "seen_on": "x"})      # lax still refuses lossy conversions
+except ValidationError as e:
+    print([x["type"] for x in e.errors()])     # ['int_from_float', 'date_from_datetime_parsing']
+
+# STRICT: no conversion from Python values
+class StrictReading(BaseModel):
+    model_config = ConfigDict(strict=True)
+    count: int
+    seen_on: date
+try:
+    StrictReading.model_validate({"count": "3", "seen_on": "2026-12-07"})
+except ValidationError as e:
+    print([(x["loc"], x["type"]) for x in e.errors()])   # [(('count',), 'int_type'), (('seen_on',), 'date_type')]
+# ...but JSON has no date type, so strict mode accepts an ISO string when the input IS a JSON document:
+print(StrictReading.model_validate_json('{"count": 3, "seen_on": "2026-12-07"}'))   # count=3 seen_on=datetime.date(2026, 12, 7)
+
+# SERIALISATION: python mode keeps rich types, json mode produces JSON-safe ones
+print(r.model_dump())                          # {'count': 3, 'seen_on': datetime.date(2026, 12, 7), 'ok': True}
+print(r.model_dump(mode="json"))               # {'count': 3, 'seen_on': '2026-12-07', 'ok': True}
+print(r.model_dump_json(exclude={"ok"}))       # {"count":3,"seen_on":"2026-12-07"}
+
+# Aliases: JSON in camelCase, Python in snake_case (the pairing from the BadgeDesk-style APIs)
+class Visitor(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    employee_id: str = Field(alias="employeeId")
+v = Visitor.model_validate({"employeeId": "e-902"})
+print(v.employee_id, v.model_dump(by_alias=True))        # e-902 {'employeeId': 'e-902'}
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; lax is a feature until it is a bug</span>
+  <p>With the default lax mode, a client that sends <code>"days": "5"</code> or <code>"active": "no"</code> is accepted and converted, which is
+  friendly for form-style input and dangerous when a type matters (an id that must stay a string, a boolean flag where
+  <code>"false"</code> must not be truthy-guessed). When correctness beats friendliness, set <code>strict=True</code> on the model or a single
+  field, and test the rejection. Do not assume either mode; run the one line that proves which you have.</p>
+</div>
+
+<h3 id="pyd-nest">Nested models, enums, Optional, default_factory</h3>
+
+<div class="code" data-lang="python">
+<header><b>nested_models.py</b></header>
+<pre><code>from datetime import date
+from enum import Enum
+from pydantic import BaseModel, Field, ValidationError
+
+class Kind(str, Enum):
+    PDF = "pdf"
+    PNG = "png"
+
+class Attachment(BaseModel):
+    name: str
+    kind: Kind
+    size_kb: int = Field(ge=0)
+
+class Ticket(BaseModel):
+    title: str
+    attachments: list[Attachment] = Field(default_factory=list)   # a NEW empty list per object
+    due: date | None = None                                       # nullable, optional
+    reviewer: str | None                                          # nullable but REQUIRED (no default!)
+
+a = Ticket(title="One", reviewer=None)
+b = Ticket(title="Two", reviewer=None)
+a.attachments.append(Attachment(name="x.pdf", kind="pdf", size_kb=10))   # "pdf" becomes Kind.PDF
+print(len(a.attachments), len(b.attachments))                 # 1 0   (not shared)
+
+try:
+    Ticket(title="Three")                                     # reviewer omitted
+except ValidationError as e:
+    print(e.errors()[0]["loc"], e.errors()[0]["type"])        # ('reviewer',) missing
+
+try:
+    Ticket(title="Four", reviewer="r", attachments=[
+        {"name": "ok.pdf", "kind": "pdf", "size_kb": 3},
+        {"name": "bad.exe", "kind": "exe", "size_kb": -1},    # two problems in the SECOND item
+    ])
+except ValidationError as e:
+    for err in e.errors():
+        print(err["loc"], err["type"])
+    # ('attachments', 1, 'kind') enum
+    # ('attachments', 1, 'size_kb') greater_than_equal
+
+# None versus missing: matters for PATCH
+t = Ticket(title="Five", reviewer=None)
+print(t.model_fields_set)                                     # {'title', 'reviewer'}  (a set, so order varies; only what the caller passed)
+print(t.model_dump(exclude_unset=True))                       # {'title': 'Five', 'reviewer': None}
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; Optional does not mean optional</span>
+  <p><code>reviewer: str | None</code> says the value may be <code>None</code>. It does <b>not</b> say the key may be absent; with no default it is required.
+  Write <code>str | None = None</code> for &ldquo;may be absent and may be null&rdquo;. And for PATCH endpoints, <code>model_fields_set</code> /
+  <code>exclude_unset=True</code> is how you tell &ldquo;the client sent null&rdquo; from &ldquo;the client said nothing&rdquo;.</p>
+</div>
+
+<h3 id="pyd-vs">Pydantic model vs dataclass</h3>
+<p>You met <code>@dataclass</code> in <a href="ai-python.html">Sheet 23</a>. Both give you a class from annotations. Only one checks them.</p>
+
+<div class="vs">
+  <div><div class="vh">dataclass</div>
+<div class="code" data-lang="python">
+<header><b>dataclass_no_checks.py</b></header>
+<pre><code>from dataclasses import dataclass
+
+@dataclass
+class Visit:
+    employee_id: str
+    days: int
+
+v = Visit(employee_id=902, days="abc")
+print(v)    # Visit(employee_id=902, days='abc')
+# Accepted. The hints are only documentation.
+</code></pre>
+</div></div>
+  <div><div class="vh">Pydantic BaseModel</div>
+<div class="code" data-lang="python">
+<header><b>model_checks.py</b></header>
+<pre><code>from pydantic import BaseModel, ValidationError
+
+class Visit(BaseModel):
+    employee_id: str
+    days: int
+
+try:
+    Visit(employee_id=902, days="abc")
+except ValidationError as e:
+    print(e.error_count())    # 2
+# Both wrong values refused, by field.
+</code></pre>
+</div></div>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Dimension</th><th>dataclass</th><th>Pydantic BaseModel</th></tr></thead>
+<tbody>
+<tr><td>Checks types at runtime</td><td>no</td><td>yes, with conversion rules</td></tr>
+<tr><td>Parses JSON and nested dicts</td><td>no (you write it)</td><td>yes, recursively</td></tr>
+<tr><td>Constraints (<code>ge</code>, <code>pattern</code>)</td><td>no (write <code>__post_init__</code>)</td><td>declarative <code>Field(...)</code></td></tr>
+<tr><td>Generates a JSON Schema</td><td>no</td><td>yes (this is how <code>/docs</code> is built)</td></tr>
+<tr><td>Cost</td><td>cheapest; standard library</td><td>a dependency, slower construction (core is compiled Rust)</td></tr>
+<tr><td>Right place</td><td>trusted, internal data you already validated</td><td><b>every boundary</b>: HTTP bodies, config, files, LLM output</td></tr>
+</tbody></table></div>
+<p><b>Pick:</b> a Pydantic model wherever data crosses a trust boundary (anything a client, a file, a queue or a model produced); a dataclass for
+small internal value objects that nobody outside your code can malform.</p>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p><b>&ldquo;Where does validation belong?&rdquo;</b> At the boundary, once, and then the inside of the program works with typed objects it can
+  trust. Re-validating in every function is noise; skipping it at the edge is how a string ends up in a date column. Follow-up: &ldquo;what
+  happens if the client sends an extra field?&rdquo; By default it is ignored silently; <code>extra="forbid"</code> rejects it, which is the right choice
+  for a write API so a client cannot smuggle in <code>status</code> or <code>is_admin</code>.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Official reading and video &mdash; Pydantic</div>
+  <a class="r" href="https://pydantic.dev/docs/validation/latest/concepts/models/" target="_blank" rel="noopener"><span>Pydantic &mdash; Models<i><code>model_validate</code>, <code>model_dump</code>, nested models, <code>model_fields_set</code>.</i></span><span class="dur">30 min</span></a>
+  <a class="r" href="https://pydantic.dev/docs/validation/latest/concepts/fields/" target="_blank" rel="noopener"><span>Pydantic &mdash; Fields<i>Every <code>Field(...)</code> constraint, aliases, <code>default_factory</code>.</i></span><span class="dur">25 min</span></a>
+  <a class="r" href="https://pydantic.dev/docs/validation/latest/concepts/validators/" target="_blank" rel="noopener"><span>Pydantic &mdash; Validators<i><code>field_validator</code> and <code>model_validator</code>, with the before/after modes.</i></span><span class="dur">30 min</span></a>
+  <a class="r" href="https://pydantic.dev/docs/validation/latest/concepts/strict_mode/" target="_blank" rel="noopener"><span>Pydantic &mdash; Strict mode<i>What lax converts and what strict refuses, per input mode.</i></span><span class="dur">15 min</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=ok8bF8M7gjk" target="_blank" rel="noopener"><span>MathByte Academy &mdash; Pydantic (V2) In-depth Starter Guide<i>V2-specific walk through models, default factories and custom validators. Titled V2; check any code against the docs above.</i></span><span class="dur">video</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="bodies">Request bodies, response models, status codes</h2>
+<p class="sub">Two models per resource: one for what a client may send, one for what you are willing to reveal. The gap between them is
+where internal fields stay internal.</p>
+
+<h3 id="bodies-in">A body model on POST</h3>
+<p>Declare a parameter whose type is a Pydantic model and FastAPI reads the JSON body into it, validated. By the time your function
+starts, <code>body</code> is a real object with real types.</p>
+
+<h3 id="bodies-out">response_model, and why it hides internal fields</h3>
+<p>Real storage rows carry fields no client should see: an internal note, a cost centre, a password hash, a soft-delete flag. If your handler
+returns the stored row, <b>everything in it goes out</b> unless something filters it. <code>response_model</code> is that filter: FastAPI
+validates the return value against the model and serialises only the declared fields.</p>
+
+<div class="code" data-lang="python">
+<header><b>ticket_api.py</b></header>
+<pre><code>from fastapi import FastAPI, Response, status
+from fastapi.testclient import TestClient
+from pydantic import BaseModel, Field
+
+class TicketIn(BaseModel):                         # what a client MAY send
+    title: str = Field(min_length=3, max_length=80)
+    priority: str = "low"
+
+class TicketOut(BaseModel):                        # what we CHOOSE to reveal
+    id: int
+    title: str
+    priority: str
+
+app = FastAPI()
+DB: dict[int, dict] = {}                           # stand-in for a table (a real one comes in week 7)
+
+@app.post("/tickets", status_code=status.HTTP_201_CREATED, response_model=TicketOut)
+def create_ticket(body: TicketIn, response: Response):
+    new_id = len(DB) + 1
+    row = {"id": new_id, **body.model_dump(),      # model_dump(): the validated body as a plain dict
+           "internal_note": "triaged by rule 7", "reporter_email": "asha@example.test"}
+    DB[new_id] = row
+    response.headers["Location"] = f"/tickets/{new_id}"    # where the new thing lives
+    return row                                     # the full row, with fields we never declared
+
+@app.get("/tickets/{ticket_id}")
+def get_ticket(ticket_id: int) -&gt; TicketOut:       # a return annotation works as response_model too
+    return DB[ticket_id]                           # (a missing id is a KeyError => 500: week-7 problem, fixed in the errors section)
+
+@app.delete("/tickets/{ticket_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_ticket(ticket_id: int):
+    DB.pop(ticket_id, None)                        # return nothing: a 204 has no body
+
+c = TestClient(app)
+r = c.post("/tickets", json={"title": "Gate stuck", "priority": "high"})
+print(r.status_code, r.json(), r.headers["location"])
+# 201 {'id': 1, 'title': 'Gate stuck', 'priority': 'high'} /tickets/1
+print(sorted(DB[1]))                               # ['id', 'internal_note', 'priority', 'reporter_email', 'title']   stored, never sent
+print(c.get("/tickets/1").json())                  # {'id': 1, 'title': 'Gate stuck', 'priority': 'high'}
+r = c.delete("/tickets/1")
+print(r.status_code, repr(r.content))              # 204 b''
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the leak that response_model prevents</span>
+  <p>Remove <code>response_model=TicketOut</code> from the POST above and the client gets <code>internal_note</code> and
+  <code>reporter_email</code> too. Nothing errors, tests that only check the status pass, and a security review finds it a year later. Declare an
+  output model on <b>every</b> route that returns stored data, and write one test that asserts the exact set of keys in the response (the lab
+  does this). Never reuse the input model as the output model for the same reason in reverse: the client could then see, and set, fields that are server-owned.</p>
+</div>
+
+<h3 id="bodies-status">Status codes you will actually use</h3>
+<div class="tw"><table>
+<thead><tr><th>Code</th><th>Use it when</th><th>Body?</th></tr></thead>
+<tbody>
+<tr><td><b>200 OK</b></td><td>A read, or an update that returns the new state.</td><td>yes</td></tr>
+<tr><td><b>201 Created</b></td><td>A POST made a new resource. Add a <code>Location</code> header.</td><td>the new resource</td></tr>
+<tr><td><b>202 Accepted</b></td><td>You queued the work; it is not done. The honest answer for slow vendor calls.</td><td>a job id or status URL</td></tr>
+<tr><td><b>204 No Content</b></td><td>It worked and there is nothing to say (DELETE, some PUTs).</td><td><b>none</b></td></tr>
+<tr><td><b>400</b> / <b>422</b></td><td>400: you refuse a request that parsed but is nonsense. 422: schema validation failed (automatic).</td><td>error</td></tr>
+<tr><td><b>401</b> / <b>403</b></td><td>401: I do not know who you are. 403: I know, and no. See <a href="#auth">authentication</a>.</td><td>error</td></tr>
+<tr><td><b>404</b> / <b>409</b></td><td>404: nothing here. 409: it exists but its state forbids this (approve twice).</td><td>error</td></tr>
+<tr><td><b>429</b></td><td>Rate limit hit. Send <code>Retry-After</code>.</td><td>error</td></tr>
+<tr><td><b>500</b> / <b>503</b></td><td>500: our bug. 503: a dependency (database, vendor) is down; clients may retry.</td><td>error</td></tr>
+</tbody></table></div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p><b>&ldquo;POST or PUT for create?&rdquo;</b> POST when the server chooses the id (<code>POST /tickets</code>, response 201 with a Location). PUT when the client
+  names the resource (<code>PUT /tickets/t-77</code>) because PUT is idempotent: sending it twice leaves the same state. Follow-up:
+  &ldquo;what if the client retries a POST after a timeout?&rdquo; You may create a duplicate, which is why <a href="#idem">idempotency keys</a> exist.</p>
+</div>
+
+<div class="code" data-lang="python">
+<header><b>patch_partial.py</b></header>
+<pre><code>from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from pydantic import BaseModel
+
+class TicketPatch(BaseModel):                      # every field optional: a PATCH may send any subset
+    title: str | None = None
+    assignee: str | None = None
+
+app = FastAPI()
+ROW = {"id": 1, "title": "Gate stuck", "assignee": "e-902"}
+
+@app.patch("/tickets/1")
+def patch(body: TicketPatch):
+    changes = body.model_dump(exclude_unset=True)  # only what the client actually sent, including explicit nulls
+    ROW.update(changes)
+    return ROW
+
+c = TestClient(app)
+print(c.patch("/tickets/1", json={"title": "Gate jammed"}).json())   # {'id': 1, 'title': 'Gate jammed', 'assignee': 'e-902'}
+print(c.patch("/tickets/1", json={"assignee": None}).json())         # {'id': 1, 'title': 'Gate jammed', 'assignee': None}   null clears it
+</code></pre>
+</div>
+
+<div class="res">
+  <div class="rh">Official reading and video &mdash; bodies and responses</div>
+  <a class="r" href="https://fastapi.tiangolo.com/tutorial/body/" target="_blank" rel="noopener"><span>FastAPI &mdash; Request body<i>Body models, how a model is told apart from query parameters, and updating with <code>model_dump</code>.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://fastapi.tiangolo.com/tutorial/response-model/" target="_blank" rel="noopener"><span>FastAPI &mdash; Response model, return type<i>The filtering behaviour from the example, plus <code>response_model_exclude_unset</code>.</i></span><span class="dur">25 min</span></a>
+  <a class="r" href="https://fastapi.tiangolo.com/tutorial/response-status-code/" target="_blank" rel="noopener"><span>FastAPI &mdash; Response status code<i>Setting codes on the decorator and the <code>status</code> constants.</i></span><span class="dur">10 min</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=Y3OV9b1ZU74" target="_blank" rel="noopener"><span>Coding for All &mdash; FastAPI Response Model &amp; Status Codes Explained<i>A short video on the same two ideas. Not checked against the installed version line by line; trust the docs where they differ.</i></span><span class="dur">video</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="errors">Errors: HTTPException, handlers, one consistent shape</h2>
+<p class="sub">Clients write code against your error bodies. If a 404 looks different from a 422 which looks different from a 500, every caller needs
+three parsers. Pick one shape and make every failure use it.</p>
+
+<h3 id="err-path">Where errors come from</h3>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 400" role="img" aria-label="The validation error path. Top row, success: raw input goes to Pydantic validation, which passes typed objects to the handler, whose result goes to the response model. Bottom, failure: Pydantic collects every error into a ValidationError, FastAPI wraps it as a RequestValidationError, an exception handler turns it into a response, and the client receives a 422 JSON body. The default body is a detail list; a custom handler can return your own shape.">
+  <defs>
+    <marker id="s25-bc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s25-br" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+  <rect class="box" x="30" y="50" width="230" height="70" rx="3"/>
+  <text class="t" x="48" y="74">Raw input</text>
+  <text class="mm" x="48" y="90">BODY, QUERY, HEADERS</text>
+  <text class="mm" x="48" y="106">UNTRUSTED</text>
+
+  <rect class="box-a" x="320" y="50" width="250" height="70" rx="3"/>
+  <text class="t b" x="338" y="74">Pydantic validates</text>
+  <text class="mm" x="338" y="90">EVERY FIELD, LAX COERCION</text>
+  <text class="mm" x="338" y="106">COLLECTS ALL ERRORS</text>
+
+  <rect class="box-c" x="630" y="50" width="250" height="70" rx="3"/>
+  <text class="t" x="648" y="74">Handler runs</text>
+  <text class="mm" x="648" y="90">TYPED OBJECTS</text>
+  <text class="mm" x="648" y="106">NO MANUAL CHECKS</text>
+
+  <rect class="box-c" x="940" y="50" width="230" height="70" rx="3"/>
+  <text class="t" x="958" y="74">response_model</text>
+  <text class="mm" x="958" y="90">FILTER, SERIALISE</text>
+
+  <rect class="box" x="30" y="215" width="250" height="120" rx="3"/>
+  <text class="mm" x="48" y="238">ONE ENTRY PER BAD FIELD</text>
+  <text class="m" x="48" y="260">type: int_parsing</text>
+  <text class="m" x="48" y="278">loc: [body, days]</text>
+  <text class="m" x="48" y="296">msg: Input should be...</text>
+  <text class="m" x="48" y="314">input: abc</text>
+
+  <rect class="box-r" x="320" y="215" width="250" height="70" rx="3"/>
+  <text class="t r" x="338" y="239">ValidationError</text>
+  <text class="mm" x="338" y="255">FROM PYDANTIC</text>
+  <text class="mm" x="338" y="271">ALL ERRORS AT ONCE</text>
+
+  <rect class="box-r" x="630" y="215" width="250" height="70" rx="3"/>
+  <text class="t r" x="648" y="239">RequestValidationError</text>
+  <text class="mm" x="648" y="255">FASTAPI WRAPS AND RAISES</text>
+
+  <rect class="box-r" x="940" y="215" width="230" height="70" rx="3"/>
+  <text class="t r" x="958" y="239">Exception handler</text>
+  <text class="mm" x="958" y="255">DEFAULT, OR YOURS</text>
+
+  <rect class="box-r" x="620" y="325" width="550" height="56" rx="3"/>
+  <text class="t r" x="638" y="349">422 body</text>
+  <text class="mm" x="638" y="367">DEFAULT {detail:[...]}  OR  {error:{code,message,details}}</text>
+
+  <path class="flow" d="M264,85 H314" marker-end="url(#s25-bc)"/>
+  <path class="flow" d="M574,85 H624" marker-end="url(#s25-bc)"/>
+  <path class="flow" d="M884,85 H934" marker-end="url(#s25-bc)"/>
+  <path class="flow-r" d="M445,124 V209" marker-end="url(#s25-br)"/>
+  <path class="flow-r" d="M574,250 H624" marker-end="url(#s25-br)"/>
+  <path class="flow-r" d="M884,250 H934" marker-end="url(#s25-br)"/>
+  <path class="flow-r" d="M1055,289 V319" marker-end="url(#s25-br)"/>
+  <path class="lead" d="M284,250 H316"/>
+  <text class="mm g" x="320" y="165">TOP: THE HAPPY PATH.  BOTTOM: THE HANDLER NEVER SEES BAD DATA.</text>
+</svg>
+<figcaption>Drawing 25-C &mdash; the validation error path. <b>Cyan</b> = success. <b>Red</b> = failure, ending in a 422 whose body you can
+replace. The left box is one element of the list in the body.</figcaption>
+</figure>
+
+<h3 id="err-http">HTTPException, domain errors, and one shape</h3>
+<p>Raise <code>HTTPException(status_code, detail)</code> from anywhere in a handler or dependency and FastAPI stops and answers with it. Good
+code goes one step further: the business logic raises a <b>domain error</b> that knows nothing about HTTP, and one handler maps it to a status code.
+Then register handlers so that 404, 405, 409, 422 and the unexpected 500 all share one body.</p>
+
+<div class="code" data-lang="python">
+<header><b>error_shape.py</b></header>
+<pre><code>from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from fastapi.testclient import TestClient
+from pydantic import BaseModel
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+class ConflictError(Exception):                    # a DOMAIN error: no status codes, no HTTP in here
+    def __init__(self, message: str):
+        self.message = message
+
+def error_body(code: str, message: str, details=None) -&gt; dict:
+    body = {"error": {"code": code, "message": message}}
+    if details is not None:
+        body["error"]["details"] = details
+    return body
+
+app = FastAPI()
+
+@app.exception_handler(ConflictError)              # domain error -&gt; HTTP, in ONE place
+async def on_conflict(request: Request, exc: ConflictError):
+    return JSONResponse(error_body("conflict", exc.message), status_code=409)
+
+@app.exception_handler(StarletteHTTPException)     # Starlette's class, NOT FastAPI's: see the trap below
+async def on_http(request: Request, exc: StarletteHTTPException):
+    return JSONResponse(error_body("http_" + str(exc.status_code), str(exc.detail)),
+                        status_code=exc.status_code, headers=getattr(exc, "headers", None))
+
+@app.exception_handler(RequestValidationError)     # replace the default {"detail": [...]} body
+async def on_invalid(request: Request, exc: RequestValidationError):
+    details = [{"field": ".".join(str(p) for p in e["loc"]), "message": e["msg"]} for e in exc.errors()]
+    return JSONResponse(error_body("validation_error", "request failed validation", details), status_code=422)
+
+@app.exception_handler(Exception)                  # last resort: hide the stack trace from the client
+async def on_crash(request: Request, exc: Exception):
+    return JSONResponse(error_body("internal_error", "unexpected error"), status_code=500)
+
+class Approve(BaseModel):
+    days: int
+
+@app.post("/tickets/{ticket_id}/approve")
+def approve(ticket_id: int, body: Approve):
+    if ticket_id == 404:
+        raise HTTPException(status_code=404, detail="ticket not found")
+    if ticket_id == 409:
+        raise ConflictError("ticket is already approved")
+    if ticket_id == 500:
+        raise RuntimeError("database password is hunter2")   # must never reach the client
+    return {"ok": True}
+
+c = TestClient(app, raise_server_exceptions=False)   # see the trap about this flag
+print(c.post("/tickets/404/approve", json={"days": 1}).json())   # {'error': {'code': 'http_404', 'message': 'ticket not found'}}
+print(c.post("/tickets/409/approve", json={"days": 1}).json())   # {'error': {'code': 'conflict', 'message': 'ticket is already approved'}}
+print(c.get("/nowhere").json())                                   # {'error': {'code': 'http_404', 'message': 'Not Found'}}
+r = c.post("/tickets/1/approve", json={"days": "x"})
+print(r.status_code, r.json()["error"]["details"])               # 422 [{'field': 'body.days', 'message': 'Input should be a valid integer, unable to parse string as an integer'}]
+r = c.post("/tickets/500/approve", json={"days": 1})
+print(r.status_code, r.json())                                    # 500 {'error': {'code': 'internal_error', 'message': 'unexpected error'}}
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; two traps in that file</span>
+  <p><b>1. Register Starlette&rsquo;s <code>HTTPException</code>, not FastAPI&rsquo;s.</b> FastAPI&rsquo;s class is a subclass of Starlette&rsquo;s. A handler registered
+  for the subclass never sees the 404 and 405 that the <i>router</i> raises (those are Starlette&rsquo;s own, checked here), so unknown URLs keep the framework&rsquo;s
+  default body and your &ldquo;one consistent shape&rdquo; has a hole in it. Registering the parent catches both. The third print above is the proof.
+  <b>2. <code>TestClient</code> re-raises server errors by default.</b> With the catch-all handler registered, a plain <code>TestClient(app)</code> still raises the
+  <code>RuntimeError</code> in your test (checked), so you cannot see the 500 body. <code>raise_server_exceptions=False</code> shows what a real client would get.
+  Also notice what the 500 body does <b>not</b> contain: the string <code>hunter2</code>. Log the traceback server-side; send the client a code and a sentence.</p>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">In production</span>
+  <p>Teams often add a <code>request_id</code> to this body and log the same id, so a customer can quote it and you can find the exact trace.
+  Another recognised convention is RFC 9457 &ldquo;problem details&rdquo; (<code>application/problem+json</code>). The point is not which shape; it is that there is exactly one,
+  that the <code>code</code> is stable and machine-readable, and that the <code>message</code> is safe to show.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Official reading &mdash; errors</div>
+  <a class="r" href="https://fastapi.tiangolo.com/tutorial/handling-errors/" target="_blank" rel="noopener"><span>FastAPI &mdash; Handling errors<i><code>HTTPException</code>, custom exception handlers, overriding the validation handler, and the Starlette-versus-FastAPI exception note.</i></span><span class="dur">25 min</span></a>
+  <a class="r" href="https://www.rfc-editor.org/rfc/rfc9457" target="_blank" rel="noopener"><span>RFC 9457 &mdash; Problem Details for HTTP APIs<i>The standard shape if you want one. Read the first two sections.</i></span><span class="dur">15 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="deps">Dependencies: Depends</h2>
+<p class="sub">A dependency is a function FastAPI calls for you before your handler and whose result it passes in. It is how shared logic, a database
+session and authentication stay out of every route.</p>
+
+<h3 id="deps-shared">Shared logic</h3>
+<p>Anything repeated across routes (pagination parameters, &ldquo;load this record or 404&rdquo;, &ldquo;who is calling&rdquo;) becomes a dependency. A
+dependency may itself declare parameters, and they are validated and documented exactly like a route&rsquo;s.</p>
+
+<div class="code" data-lang="python">
+<header><b>shared_deps.py</b></header>
+<pre><code>from typing import Annotated
+from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi.testclient import TestClient
+
+app = FastAPI()
+TICKETS = {1: {"id": 1, "title": "Gate stuck"}, 2: {"id": 2, "title": "Badge reader offline"}}
+
+def page(limit: Annotated[int, Query(ge=1, le=50)] = 10,      # its OWN parameters: validated, shown in /docs
+         offset: Annotated[int, Query(ge=0)] = 0) -&gt; dict:
+    return {"limit": limit, "offset": offset}
+
+def load_ticket(ticket_id: int) -&gt; dict:                      # a dependency may read the path too
+    ticket = TICKETS.get(ticket_id)
+    if ticket is None:
+        raise HTTPException(status_code=404, detail="ticket not found")
+    return ticket
+
+Page = Annotated[dict, Depends(page)]                         # an alias: write the dependency once, reuse the name
+Ticket = Annotated[dict, Depends(load_ticket)]
+
+@app.get("/tickets")
+def list_tickets(p: Page):
+    rows = list(TICKETS.values())
+    return rows[p["offset"]: p["offset"] + p["limit"]]
+
+@app.get("/tickets/{ticket_id}")
+def show(ticket: Ticket):                                     # the 404 logic is not in this function at all
+    return ticket
+
+@app.delete("/tickets/{ticket_id}", status_code=204)
+def remove(ticket: Ticket):                                   # ...nor in this one
+    del TICKETS[ticket["id"]]
+
+c = TestClient(app)
+print(c.get("/tickets?limit=1").json())        # [{'id': 1, 'title': 'Gate stuck'}]
+print(c.get("/tickets?limit=99").status_code)  # 422   (the dependency's own Query rule applied)
+print(c.get("/tickets/9").status_code)         # 404
+</code></pre>
+</div>
+
+<h3 id="deps-db">The database-session pattern: yield</h3>
+<p>A dependency that <code>yield</code>s is a setup and teardown pair: code before <code>yield</code> runs before the handler, the yielded value is
+injected, and code after it (in <code>finally</code>) runs once the response is on its way. That is the pattern for a database
+session, a file, or any resource with a lifetime of one request. Week 7 plugs a real PostgreSQL session into exactly this shape.</p>
+
+<div class="code" data-lang="python">
+<header><b>session_dep.py</b></header>
+<pre><code>from typing import Annotated
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.testclient import TestClient
+
+EVENTS = []                                         # a log, so we can SEE the order things happen
+
+class FakeSession:                                  # stands in for a DB session; week 7 swaps in a real one
+    def __init__(self):
+        EVENTS.append("open")
+    def close(self):
+        EVENTS.append("close")
+
+def get_session():
+    session = FakeSession()
+    try:
+        yield session                               # the handler runs while we are suspended here
+    finally:
+        session.close()                             # runs after the handler, even if it raised
+
+Session = Annotated[FakeSession, Depends(get_session)]
+app = FastAPI()
+
+@app.get("/ok")
+def ok(session: Session):
+    EVENTS.append("handler")
+    return {"fine": True}
+
+@app.get("/missing")
+def missing(session: Session):
+    EVENTS.append("handler")
+    raise HTTPException(status_code=404, detail="no such ticket")
+
+c = TestClient(app)
+c.get("/ok"); print(EVENTS)                         # ['open', 'handler', 'close']
+EVENTS.clear()
+print(c.get("/missing").status_code, EVENTS)        # 404 ['open', 'handler', 'close']   closed despite the error
+
+# The same dependency in a test: swap it, no handler changes
+class StubSession(FakeSession):
+    pass
+app.dependency_overrides[get_session] = lambda: StubSession()
+EVENTS.clear(); c.get("/ok"); print(EVENTS)         # ['open', 'handler']   the stub has no cleanup: overrides replace the whole function
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the dependency you cannot test</span>
+  <p>If a handler creates its own session or reads <code>os.environ</code> inside the function body, a test cannot replace it. Put anything with a side
+  effect or an environment (database, clock, vendor client, settings) behind a <code>Depends</code> and the test swaps it with
+  <code>app.dependency_overrides[original] = replacement</code>. The key is the <b>original function object</b>, not its name. This is also the main reason to prefer
+  dependencies over module-level globals.</p>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p><b>&ldquo;What is dependency injection and why does FastAPI have it?&rdquo;</b> A function declares what it needs (a session, the current user, pagination
+  numbers) and the framework supplies it, instead of the function constructing or fetching it. The gains: shared logic written once, validated
+  parameters for free, and test doubles by overriding one entry. Follow-up: &ldquo;when does the code after <code>yield</code> run?&rdquo; After the
+  handler returns or raises, as part of finishing the request; so a database session is always released.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Official reading and video &mdash; dependencies</div>
+  <a class="r" href="https://fastapi.tiangolo.com/tutorial/dependencies/" target="_blank" rel="noopener"><span>FastAPI &mdash; Dependencies<i>The concept, classes as dependencies, sub-dependencies, and global dependencies.</i></span><span class="dur">35 min</span></a>
+  <a class="r" href="https://fastapi.tiangolo.com/tutorial/dependencies/dependencies-with-yield/" target="_blank" rel="noopener"><span>FastAPI &mdash; Dependencies with yield<i>Setup and teardown, exception behaviour, and the exit-code timing in current versions.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=xqYJjxITbxA" target="_blank" rel="noopener"><span>The Software Mentor &mdash; Dependency Injection with Depends, FastAPI for Developers<i>A step-by-step video on <code>Depends</code>. Check details against the official page; a video cannot be re-run.</i></span><span class="dur">video</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="auth">Authentication in an API: keys, bearer tokens, 401 versus 403</h2>
+<p class="sub">Authentication answers &ldquo;who are you?&rdquo;; authorisation answers &ldquo;may you do this?&rdquo;. The two failures have different status codes
+and the difference is a favourite interview question.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 340" role="img" aria-label="Decision path for an authenticated request. Is a credential present? If not, 401. Is the credential valid, with a good signature and not expired? If not, 401. Is the caller allowed to do this, by role or scope? If not, 403. If yes, the handler runs. A note says that returning 404 instead of 403 can hide the existence of a resource.">
+  <defs>
+    <marker id="s25-dc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s25-dr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+  <rect class="box" x="30" y="50" width="190" height="70" rx="3"/>
+  <text class="t" x="48" y="74">Request</text>
+  <text class="mm" x="48" y="90">ARRIVES WITH ?</text>
+  <rect class="box-c" x="270" y="50" width="210" height="70" rx="3"/>
+  <text class="t" x="288" y="74">Credential present?</text>
+  <text class="mm" x="288" y="90">KEY OR BEARER TOKEN</text>
+  <rect class="box-c" x="530" y="50" width="210" height="70" rx="3"/>
+  <text class="t" x="548" y="74">Credential valid?</text>
+  <text class="mm" x="548" y="90">SIGNATURE, EXPIRY</text>
+  <rect class="box-c" x="790" y="50" width="190" height="70" rx="3"/>
+  <text class="t" x="808" y="74">Allowed to do this?</text>
+  <text class="mm" x="808" y="90">ROLE OR SCOPE</text>
+  <rect class="box-a" x="1030" y="50" width="140" height="70" rx="3"/>
+  <text class="t b" x="1048" y="74">Handler</text>
+  <text class="mm" x="1048" y="90">RUNS</text>
+
+  <path class="flow" d="M224,85 H264" marker-end="url(#s25-dc)"/>
+  <path class="flow" d="M484,85 H524" marker-end="url(#s25-dc)"/>
+  <path class="flow" d="M744,85 H784" marker-end="url(#s25-dc)"/>
+  <path class="flow" d="M984,85 H1024" marker-end="url(#s25-dc)"/>
+  <text class="mm c mid" x="504" y="76">YES</text>
+  <text class="mm c mid" x="764" y="76">YES</text>
+  <text class="mm c mid" x="1004" y="76">YES</text>
+
+  <rect class="box-r" x="270" y="210" width="470" height="70" rx="3"/>
+  <text class="t r" x="288" y="234">401 Unauthorized</text>
+  <text class="mm" x="288" y="250">I DO NOT KNOW WHO YOU ARE.</text>
+  <text class="mm" x="288" y="266">SEND WWW-Authenticate. THE CLIENT CAN FIX THIS BY LOGGING IN.</text>
+  <rect class="box-r" x="790" y="210" width="190" height="70" rx="3"/>
+  <text class="t r" x="808" y="234">403 Forbidden</text>
+  <text class="mm" x="808" y="250">I KNOW YOU.</text>
+  <text class="mm" x="808" y="266">THE ANSWER IS NO.</text>
+  <path class="flow-r" d="M375,124 V204" marker-end="url(#s25-dr)"/>
+  <path class="flow-r" d="M635,124 V204" marker-end="url(#s25-dr)"/>
+  <path class="flow-r" d="M885,124 V204" marker-end="url(#s25-dr)"/>
+  <text class="mm r" x="383" y="170">NO</text>
+  <text class="mm r" x="643" y="170">NO</text>
+  <text class="mm r" x="893" y="170">NO</text>
+  <text class="mm g" x="30" y="320">A 404 INSTEAD OF A 403 HIDES THAT A RESOURCE EXISTS AT ALL: USE IT FOR OBJECTS THE CALLER MUST NOT EVEN KNOW ABOUT.</text>
+</svg>
+<figcaption>Drawing 25-D &mdash; 401 versus 403. <b>Cyan</b> = checks passing. <b>Red</b> = the two different refusals. The names are historical:
+&ldquo;Unauthorized&rdquo; really means unauthenticated.</figcaption>
+</figure>
+
+<h3 id="auth-key">An API key header dependency</h3>
+<p>The simplest scheme: the caller sends a secret in a header, your dependency checks it and returns who it belongs to. It suits server-to-server calls and
+internal tools. Because the check is a dependency, every protected route opts in with one parameter, and a test can replace it.</p>
+
+<div class="code" data-lang="python">
+<header><b>api_key_auth.py</b></header>
+<pre><code>import secrets
+from typing import Annotated
+from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.testclient import TestClient
+
+KEYS = {"key-emp": "employee", "key-mgr": "manager"}    # in real life: hashed, stored, from settings. Never in source.
+
+def current_role(x_api_key: Annotated[str | None, Header()] = None) -&gt; str:
+    if x_api_key is None:
+        raise HTTPException(status_code=401, detail="missing API key",
+                            headers={"WWW-Authenticate": "ApiKey"})
+    for key, role in KEYS.items():
+        # compare_digest takes the same time however many characters match; encode so non-ASCII input cannot crash it
+        if secrets.compare_digest(x_api_key.encode(), key.encode()):
+            return role
+    raise HTTPException(status_code=401, detail="invalid API key", headers={"WWW-Authenticate": "ApiKey"})
+
+def require_role(*allowed: str):                         # a dependency FACTORY: returns a dependency
+    def check(role: Annotated[str, Depends(current_role)]) -&gt; str:
+        if role not in allowed:
+            raise HTTPException(status_code=403, detail=f"requires one of {allowed}")
+        return role
+    return check
+
+app = FastAPI()
+
+@app.get("/tickets")                                     # any known caller
+def list_tickets(role: Annotated[str, Depends(current_role)]):
+    return {"role": role}
+
+@app.post("/tickets/1/approve")                          # managers only
+def approve(role: Annotated[str, Depends(require_role("manager"))]):
+    return {"approved_by": role}
+
+c = TestClient(app)
+print(c.get("/tickets").status_code)                                           # 401   (no key: unknown caller)
+print(c.get("/tickets", headers={"X-API-Key": "nope"}).status_code)            # 401   (key does not match)
+print(c.post("/tickets/1/approve", headers={"X-API-Key": "key-emp"}).status_code)  # 403   (known caller, wrong role)
+print(c.post("/tickets/1/approve", headers={"X-API-Key": "key-mgr"}).json())   # {'approved_by': 'manager'}
+print(c.get("/tickets").headers["www-authenticate"])                           # ApiKey
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the 401/403 mix-up and the key in the URL</span>
+  <p>Returning 403 for a missing key tells a client &ldquo;logging in will not help&rdquo; when it will; returning 401 for a wrong role makes a well-behaved client
+  retry credentials that were fine. Order matters in code too: the role check depends on the identity check, which is why <code>require_role</code> declares
+  <code>Depends(current_role)</code>: without a key you reach 401 first. And never accept the key as a query parameter: URLs end up in browser history,
+  proxy logs and access logs. Headers do not. In production, store hashes of keys, not the keys.</p>
+</div>
+
+<h3 id="auth-jwt">OAuth2 bearer tokens and JWT, explained by building one</h3>
+<p>An API key proves &ldquo;whoever holds this string&rdquo;. A <b>bearer token</b> is a string sent as <code>Authorization: Bearer &lt;token&gt;</code>, issued after a login, that
+expires. <b>OAuth2</b> is the family of rules for how a client gets such a token (the user logs in with an identity provider, the app receives an access token
+and often a longer-lived refresh token). A <b>JWT</b> (JSON Web Token) is one common <i>format</i> for the token: three base64url parts joined by dots,
+<code>header.payload.signature</code>. The payload is readable by anyone; the <b>signature</b> proves it was not altered. Build the signing yourself once and the
+mystery goes away. The signing function below is checked against the well-known example token from the JWT introduction page.</p>
+
+<div class="code" data-lang="python">
+<header><b>jwt_by_hand.py</b></header>
+<pre><code>import base64, hashlib, hmac, json, time
+
+def b64(raw: bytes) -&gt; str:
+    return base64.urlsafe_b64encode(raw).rstrip(b"=").decode()          # base64url, no padding
+
+def unb64(text: str) -&gt; bytes:
+    return base64.urlsafe_b64decode(text + "=" * (-len(text) % 4))
+
+def sign(claims: dict, secret: bytes) -&gt; str:
+    header = b64(json.dumps({"alg": "HS256", "typ": "JWT"}, separators=(",", ":")).encode())
+    payload = b64(json.dumps(claims, separators=(",", ":")).encode())
+    mac = hmac.new(secret, f"{header}.{payload}".encode(), hashlib.sha256).digest()   # HMAC-SHA256 over "header.payload"
+    return f"{header}.{payload}.{b64(mac)}"
+
+def verify(token: str, secret: bytes, now: float | None = None) -&gt; dict:
+    try:
+        header_b64, payload_b64, sig_b64 = token.split(".")
+        header = json.loads(unb64(header_b64))
+    except ValueError:
+        raise ValueError("malformed token")
+    if header.get("alg") != "HS256":                                    # PIN the algorithm: never trust the token's own claim
+        raise ValueError("unexpected algorithm")
+    good = hmac.new(secret, f"{header_b64}.{payload_b64}".encode(), hashlib.sha256).digest()
+    if not hmac.compare_digest(good, unb64(sig_b64)):
+        raise ValueError("bad signature")
+    claims = json.loads(unb64(payload_b64))
+    if claims.get("exp", 0) &lt;= (time.time() if now is None else now):
+        raise ValueError("token expired")
+    return claims
+
+# Proof the signing is the real standard: the example token from the JWT introduction page.
+known = sign({"sub": "1234567890", "name": "John Doe", "iat": 1516239022}, b"your-256-bit-secret")
+print(known.endswith("SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"))   # True
+
+secret = b"dev-only-secret"
+token = sign({"sub": "e-902", "role": "employee", "exp": 2000}, secret)
+print(verify(token, secret, now=1000))                                 # {'sub': 'e-902', 'role': 'employee', 'exp': 2000}
+
+for label, t, now in [("expired", token, 3000),
+                      ("wrong secret", sign({"sub": "x", "exp": 2000}, b"other"), 1000)]:
+    try:
+        verify(t, secret, now=now)
+    except ValueError as e:
+        print(label, "->", e)                                          # expired -> token expired / wrong secret -> bad signature
+
+# Tampering: change the payload to role=manager but keep the old signature
+head, sig = token.split(".")[0], token.rsplit(".", 1)[1]
+forged = f"{head}.{b64(json.dumps({'sub': 'e-902', 'role': 'manager', 'exp': 2000}, separators=(',', ':')).encode())}.{sig}"
+try:
+    verify(forged, secret, now=1000)
+except ValueError as e:
+    print("forged ->", e)                                              # forged -> bad signature
+
+print(json.loads(unb64(token.split(".")[1])))                          # anyone can READ the payload: it is encoded, not encrypted
+</code></pre>
+</div>
+
+<p>Now wire the verifier into FastAPI the way the OAuth2 pattern does: a dependency pulls the bearer token out of the <code>Authorization</code> header with
+<code>HTTPBearer</code> (which also puts the lock icon in <code>/docs</code>), verifies it, and returns the identity.</p>
+
+<div class="code" data-lang="python">
+<header><b>bearer_dependency.py</b></header>
+<pre><code>import base64, hashlib, hmac, json, time
+from typing import Annotated
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.testclient import TestClient
+
+SECRET = b"dev-only-secret"
+
+def b64(raw): return base64.urlsafe_b64encode(raw).rstrip(b"=").decode()
+def unb64(s): return base64.urlsafe_b64decode(s + "=" * (-len(s) % 4))
+def sign(claims):
+    h = b64(b'{"alg":"HS256","typ":"JWT"}'); p = b64(json.dumps(claims).encode())
+    return f"{h}.{p}.{b64(hmac.new(SECRET, f'{h}.{p}'.encode(), hashlib.sha256).digest())}"
+def verify(token):                                      # condensed from the previous block
+    h, p, s = token.split(".")
+    if not hmac.compare_digest(hmac.new(SECRET, f"{h}.{p}".encode(), hashlib.sha256).digest(), unb64(s)):
+        raise ValueError("bad signature")
+    claims = json.loads(unb64(p))
+    if claims["exp"] &lt;= time.time():
+        raise ValueError("expired")
+    return claims
+
+bearer = HTTPBearer()                                   # reads "Authorization: Bearer ..."; missing header -&gt; 401 automatically
+
+def current_user(creds: Annotated[HTTPAuthorizationCredentials, Depends(bearer)]) -&gt; dict:
+    try:
+        return verify(creds.credentials)
+    except (ValueError, KeyError):                      # malformed, forged or expired: all 401, say nothing more
+        raise HTTPException(status_code=401, detail="invalid or expired token",
+                            headers={"WWW-Authenticate": "Bearer"})
+
+app = FastAPI()
+
+@app.get("/me")
+def me(user: Annotated[dict, Depends(current_user)]):
+    return {"sub": user["sub"], "role": user["role"]}
+
+c = TestClient(app)
+good = sign({"sub": "e-902", "role": "employee", "exp": time.time() + 60})
+old = sign({"sub": "e-902", "role": "employee", "exp": time.time() - 1})
+print(c.get("/me").status_code)                                                  # 401  no header at all
+print(c.get("/me", headers={"Authorization": f"Bearer {good}"}).json())          # {'sub': 'e-902', 'role': 'employee'}
+print(c.get("/me", headers={"Authorization": f"Bearer {old}"}).status_code)      # 401  expired
+print(c.get("/me", headers={"Authorization": f"Bearer {good}x"}).status_code)    # 401  signature no longer matches
+</code></pre>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Scheme</th><th>What the client holds</th><th>Good for</th><th>Weak spot</th></tr></thead>
+<tbody>
+<tr><td><b>API key</b></td><td>A long random secret, no expiry</td><td>Server-to-server, internal tools, simple partner access</td><td>Cannot say <i>who</i> a human is; one leak is valid until rotated</td></tr>
+<tr><td><b>Bearer JWT (OAuth2)</b></td><td>A short-lived signed token (minutes) plus a refresh token</td><td>User-facing apps; identity and scopes travel in the token; no lookup per request</td><td>Cannot be revoked before expiry without extra state; payload is public</td></tr>
+<tr><td><b>Session cookie</b></td><td>An opaque id; the server stores the session</td><td>Browser apps on one site</td><td>Needs shared session storage; CSRF protection</td></tr>
+</tbody></table></div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; four JWT mistakes that become incidents</span>
+  <p><b>1. Believing the token&rsquo;s own <code>alg</code>.</b> Pin the accepted algorithm on the server (the <code>verify</code> above does); older libraries had a hole where
+  <code>alg: none</code> skipped the check. <b>2. Secrets in the payload.</b> The payload is base64, not encryption; the last print above shows anyone can read it.
+  <b>3. No expiry, or days of it.</b> A stolen token is valid until <code>exp</code>; keep access tokens to minutes and use a refresh token. <b>4. Rolling your own in production.</b>
+  The hand-written code here is for understanding and was only exercised against the tests above. Use a maintained library (PyJWT, Authlib) or, better, let an identity provider
+  (Cognito, Entra ID, Auth0, Keycloak) issue and verify tokens, and have your API verify them with the provider&rsquo;s public keys. Do not write the login screen. For this
+  roadmap the API-key dependency is enough to build and test; know the bearer story well enough to explain it. FastAPI&rsquo;s own <code>OAuth2PasswordBearer</code>
+  and PyJWT tutorial was not run for this sheet; the official page is linked below.</p>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">A version note worth checking</span>
+  <p>With the installed FastAPI, a missing <code>Authorization</code> header on an <code>HTTPBearer</code> dependency returned <b>401</b> with <code>WWW-Authenticate: Bearer</code>
+  (checked). Tutorials written for older releases describe it as 403. If a test of yours disagrees with a blog post, the installed version is right; look at
+  your own output, and pin the expectation in a test so an upgrade that changes it is noticed.</p>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p><b>&ldquo;401 or 403?&rdquo;</b> 401 means unauthenticated: no credential, or an invalid or expired one. 403 means authenticated but not permitted. Follow-up:
+  <b>&ldquo;Is a JWT encrypted?&rdquo;</b> No. A normal JWT is signed, not encrypted: anyone can read it, nobody can change it without detection. <b>&ldquo;How do you log a user out of a JWT system?&rdquo;</b>
+  You cannot cancel a token already issued; you keep expiry short, rotate refresh tokens, and keep a deny-list for emergencies.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Official reading &mdash; authentication</div>
+  <a class="r" href="https://fastapi.tiangolo.com/tutorial/security/first-steps/" target="_blank" rel="noopener"><span>FastAPI &mdash; Security, first steps<i>The OAuth2 password-bearer flow, and how the Authorize button in /docs works.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/" target="_blank" rel="noopener"><span>FastAPI &mdash; OAuth2 with Password (and hashing), Bearer with JWT tokens<i>The library-based version of the hand-written block. Read it once; not needed for the lab.</i></span><span class="dur">30 min</span></a>
+  <a class="r" href="https://owasp.org/API-Security/" target="_blank" rel="noopener"><span>OWASP API Security Project<i>The top-ten list: broken object-level authorisation and broken authentication are the first two.</i></span><span class="dur">30 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="settings">Settings from the environment</h2>
+<p class="sub">Secrets and per-machine values (database address, keys, page sizes) live outside the code. <code>pydantic-settings</code> reads them from environment
+variables, validates them like any model, and refuses to start if one is wrong.</p>
+
+<div class="code" data-lang="python">
+<header><b>settings_demo.py</b></header>
+<pre><code>import os
+from functools import lru_cache
+from typing import Annotated
+from fastapi import Depends, FastAPI
+from fastapi.testclient import TestClient
+from pydantic import Field, SecretStr, ValidationError
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="DESK_", env_file=".env", extra="ignore")
+    database_url: str = "sqlite:///./dev.db"             # a safe default for development
+    api_key: SecretStr                                    # NO default: the app must not start without it
+    page_size: int = Field(10, ge=1, le=50)               # env vars are strings; this converts and bounds it
+    debug: bool = False
+
+# Fail fast: no DESK_API_KEY set
+os.environ.pop("DESK_API_KEY", None)
+try:
+    Settings()
+except ValidationError as e:
+    print(e.errors()[0]["loc"], e.errors()[0]["type"])   # ('api_key',) missing
+
+os.environ["DESK_API_KEY"] = "s3cret-value"
+os.environ["DESK_PAGE_SIZE"] = "25"
+s = Settings()
+print(s.page_size, type(s.page_size).__name__)           # 25 int      (the string "25" was converted)
+print(s.api_key)                                          # **********   a SecretStr hides itself in logs and reprs
+print(s.api_key.get_secret_value() == "s3cret-value")     # True         you ask for the secret explicitly
+
+os.environ["DESK_PAGE_SIZE"] = "500"
+try:
+    Settings()
+except ValidationError as e:
+    print(e.errors()[0]["loc"], e.errors()[0]["type"])   # ('page_size',) less_than_equal
+
+# In the app: ONE cached settings object, delivered through Depends so tests can replace it
+os.environ["DESK_PAGE_SIZE"] = "25"
+
+@lru_cache
+def get_settings() -&gt; Settings:
+    return Settings()
+
+app = FastAPI()
+
+@app.get("/config")
+def config(settings: Annotated[Settings, Depends(get_settings)]):
+    return {"page_size": settings.page_size, "debug": settings.debug}
+
+c = TestClient(app)
+print(c.get("/config").json())                            # {'page_size': 25, 'debug': False}
+app.dependency_overrides[get_settings] = lambda: Settings(page_size=5, api_key="test-key")
+print(c.get("/config").json())                            # {'page_size': 5, 'debug': False}
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; .env in git, and defaults that hide mistakes</span>
+  <p>Add <code>.env</code> to <code>.gitignore</code> <b>before</b> the first commit; a secret pushed once is in history for good, as <a href="ai-python.html">Sheet 23</a> warned. Commit a
+  <code>.env.example</code> with fake values instead. And do not give secrets a default like <code>"changeme"</code>: a missing production variable should stop the
+  process at start-up (as <code>api_key</code> does above), not run with a known password. Real environment variables win over the <code>.env</code> file, which is how the same code
+  runs on your laptop and in a container.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Official reading &mdash; settings</div>
+  <a class="r" href="https://fastapi.tiangolo.com/advanced/settings/" target="_blank" rel="noopener"><span>FastAPI &mdash; Settings and environment variables<i>The same pattern with <code>lru_cache</code> and dependency overrides for tests.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://pydantic.dev/docs/validation/latest/concepts/pydantic_settings/" target="_blank" rel="noopener"><span>Pydantic &mdash; Settings management<i>Prefixes, <code>.env</code> files, secrets, nested settings.</i></span><span class="dur">20 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="async">Sync versus async: when it matters</h2>
+<p class="sub">FastAPI accepts both <code>def</code> and <code>async def</code> handlers. The choice is not &ldquo;fast versus slow&rdquo;; it decides <b>which thread</b> your code
+runs on, and one wrong combination freezes the whole server.</p>
+
+<h3 id="async-how">What each one does</h3>
+<div class="tw"><table>
+<thead><tr><th></th><th><code>def handler</code></th><th><code>async def handler</code></th></tr></thead>
+<tbody>
+<tr><td>Runs on</td><td>A worker thread from a pool (40 threads by default in the installed stack: checked)</td><td>The single event-loop thread, shared with every other request</td></tr>
+<tr><td>A slow blocking call (<code>time.sleep</code>, <code>requests.get</code>, a sync DB driver)</td><td>Occupies one thread; other requests carry on</td><td><b>Freezes the loop</b>: nothing else is served until it returns</td></tr>
+<tr><td>Waiting on I/O with <code>await</code></td><td>Not possible</td><td>Cheap: thousands of waiting requests on one thread</td></tr>
+<tr><td>CPU-heavy work</td><td>Competes for the interpreter lock; slow either way</td><td>Blocks the loop; use a process pool or a worker queue</td></tr>
+<tr><td>Right when</td><td>You use ordinary blocking libraries (most database drivers, <code>requests</code>, file I/O)</td><td>Every slow call inside is awaitable (<code>httpx.AsyncClient</code>, an async driver)</td></tr>
+</tbody></table></div>
+
+<p>First prove the thread claim, then the freeze.</p>
+
+<div class="code" data-lang="python">
+<header><b>which_thread.py</b></header>
+<pre><code>import threading
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+app = FastAPI()
+
+@app.get("/a")
+async def a():
+    return {"thread": threading.get_ident()}
+
+@app.get("/b")
+async def b():
+    return {"thread": threading.get_ident()}
+
+@app.get("/s")
+def s():
+    return {"thread": threading.get_ident()}
+
+with TestClient(app) as c:   # the `with` keeps ONE event loop alive; without it each request gets a fresh one
+    loop_a, loop_b, sync_t = (c.get(p).json()["thread"] for p in ("/a", "/b", "/s"))
+print(loop_a == loop_b)      # True   both async handlers ran on the same event-loop thread
+print(sync_t == loop_a)      # False  the plain def handler ran in a worker thread
+</code></pre>
+</div>
+
+<div class="code" data-lang="python">
+<header><b>freeze_demo.py</b></header>
+<pre><code>import asyncio, time
+
+# Five "requests" arrive together. Each handler needs 0.2 s of waiting.
+async def blocks_the_loop(n):
+    time.sleep(0.2)                       # async def + a blocking call: the loop cannot switch away
+
+async def awaits(n):
+    await asyncio.sleep(0.2)              # async def + an awaitable: the loop serves others meanwhile
+
+async def sync_in_thread(n):              # roughly what FastAPI does for a plain `def` handler
+    await asyncio.to_thread(time.sleep, 0.2)
+
+async def burst(handler):
+    start = time.perf_counter()
+    await asyncio.gather(*(handler(i) for i in range(5)))
+    return time.perf_counter() - start
+
+for handler in (blocks_the_loop, awaits, sync_in_thread):
+    print(f"{handler.__name__:&lt;16} {asyncio.run(burst(handler)):.1f} s")
+# blocks_the_loop  1.0 s      5 x 0.2, one after another
+# awaits           0.2 s      all five waited at once
+# sync_in_thread   0.2 s      five threads, five waits at once (0.3 s is normal: starting threads costs a little)
+# (timings are about these on an idle machine; the ordering is what matters)
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; async def is not a speed switch</span>
+  <p>The commonest mistake: writing <code>async def</code> everywhere because it sounds modern, then calling a blocking library inside. The server now handles one
+  request at a time while looking fine on a laptop with one user. If you are unsure, <b>use plain <code>def</code></b>: FastAPI runs it safely in a thread. Use <code>async def</code> only
+  when you <code>await</code> something. In an Applied AI service the usual slow calls (a vendor API, an LLM, a vector store) are I/O waits, so an async HTTP client inside
+  <code>async def</code> scales well; a blocking SDK inside <code>async def</code> does not. Also remember that the thread pool is finite: 40 slow <code>def</code> requests in flight and
+  the 41st queues.</p>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">Interviewers ask</span>
+  <p><b>&ldquo;What happens if I call <code>requests.get</code> inside an <code>async def</code> endpoint?&rdquo;</b> It blocks the event loop for the duration of the call, so
+  every other request on that worker waits. Fix: make the handler a plain <code>def</code>, use an async client such as <code>httpx.AsyncClient</code> with <code>await</code>, or push the call
+  to a thread with <code>asyncio.to_thread</code>. Follow-up: &ldquo;does async make one request faster?&rdquo; No. It lets one process hold many waiting requests at once.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Official reading and video &mdash; sync and async</div>
+  <a class="r" href="https://fastapi.tiangolo.com/async/" target="_blank" rel="noopener"><span>FastAPI &mdash; Concurrency and async / await<i>Read the &ldquo;in a hurry&rdquo; box first, then the burger analogy if you want the intuition.</i></span><span class="dur">20 min</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=2JPDt-Jp6fM" target="_blank" rel="noopener"><span>Corey Schafer &mdash; Python FastAPI Tutorial (Part 7): Sync vs Async<i>Converts an app from sync to async and says when each is right.</i></span><span class="dur">video</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="layout">Project layout: routers, schemas, services</h2>
+<p class="sub">One <code>main.py</code> is fine for an afternoon and a trap for a month. The split below keeps HTTP concerns, the contract and the business rules
+in different files, so each can be tested and changed alone.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 400" role="img" aria-label="A recommended FastAPI project layout. On the left, a file tree: a desk package containing main.py, settings.py, deps.py, schemas.py, errors.py, a routers folder, a services folder and repo.py, plus a tests folder. On the right, three layers connected by arrows: routers handle HTTP in and out, services hold business rules with no HTTP, and repo does data access. Beside them, three supporting boxes: schemas shared by routers and services, deps and settings injected through Depends, and errors with one set of handlers. A red box warns against SQL or environment reads inside route functions.">
+  <defs>
+    <marker id="s25-ec" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+  </defs>
+  <rect class="box" x="30" y="30" width="380" height="345" rx="3"/>
+  <text class="mm" x="48" y="52">PROJECT TREE</text>
+  <text class="m" x="48" y="76">desk/</text>
+  <text class="m" x="48" y="94">  main.py         create_app(), wiring</text>
+  <text class="m" x="48" y="112">  settings.py     pydantic-settings</text>
+  <text class="m" x="48" y="130">  deps.py         auth, service, paging</text>
+  <text class="m" x="48" y="148">  schemas.py      Pydantic in / out</text>
+  <text class="m" x="48" y="166">  errors.py       domain errors, handlers</text>
+  <text class="m" x="48" y="184">  routers/</text>
+  <text class="m" x="48" y="202">    tickets.py    HTTP only</text>
+  <text class="m" x="48" y="220">  services.py     rules, no HTTP</text>
+  <text class="m" x="48" y="238">  repo.py         data access (week 7)</text>
+  <text class="m" x="48" y="262">tests/</text>
+  <text class="m" x="48" y="280">  test_tickets.py TestClient + overrides</text>
+  <text class="m" x="48" y="298">.env              never committed</text>
+  <text class="m" x="48" y="316">.env.example      fake values, committed</text>
+  <text class="m" x="48" y="334">requirements.txt  pinned versions</text>
+
+  <rect class="box-c" x="470" y="30" width="330" height="70" rx="3"/>
+  <text class="t" x="488" y="54">routers/</text>
+  <text class="mm" x="488" y="70">PATHS, PARAMS, STATUS CODES</text>
+  <text class="mm" x="488" y="86">CALLS A SERVICE, RETURNS A MODEL</text>
+  <rect class="box-a" x="470" y="125" width="330" height="70" rx="3"/>
+  <text class="t b" x="488" y="149">services</text>
+  <text class="mm" x="488" y="165">BUSINESS RULES, NO HTTP IMPORTS</text>
+  <text class="mm" x="488" y="181">RAISES DOMAIN ERRORS</text>
+  <rect class="box" x="470" y="220" width="330" height="70" rx="3"/>
+  <text class="t" x="488" y="244">repo</text>
+  <text class="mm" x="488" y="260">SQL OR API CALLS, NOTHING ELSE</text>
+  <path class="flow" d="M635,104 V119" marker-end="url(#s25-ec)"/>
+  <path class="flow" d="M635,199 V214" marker-end="url(#s25-ec)"/>
+
+  <rect class="box-a" x="860" y="30" width="310" height="70" rx="3"/>
+  <text class="t b" x="878" y="54">schemas.py</text>
+  <text class="mm" x="878" y="70">THE CONTRACT BOTH SIDES SHARE</text>
+  <text class="mm" x="878" y="86">ONE IN MODEL, ONE OUT MODEL</text>
+  <rect class="box-a" x="860" y="125" width="310" height="70" rx="3"/>
+  <text class="t b" x="878" y="149">deps.py + settings.py</text>
+  <text class="mm" x="878" y="165">INJECTED WITH Depends</text>
+  <text class="mm" x="878" y="181">TESTS OVERRIDE THEM</text>
+  <rect class="box-a" x="860" y="220" width="310" height="70" rx="3"/>
+  <text class="t b" x="878" y="244">errors.py</text>
+  <text class="mm" x="878" y="260">DOMAIN ERROR -&gt; ONE BODY SHAPE</text>
+  <text class="mm" x="878" y="276">REGISTERED ONCE IN create_app</text>
+
+  <rect class="box-r" x="470" y="315" width="700" height="60" rx="3"/>
+  <text class="t r" x="488" y="339">The anti-pattern</text>
+  <text class="mm" x="488" y="357">SQL STRINGS, os.environ AND BUSINESS RULES ALL INSIDE THE ROUTE FUNCTION: UNTESTABLE WITHOUT A SERVER.</text>
+</svg>
+<figcaption>Drawing 25-E &mdash; the layout and where each subtopic of this sheet lives. <b>Cyan</b> = HTTP-aware code. <b>Brass</b> = code you
+design on purpose. <b>Red</b> = what the layers exist to prevent. Dependencies point downwards: a service never imports a router.</figcaption>
+</figure>
+
+<p>The block below writes a tiny package of exactly this shape into a temporary folder, imports it, and drives it with the test client. It uses
+<code>APIRouter</code> (a mini-app you attach with a prefix), an app factory <code>create_app()</code>, and every earlier idea in small form. Read the files in order of the tree.</p>
+
+<div class="code" data-lang="python">
+<header><b>layout_demo.py</b></header>
+<pre><code>import sys, tempfile
+from pathlib import Path
+
+FILES = {
+"desk/__init__.py": "",
+"desk/routers/__init__.py": "",
+
+"desk/settings.py": '''
+from functools import lru_cache
+from pydantic_settings import BaseSettings
+
+class Settings(BaseSettings):
+    api_key: str = "dev-key"          # real deployments set it in the environment
+
+@lru_cache
+def get_settings() -&gt; Settings:
+    return Settings()
+''',
+
+"desk/schemas.py": '''
+from pydantic import BaseModel, Field
+
+class TicketIn(BaseModel):
+    title: str = Field(min_length=3, max_length=80)
+
+class TicketOut(BaseModel):
+    id: int
+    title: str
+''',
+
+"desk/errors.py": '''
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+
+class NotFound(Exception):            # a domain error: the service raises it, HTTP is decided here
+    def __init__(self, what: str):
+        self.what = what
+
+def install_handlers(app: FastAPI) -&gt; None:
+    @app.exception_handler(NotFound)
+    async def on_not_found(request: Request, exc: NotFound):
+        return JSONResponse({"error": {"code": "not_found", "message": exc.what + " not found"}}, status_code=404)
+''',
+
+"desk/services.py": '''
+from desk.errors import NotFound
+
+class TicketService:                  # rules live here; no FastAPI imports at all
+    def __init__(self):
+        self._rows = {}
+    def create(self, title: str) -&gt; dict:
+        row = {"id": len(self._rows) + 1, "title": title.strip(), "internal_note": "n/a"}
+        self._rows[row["id"]] = row
+        return row
+    def get(self, ticket_id: int) -&gt; dict:
+        if ticket_id not in self._rows:
+            raise NotFound(f"ticket {ticket_id}")
+        return self._rows[ticket_id]
+''',
+
+"desk/deps.py": '''
+from functools import lru_cache
+from typing import Annotated
+from fastapi import Depends, Header, HTTPException
+from desk.services import TicketService
+from desk.settings import Settings, get_settings
+
+@lru_cache
+def get_service() -&gt; TicketService:  # one per process; tests override it
+    return TicketService()
+
+def require_key(settings: Annotated[Settings, Depends(get_settings)],
+                x_api_key: Annotated[str | None, Header()] = None) -&gt; None:
+    if x_api_key != settings.api_key:
+        raise HTTPException(status_code=401, detail="invalid API key")
+''',
+
+"desk/routers/tickets.py": '''
+from typing import Annotated
+from fastapi import APIRouter, Depends
+from desk.deps import get_service, require_key
+from desk.schemas import TicketIn, TicketOut
+from desk.services import TicketService
+
+router = APIRouter(prefix="/tickets", tags=["tickets"], dependencies=[Depends(require_key)])
+Service = Annotated[TicketService, Depends(get_service)]
+
+@router.post("", status_code=201, response_model=TicketOut)
+def create(body: TicketIn, service: Service):
+    return service.create(body.title)            # HTTP in, service call, model out: nothing else
+
+@router.get("/{ticket_id}", response_model=TicketOut)
+def read(ticket_id: int, service: Service):
+    return service.get(ticket_id)
+''',
+
+"desk/main.py": '''
+from fastapi import FastAPI
+from desk.errors import install_handlers
+from desk.routers import tickets
+
+def create_app() -&gt; FastAPI:                    # a factory: every call builds a fresh, configurable app
+    app = FastAPI(title="Desk")
+    install_handlers(app)
+    app.include_router(tickets.router)
+    return app
+''',
+}
+
+root = Path(tempfile.mkdtemp())
+for name, text in FILES.items():
+    path = root / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text.lstrip("\n"), encoding="utf-8")
+print(sorted(str(p.relative_to(root)).replace("\\", "/") for p in root.rglob("*.py") if p.stat().st_size))
+# ['desk/deps.py', 'desk/errors.py', 'desk/main.py', 'desk/routers/tickets.py', 'desk/schemas.py', 'desk/services.py', 'desk/settings.py']
+
+sys.path.insert(0, str(root))                    # make "import desk" work
+from fastapi.testclient import TestClient
+from desk.main import create_app
+
+c = TestClient(create_app())
+H = {"X-API-Key": "dev-key"}
+print(c.post("/tickets", json={"title": " Gate stuck "}, headers=H).json())   # {'id': 1, 'title': 'Gate stuck'}   no internal_note
+print(c.get("/tickets/7", headers=H).json())                                  # {'error': {'code': 'not_found', 'message': 'ticket 7 not found'}}
+print(c.get("/tickets/1").status_code)                                        # 401   the router-level dependency guards every route
+</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">You must be able to explain this</span>
+  <p>Three lines carry the design: <code>dependencies=[Depends(require_key)]</code> on the <b>router</b> protects every route in it at once;
+  <code>return service.create(body.title)</code> is the whole route body, because rules live in the service; and <code>create_app()</code> is a <b>factory</b>, so a test can
+  build a fresh app (and override a dependency) per test instead of fighting shared state. Notice that <code>services.py</code> imports nothing from FastAPI: you could call it
+  from a Kafka consumer or a script unchanged.</p>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; circular imports and state at import time</span>
+  <p>If <code>deps.py</code> imports <code>main.py</code> to reach <code>app</code>, and <code>main.py</code> imports routers which import <code>deps.py</code>, Python raises an
+  <code>ImportError</code> half-way through start-up. Keep the arrows in the drawing pointing one way. And do not create database connections or read settings at module import: do it
+  in the factory or in a dependency, or every test that imports the module pays for it (and may need your real database).</p>
+</div>
+
+<div class="res">
+  <div class="rh">Official reading and video &mdash; structure</div>
+  <a class="r" href="https://fastapi.tiangolo.com/tutorial/bigger-applications/" target="_blank" rel="noopener"><span>FastAPI &mdash; Bigger applications, multiple files<i><code>APIRouter</code>, prefixes, router-level dependencies, and the official example tree.</i></span><span class="dur">30 min</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=NkgIHa6KtHg" target="_blank" rel="noopener"><span>Corey Schafer &mdash; Python FastAPI Tutorial (Part 8): Routers<i>Splitting a growing <code>main.py</code> into router modules.</i></span><span class="dur">video</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="middleware">Middleware, CORS and background tasks</h2>
+<p class="sub">Things that apply to every request belong in middleware. Things that must happen after the response is sent belong in a background task, until they
+matter enough to need a real queue.</p>
+
+<h3 id="mw-basic">Middleware and CORS</h3>
+<p>Middleware wraps the whole application: code before <code>call_next</code> runs on the way in, code after it on the way out. <b>CORS</b> is the browser rule that a page served from
+one origin (<code>http://localhost:3000</code>, your Next.js dev server) may not read responses from another origin (your API on port 8000) unless the API says so with
+<code>Access-Control-Allow-*</code> headers. The browser enforces it; <code>curl</code>, a server or a test client never does.</p>
+
+<div class="code" data-lang="python">
+<header><b>middleware_cors.py</b></header>
+<pre><code>import time, uuid
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.testclient import TestClient
+
+app = FastAPI()
+
+@app.middleware("http")                              # runs for EVERY request
+async def request_id_and_timing(request: Request, call_next):
+    rid = request.headers.get("x-request-id") or uuid.uuid4().hex[:8]
+    started = time.perf_counter()
+    response = await call_next(request)              # everything inside (router, deps, handler) happens here
+    response.headers["X-Request-Id"] = rid
+    response.headers["X-Elapsed-Ms"] = f"{(time.perf_counter() - started) * 1000:.1f}"
+    return response
+
+app.add_middleware(                                  # added LAST => outermost: sees the request first
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],         # a list of exact origins; avoid "*" for anything with credentials
+    allow_methods=["GET", "POST"],
+    allow_headers=["X-API-Key", "Content-Type"],
+)
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+c = TestClient(app)
+r = c.get("/health", headers={"X-Request-Id": "abc123"})
+print(r.headers["x-request-id"], "x-elapsed-ms" in r.headers)       # abc123 True
+
+# The browser's PREFLIGHT: an OPTIONS request it sends before a "non-simple" request
+pre = c.options("/health", headers={"Origin": "http://localhost:3000",
+                                    "Access-Control-Request-Method": "GET",
+                                    "Access-Control-Request-Headers": "X-API-Key"})
+print(pre.status_code, pre.headers["access-control-allow-origin"])  # 200 http://localhost:3000
+
+bad = c.options("/health", headers={"Origin": "http://evil.example",
+                                    "Access-Control-Request-Method": "GET"})
+print(bad.status_code, "access-control-allow-origin" in bad.headers)  # 400 False
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the CORS error is not an API error</span>
+  <p>&ldquo;CORS error&rdquo; in the browser console while <code>curl</code> works means the API is fine and the headers are missing or wrong for that origin. Adding
+  <code>allow_origins=["*"]</code> to make it go away is the fix that fails security review; list the exact origins. Two more: a request that fails with a 500 can look like a CORS error
+  because the error response lacks the CORS headers (look at the server log, not the browser message), and CORS never protects your API from non-browser callers, so it is
+  not authentication.</p>
+</div>
+
+<h3 id="mw-bg">Background tasks, and when you need a real queue</h3>
+<p><code>BackgroundTasks</code> runs a function <b>after the response has been sent</b>, in the same process. It suits small, quick, disposable follow-ups: send a confirmation email, write an audit line.</p>
+
+<div class="code" data-lang="python">
+<header><b>background_tasks.py</b></header>
+<pre><code>from fastapi import BackgroundTasks, FastAPI
+from fastapi.testclient import TestClient
+
+LOG: list[str] = []
+app = FastAPI()
+
+def notify_manager(ticket_id: int) -&gt; None:        # an ordinary function; may be sync or async
+    LOG.append(f"emailed manager about {ticket_id}")
+
+@app.post("/tickets", status_code=202)               # 202: accepted, the follow-up work is not finished
+def create(background: BackgroundTasks):
+    background.add_task(notify_manager, 1)           # scheduled, not run yet
+    LOG.append("handler returned")
+    return {"id": 1}
+
+c = TestClient(app)
+print(c.post("/tickets").status_code, LOG)           # 202 ['handler returned', 'emailed manager about 1']
+</code></pre>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Need</th><th><code>BackgroundTasks</code></th><th>A real queue (Kafka, SQS, Celery, RQ, arq)</th></tr></thead>
+<tbody>
+<tr><td>Survives a crash or deploy</td><td>No: it lives in the process memory</td><td>Yes: the message is stored until acknowledged</td></tr>
+<tr><td>Retries with back-off</td><td>No</td><td>Yes</td></tr>
+<tr><td>Visible and countable (&ldquo;how many are stuck?&rdquo;)</td><td>No</td><td>Yes</td></tr>
+<tr><td>Runs on another machine, scales on its own</td><td>No: same CPU as the API</td><td>Yes: workers scale independently</td></tr>
+<tr><td>Right for</td><td>Optional, quick, loss-tolerable (a log line)</td><td>Anything that must happen: provisioning a badge, charging, calling a flaky vendor</td></tr>
+</tbody></table></div>
+<p>If losing the task would matter to a user or to money, it is a queue job, not a background task. The queue design (and the retry and idempotency rules that go with it) is covered in
+<a href="messaging.html">the messaging sheet</a> and in week 9 of <a href="ai-plan.html">the plan</a>.</p>
+
+<div class="res">
+  <div class="rh">Official reading &mdash; middleware</div>
+  <a class="r" href="https://fastapi.tiangolo.com/tutorial/middleware/" target="_blank" rel="noopener"><span>FastAPI &mdash; Middleware<i>The <code>@app.middleware("http")</code> pattern and ordering.</i></span><span class="dur">10 min</span></a>
+  <a class="r" href="https://fastapi.tiangolo.com/tutorial/cors/" target="_blank" rel="noopener"><span>FastAPI &mdash; CORS<i>Origins, credentials and preflight, with the exact parameters.</i></span><span class="dur">15 min</span></a>
+  <a class="r" href="https://fastapi.tiangolo.com/tutorial/background-tasks/" target="_blank" rel="noopener"><span>FastAPI &mdash; Background tasks<i>Including the note on when to reach for Celery instead.</i></span><span class="dur">10 min</span></a>
+  <a class="r" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS" target="_blank" rel="noopener"><span>MDN &mdash; Cross-Origin Resource Sharing<i>The browser side of the story: why the rule exists and what a preflight is.</i></span><span class="dur">25 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="docs">Auto docs: OpenAPI, Swagger UI, ReDoc</h2>
+<p class="sub">FastAPI builds a machine-readable description of your API from the same type hints it validates with. The interactive pages are just viewers
+for that description.</p>
+
+<div class="code" data-lang="python">
+<header><b>openapi_peek.py</b></header>
+<pre><code>from fastapi import FastAPI
+from pydantic import BaseModel, Field
+
+class TicketIn(BaseModel):
+    title: str = Field(min_length=3, description="Short summary")
+
+class TicketOut(BaseModel):
+    id: int
+    title: str
+
+app = FastAPI(title="Desk API", version="1.0.0", description="Tickets for the help desk")
+
+@app.post("/tickets", response_model=TicketOut, status_code=201, tags=["tickets"], summary="Open a ticket")
+def create(body: TicketIn):
+    return {"id": 1, "title": body.title, "internal_note": "x"}
+
+spec = app.openapi()                                     # a plain dict: this is what /openapi.json serves
+print(spec["openapi"], spec["info"]["title"])            # 3.1.0 Desk API
+print(list(spec["paths"]))                               # ['/tickets']
+post = spec["paths"]["/tickets"]["post"]
+print(post["summary"], post["tags"], sorted(post["responses"]))   # Open a ticket ['tickets'] ['201', '422']
+print(sorted(spec["components"]["schemas"]))             # ['HTTPValidationError', 'TicketIn', 'TicketOut', 'ValidationError']
+print(sorted(spec["components"]["schemas"]["TicketOut"]["properties"]))   # ['id', 'title']   no internal_note: the contract matches the filter
+print(spec["components"]["schemas"]["TicketIn"]["properties"]["title"]["minLength"])   # 3   constraints become schema
+</code></pre>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>URL</th><th>What it is</th><th>Use it for</th></tr></thead>
+<tbody>
+<tr><td><code>/openapi.json</code></td><td>The machine-readable contract (OpenAPI 3.1 here)</td><td>Generating client code, contract tests, importing into Postman or an API gateway</td></tr>
+<tr><td><code>/docs</code></td><td>Swagger UI: try every endpoint from the browser</td><td>Day-to-day poking; the Authorize button for keys and bearer tokens</td></tr>
+<tr><td><code>/redoc</code></td><td>ReDoc: a cleaner read-only reference</td><td>Sharing with a colleague who only reads</td></tr>
+</tbody></table></div>
+
+<p>Because the schema is generated from your models, <b>the docs cannot drift from the code</b>, which is the strongest argument for typed hints. To document your custom error shape, add
+<code>responses={404: {"model": ErrorBody}}</code> to a route. In production, many teams turn the viewers off or protect them with <code>docs_url=None, redoc_url=None, openapi_url=None</code>.</p>
+
+<div class="res">
+  <div class="rh">Official reading &mdash; docs</div>
+  <a class="r" href="https://fastapi.tiangolo.com/tutorial/metadata/" target="_blank" rel="noopener"><span>FastAPI &mdash; Metadata and docs URLs<i>Titles, tags, versions, and how to move or disable the docs endpoints.</i></span><span class="dur">10 min</span></a>
+  <a class="r" href="https://spec.openapis.org/oas/latest.html" target="_blank" rel="noopener"><span>OpenAPI Specification<i>Reference only. Skim the paths and schema objects to see what the generated JSON is made of.</i></span><span class="dur">reference</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="paging">Pagination, versioning and idempotency</h2>
+<p class="sub">Three decisions that are cheap on day one and expensive after a client depends on you.</p>
+
+<h3 id="paging-page">Pagination parameters</h3>
+<p>Never return an unbounded list: one big table and one careless <code>GET /tickets</code> becomes an outage. Take <code>limit</code> and <code>offset</code> (or a cursor), cap the limit,
+and say how many there are in total.</p>
+
+<div class="code" data-lang="python">
+<header><b>paging_versioning.py</b></header>
+<pre><code>from typing import Annotated
+from fastapi import APIRouter, FastAPI, Query
+from fastapi.testclient import TestClient
+
+ROWS = [{"id": n, "title": f"Ticket {n}"} for n in range(1, 8)]      # ids 1..7
+
+v1 = APIRouter(prefix="/v1")                                          # the version lives in the URL prefix
+v2 = APIRouter(prefix="/v2")
+
+@v1.get("/tickets")
+def list_v1(limit: Annotated[int, Query(ge=1, le=50)] = 3, offset: Annotated[int, Query(ge=0)] = 0):
+    return {"items": ROWS[offset: offset + limit], "total": len(ROWS), "limit": limit, "offset": offset}
+
+@v2.get("/tickets")                                                    # v2 changes the shape: a BREAKING change, so a new version
+def list_v2(after_id: int = 0, limit: Annotated[int, Query(ge=1, le=50)] = 3):
+    page = [r for r in ROWS if r["id"] &gt; after_id][:limit]             # keyset (cursor) paging
+    return {"items": page, "next_after_id": page[-1]["id"] if len(page) == limit else None}
+
+app = FastAPI()
+app.include_router(v1)
+app.include_router(v2)
+
+c = TestClient(app)
+print(c.get("/v1/tickets?limit=3&amp;offset=3").json())
+# {'items': [{'id': 4, 'title': 'Ticket 4'}, {'id': 5, 'title': 'Ticket 5'}, {'id': 6, 'title': 'Ticket 6'}], 'total': 7, 'limit': 3, 'offset': 3}
+print(c.get("/v1/tickets?limit=500").status_code)                      # 422   the cap is enforced, not advisory
+print(c.get("/v2/tickets?after_id=6").json())                          # {'items': [{'id': 7, 'title': 'Ticket 7'}], 'next_after_id': None}
+</code></pre>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Style</th><th>How</th><th>Good</th><th>Bad</th></tr></thead>
+<tbody>
+<tr><td><b>Offset / limit</b></td><td><code>?limit=20&amp;offset=40</code></td><td>Simple; jump to page N</td><td>Rows inserted meanwhile shift pages (duplicates or gaps); a large offset makes the database count and discard that many rows</td></tr>
+<tr><td><b>Cursor / keyset</b></td><td><code>?after_id=6&amp;limit=20</code></td><td>Stable under inserts; fast at any depth (an indexed <code>WHERE id &gt; ...</code>)</td><td>No jump to page N; needs a sortable unique key</td></tr>
+</tbody></table></div>
+
+<h3 id="paging-ver">Versioning basics</h3>
+<p>A change is <b>additive</b> (a new optional field, a new endpoint: safe in place) or <b>breaking</b> (a renamed field, a changed type, a removed route: needs a new version). The
+simplest scheme that works is the one above: a version prefix in the path (<code>/v1</code>). Header-based versioning is neater in theory and harder to test, cache and read in a log.
+Keep the old version running until every caller has moved, and say how long.</p>
+
+<h3 id="idem">Idempotency, and what this week deliberately leaves unfixed</h3>
+<p>A client times out on <code>POST /tickets</code>, does not know whether it worked, and retries. Without protection you now have two tickets. An <b>idempotency key</b> is a client-chosen
+header; the server stores the result against it and replays that result for a repeat. The version below is deliberately naive so you can see the idea.</p>
+
+<div class="code" data-lang="python">
+<header><b>idempotency_naive.py</b></header>
+<pre><code>from typing import Annotated
+from fastapi import FastAPI, Header
+from fastapi.testclient import TestClient
+
+app = FastAPI()
+TICKETS: list[dict] = []
+SEEN: dict[str, dict] = {}                           # key -&gt; the response we gave the first time
+
+@app.post("/tickets", status_code=201)
+def create(title: str, idempotency_key: Annotated[str | None, Header()] = None):
+    if idempotency_key and idempotency_key in SEEN:
+        return SEEN[idempotency_key]                 # replay: same answer, no second row
+    ticket = {"id": len(TICKETS) + 1, "title": title}
+    TICKETS.append(ticket)
+    if idempotency_key:
+        SEEN[idempotency_key] = ticket
+    return ticket
+
+c = TestClient(app)
+first = c.post("/tickets?title=Gate", headers={"Idempotency-Key": "k-1"}).json()
+again = c.post("/tickets?title=Gate", headers={"Idempotency-Key": "k-1"}).json()
+print(first == again, len(TICKETS))                  # True 1
+c.post("/tickets?title=Gate"); c.post("/tickets?title=Gate")
+print(len(TICKETS))                                  # 3   without the header, a retry makes a duplicate
+</code></pre>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; why this is only a sketch</span>
+  <p>It lives in one process&rsquo;s memory (lost on restart, not shared between two workers), and the check-then-insert is not atomic: two simultaneous retries can both pass the
+  <code>if</code> and both insert. A correct version stores the key in the database with a <b>unique constraint</b> and lets the database arbitrate. That is week 9 of <a href="ai-plan.html">the plan</a>; the
+  day-42 Saturday task asks you to write down exactly this flaw in <code>POST /requests</code> so you can fix it then. Background reading is on
+  <a href="apis.html">the APIs sheet</a> and <a href="messaging.html">the messaging sheet</a>.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Reading &mdash; paging and retries</div>
+  <a class="r" href="https://developer.mozilla.org/en-US/docs/Glossary/Idempotent" target="_blank" rel="noopener"><span>MDN &mdash; Idempotent<i>The definition used on this sheet, in four lines.</i></span><span class="dur">3 min</span></a>
+  <a class="r" href="https://fastapi.tiangolo.com/tutorial/bigger-applications/" target="_blank" rel="noopener"><span>FastAPI &mdash; Bigger applications<i>The <code>APIRouter(prefix=...)</code> and <code>include_router</code> pair used for the version prefixes.</i></span><span class="dur">30 min</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="testing">Testing with TestClient</h2>
+<p class="sub">The test client calls your app in-process: no server, no port, no network, and a failing test points at one function. It is also how you prove the 401, 403,
+404 and 422 paths that you never hit by hand.</p>
+
+<div class="code" data-lang="python" data-run="pytest">
+<header><b>test_desk.py</b></header>
+<pre><code>import pytest
+from typing import Annotated
+from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.testclient import TestClient
+from pydantic import BaseModel, Field
+
+# ---- a small app under test (in a real project this is `from desk.main import create_app`)
+class TicketIn(BaseModel):
+    title: str = Field(min_length=3)
+
+class Clock:
+    def now(self) -&gt; str:
+        return "real-time"
+
+def get_clock() -&gt; Clock:
+    return Clock()
+
+def create_app() -&gt; FastAPI:
+    app = FastAPI()
+    rows: dict[int, dict] = {}
+
+    def require_key(x_api_key: Annotated[str | None, Header()] = None):
+        if x_api_key != "k":
+            raise HTTPException(status_code=401, detail="invalid API key")
+
+    @app.post("/tickets", status_code=201, dependencies=[Depends(require_key)])
+    def create(body: TicketIn, clock: Annotated[Clock, Depends(get_clock)]):
+        row = {"id": len(rows) + 1, "title": body.title, "created": clock.now()}
+        rows[row["id"]] = row
+        return row
+
+    @app.get("/tickets/{ticket_id}", dependencies=[Depends(require_key)])
+    def read(ticket_id: int):
+        if ticket_id not in rows:
+            raise HTTPException(status_code=404, detail="not found")
+        return rows[ticket_id]
+
+    return app
+
+# ---- the tests
+@pytest.fixture
+def app():
+    return create_app()                               # a FRESH app per test: no leaked state between tests
+
+@pytest.fixture
+def client(app):
+    return TestClient(app)
+
+AUTH = {"X-API-Key": "k"}
+
+def test_create_then_read(client):
+    r = client.post("/tickets", json={"title": "Gate stuck"}, headers=AUTH)
+    assert r.status_code == 201
+    assert client.get(f"/tickets/{r.json()['id']}", headers=AUTH).json()["title"] == "Gate stuck"
+
+def test_missing_key_is_401(client):
+    assert client.post("/tickets", json={"title": "Gate stuck"}).status_code == 401
+
+def test_unknown_ticket_is_404(client):
+    assert client.get("/tickets/99", headers=AUTH).status_code == 404
+
+@pytest.mark.parametrize("payload", [{}, {"title": "ab"}, {"title": 5}, {"name": "x"}])
+def test_bad_body_is_422(client, payload):            # one failure case per route, with the cause visible in the data
+    assert client.post("/tickets", json=payload, headers=AUTH).status_code == 422
+
+def test_dependency_override_controls_time(app, client):
+    class FrozenClock(Clock):
+        def now(self):
+            return "2026-12-07T09:00"
+    app.dependency_overrides[get_clock] = FrozenClock   # replace the dependency for this app only
+    r = client.post("/tickets", json={"title": "Gate stuck"}, headers=AUTH)
+    assert r.json()["created"] == "2026-12-07T09:00"
+</code></pre>
+</div>
+
+<div class="panel panel--ask">
+  <span class="ph">What a good API test suite covers</span>
+  <p>For <b>each route</b>: the success case with the exact status and body; the 401 (and 403 if roles exist); the 404 for an unknown id; and a 422 for each kind of bad
+  input. Plus one assertion on the exact set of response keys so a leaking field is caught. The week 6 lab has 43 test cases built on this list. Using <code>with TestClient(app) as client:</code> also runs
+  start-up and shutdown (lifespan) code; without the <code>with</code> it does not.</p>
+</div>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; tests that share state, and tests that pass without testing</span>
+  <p>A module-level <code>app</code> with a module-level dict means the order the tests run in changes the result: test 2 passes only because test 1 ran first. Build the app in a fixture
+  (as above). The other failure is asserting only <code>status_code == 200</code>: a route returning the wrong body, or leaking a field, still passes. Assert the body.
+  And install the test dependency for your version: current Starlette asks for <code>httpx2</code> for <code>TestClient</code>; older ones need <code>httpx</code>.</p>
+</div>
+
+<div class="res">
+  <div class="rh">Official reading and video &mdash; testing</div>
+  <a class="r" href="https://fastapi.tiangolo.com/tutorial/testing/" target="_blank" rel="noopener"><span>FastAPI &mdash; Testing<i>TestClient basics and which client package to install.</i></span><span class="dur">15 min</span></a>
+  <a class="r" href="https://fastapi.tiangolo.com/advanced/testing-dependencies/" target="_blank" rel="noopener"><span>FastAPI &mdash; Testing dependencies with overrides<i><code>app.dependency_overrides</code>, as used above.</i></span><span class="dur">10 min</span></a>
+  <a class="r" href="https://www.youtube.com/watch?v=SO7m7nod0ts" target="_blank" rel="noopener"><span>Corey Schafer &mdash; Python FastAPI Tutorial (Part 17): Testing the API<i>Pytest fixtures and mocking external services on a larger app.</i></span><span class="dur">video</span></a>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="compare">FastAPI vs Flask vs Django, honestly</h2>
+<p class="sub">Interviewers ask this to see whether you chose a tool or just used the first one you met. The honest answer has costs on every side.</p>
+
+<div class="vs">
+  <div><div class="vh">Flask (shown, not run here)</div>
+<div class="code" data-lang="text">
+<header><b>app.py &mdash; not executed in the authoring environment; Flask was not installed</b></header>
+<pre><code>from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+@app.post("/tickets")
+def create():
+    data = request.get_json()          # a dict, unchecked
+    if not data or len(data.get("title", "")) &lt; 3:
+        return jsonify(error="bad title"), 400
+    return jsonify(id=1, title=data["title"]), 201</code></pre>
+</div></div>
+  <div><div class="vh">FastAPI (this sheet)</div>
+<div class="code" data-lang="python">
+<header><b>app.py</b></header>
+<pre><code>from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from pydantic import BaseModel, Field
+
+app = FastAPI()
+
+class TicketIn(BaseModel):
+    title: str = Field(min_length=3)
+
+@app.post("/tickets", status_code=201)
+def create(body: TicketIn):            # checked before the function runs
+    return {"id": 1, "title": body.title}
+
+print(TestClient(app).post("/tickets", json={"title": "ab"}).status_code)   # 422
+</code></pre>
+</div></div>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Dimension</th><th>FastAPI</th><th>Flask</th><th>Django</th></tr></thead>
+<tbody>
+<tr><td>Scope</td><td>API framework: routing, validation, docs, dependencies</td><td>Micro-framework: routing and request handling; you add the rest</td><td>Full-stack: ORM, migrations, admin, auth, templates, forms</td></tr>
+<tr><td>Input validation</td><td>Built in, from type hints (Pydantic)</td><td>Not built in; add a library or write it</td><td>Forms and serializers (Django REST framework or Ninja for APIs)</td></tr>
+<tr><td>Auto API docs</td><td>Yes, from the same hints</td><td>Via extensions</td><td>Via extensions (DRF has its own)</td></tr>
+<tr><td>Async</td><td>First-class (<code>async def</code> and thread-pooled <code>def</code>)</td><td>Mostly synchronous; async support is more limited</td><td>Async views supported; much of the ecosystem is sync</td></tr>
+<tr><td>Database and admin</td><td>None included: bring SQLAlchemy or a driver</td><td>None included</td><td><b>Included</b>, and the admin UI is a real time-saver</td></tr>
+<tr><td>Maturity and hiring pool</td><td>Younger; fast-growing in AI and data teams</td><td>Old, huge, stable</td><td>Oldest of the three, very large</td></tr>
+<tr><td>Where it hurts</td><td>You assemble auth, DB and structure yourself; sync-versus-async mistakes</td><td>You re-invent validation and structure on every project</td><td>Heavy for a small JSON service; opinionated</td></tr>
+</tbody></table></div>
+<p><b>Pick:</b> FastAPI for a JSON service in front of models, tools and data, which is both portfolio projects; Django when you need an admin, accounts and a relational app out of the box; Flask when the app is
+tiny, synchronous, or the team already runs it. The honest caveat: none of these is the reason a service is good. Validation, error shape, tests and idempotency are, and they are the same in all three.</p>
+
+<div class="panel panel--ask">
+  <span class="ph">Recap of the other two comparisons on this sheet</span>
+  <p><b>Pydantic model vs dataclass:</b> models check and convert at runtime and generate schemas; dataclasses are cheap containers for data you already trust (<a href="#pyd-vs">the table above</a>).
+  <b>Sync vs async:</b> <code>def</code> runs in a thread pool and is the safe default; <code>async def</code> runs on the event loop and is right only when every slow call inside is awaited (<a href="#async-how">the table above</a>).</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="lab">The lab: python-lab/week06</h2>
+<p class="sub">You write the Pydantic models, the error helpers and a FastAPI app factory. A test file with 43 cases marks your work. It is the same shape as the weeks before: every stub is red until you make it green.</p>
+
+<div class="code" data-lang="powershell">
+<header><b>personal laptop, from the engineering-roadmap folder</b></header>
+<pre><code>cd python-lab
+.\.venv\Scripts\Activate.ps1                          # the venv you made in week 1
+python -m pip install -r week06\requirements-week06.txt
+pytest week06 -q                                      # the first run is red: that is the starting line
+pytest week06 -x -k "in_model"                        # stop at the first failure; only the model tests
+</code></pre>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>File</th><th>You edit</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><code>week06/w06_api.py</code></td><td>yes</td><td>Models <code>AccessRequestIn</code> and <code>AccessRequestOut</code>, helpers <code>error_body</code> and <code>paginate</code>, and <code>create_app()</code>. The docstrings are the specification.</td></tr>
+<tr><td><code>week06/test_w06_api.py</code></td><td><b>no</b></td><td>43 cases: models checked directly (no server), then every route with its failure cases through <code>TestClient</code>.</td></tr>
+<tr><td><code>week06/requirements-week06.txt</code></td><td>no</td><td>fastapi, uvicorn, pydantic, pydantic-settings, httpx2, pytest.</td></tr>
+</tbody></table></div>
+
+<p>Suggested order, which matches days 36&ndash;41: make <code>GET /health</code> pass first; then the two models with only the model tests running; then <code>error_body</code> and <code>paginate</code>; then
+<code>POST /requests</code> and <code>GET</code> with the auth dependency; then the two exception handlers; then approve, delete and the 403. When a test fails, its name is the requirement and the assertion shows the expected
+value. The module <code>w06_api.py</code> is named uniquely because the lab&rsquo;s <code>conftest.py</code> puts every week folder on the import path.</p>
+
+<div class="panel panel--real">
+  <span class="ph">How this lab was checked, and what green means</span>
+  <p>The lab was proven three ways before you received it: all 43 cases fail against the stubs; all 43 pass against a reference solution kept outside the repository; and 26 deliberate
+  breakages of that reference (a dropped <code>extra="forbid"</code>, a 200 instead of 201, an employee allowed to approve, shared state between apps, a response model removed from one route,
+  and so on) were each caught by at least one test. Green still means only &ldquo;handles the cases listed&rdquo;. The shared <code>pytest.ini</code> in <code>python-lab</code> lists only weeks 1 to 4 in
+  <code>testpaths</code>, so run <code>pytest week06</code> by naming the folder, as above.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="connect">How the subtopics connect</h2>
+<p class="sub">Seven days, one API. By the end of day 41 you have a tested request service with every idea from this sheet in it.</p>
+
+<figure class="dwg">
+<svg viewBox="0 0 1200 330" role="img" aria-label="The week as one growing API, day by day. Day 36: app, route, uvicorn, docs. Day 37: path and query parameters, 422. Day 38: Pydantic models and validators. Day 39: request body, response model, status codes. Day 40: errors and dependencies, one error shape, API key. Day 41: tests for every route including failures. Day 42: review, and writing down the retry and idempotency flaw to fix in week 9. Underneath, one box shows the finished slice: client, middleware, router, dependencies, validation, handler, response model, with a red error path.">
+  <defs>
+    <marker id="s25-fcc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s25-fcb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+  </defs>
+  <rect class="box-c" x="24" y="30" width="148" height="100" rx="3"/>
+  <text class="t" x="38" y="54">Day 36</text>
+  <text class="m" x="38" y="76">app, route</text>
+  <text class="m" x="38" y="94">uvicorn</text>
+  <text class="m" x="38" y="112">/docs</text>
+  <rect class="box-c" x="193" y="30" width="148" height="100" rx="3"/>
+  <text class="t" x="207" y="54">Day 37</text>
+  <text class="m" x="207" y="76">path, query</text>
+  <text class="m" x="207" y="94">typed params</text>
+  <text class="m" x="207" y="112">read the 422</text>
+  <rect class="box-a" x="362" y="30" width="148" height="100" rx="3"/>
+  <text class="t b" x="376" y="54">Day 38</text>
+  <text class="m" x="376" y="76">BaseModel</text>
+  <text class="m" x="376" y="94">Field, validators</text>
+  <text class="m" x="376" y="112">strict vs lax</text>
+  <rect class="box-a" x="531" y="30" width="148" height="100" rx="3"/>
+  <text class="t b" x="545" y="54">Day 39</text>
+  <text class="m" x="545" y="76">body model</text>
+  <text class="m" x="545" y="94">response_model</text>
+  <text class="m" x="545" y="112">201, 204</text>
+  <rect class="box-a" x="700" y="30" width="148" height="100" rx="3"/>
+  <text class="t b" x="714" y="54">Day 40</text>
+  <text class="m" x="714" y="76">HTTPException</text>
+  <text class="m" x="714" y="94">Depends, key</text>
+  <text class="m" x="714" y="112">one error shape</text>
+  <rect class="box-c" x="869" y="30" width="148" height="100" rx="3"/>
+  <text class="t" x="883" y="54">Day 41</text>
+  <text class="m" x="883" y="76">TestClient</text>
+  <text class="m" x="883" y="94">every route,</text>
+  <text class="m" x="883" y="112">one failure each</text>
+  <rect class="box" x="1038" y="30" width="138" height="100" rx="3"/>
+  <text class="t" x="1052" y="54">Day 42</text>
+  <text class="m" x="1052" y="76">review, write</text>
+  <text class="m" x="1052" y="94">down the retry</text>
+  <text class="m" x="1052" y="112">flaw (week 9)</text>
+  <path class="flow" d="M176,80 H189" marker-end="url(#s25-fcc)"/>
+  <path class="flow" d="M345,80 H358" marker-end="url(#s25-fcc)"/>
+  <path class="flow-b" d="M514,80 H527" marker-end="url(#s25-fcb)"/>
+  <path class="flow-b" d="M683,80 H696" marker-end="url(#s25-fcb)"/>
+  <path class="flow" d="M852,80 H865" marker-end="url(#s25-fcc)"/>
+  <path class="flow" d="M1021,80 H1034" marker-end="url(#s25-fcc)"/>
+
+  <rect class="zone" x="24" y="170" width="1152" height="130" rx="4"/>
+  <text class="mm" x="40" y="192">THE SLICE AT THE END OF THE WEEK: python-lab/week06/w06_api.py</text>
+  <text class="m" x="40" y="224">client &rarr; middleware &rarr; router &rarr; Depends(api key) &rarr; validate(AccessRequestIn) &rarr; handler &rarr; response_model(AccessRequestOut) &rarr; JSON</text>
+  <text class="m r" x="40" y="252">any failure &rarr; 401 / 403 / 404 / 409 / 422, all in the one {error:{code,message}} shape, handler never runs</text>
+  <text class="m b" x="40" y="280">what is deliberately missing: a real database (week 7), idempotent create (week 9), a queue for slow work</text>
+</svg>
+<figcaption>Drawing 25-F &mdash; the week as one growing API. <b>Cyan</b> = framework behaviour you learn to read. <b>Brass</b> = the contract you design.
+The zone below is the finished slice and which parts are consciously left for later weeks.</figcaption>
+</figure>
+
+<div class="panel panel--real">
+  <span class="ph">What you ship</span>
+  <p>A tested <code>requests</code> API on your own repository: <code>POST /requests</code> returning 201 with a response model that hides an internal field, filtered and paged <code>GET</code>, 401 for a missing key, 404 for an
+  unknown id, 409 for a conflicting state change, one error body everywhere, at least ten tests with a failure case per route, and a short note on what happens when a client retries <code>POST</code>.
+  No employer data: the examples here are access requests, tickets and documents. This API is the skeleton the <a href="ai-plan.html">plan</a> grows into Project 1 (a RAG knowledge assistant) and Project 2 (an operations
+  assistant with tool calling); week 7 puts a database behind it. The Python this sheet assumes is on <a href="ai-python.html">Sheet 23</a>.</p>
+</div>
+
+<div class="panel panel--real">
+  <span class="ph">The knowledge-base-document shape, for later</span>
+  <p>The same pattern fits a document service: <code>POST /documents</code> takes a <code>DocumentIn</code> (title, source, text of bounded length), returns a <code>DocumentOut</code> (id, title, chunk count) and
+  hides the raw embedding vectors and storage paths; <code>GET /documents?source=policy&amp;limit=20</code> is the filtered, capped list. Only the model names change.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="drill">Drill book</h2>
+<p class="sub">Answer aloud first, then open the answer. If you cannot say it without notes, it goes on your revise list.</p>
+
+<div class="drill">
+  <div class="dh">Drill &mdash; FastAPI and Pydantic</div>
+  <details><summary>What is the difference between FastAPI, Starlette, uvicorn and ASGI?</summary>
+    <div class="ans"><p>uvicorn is the server: it owns the socket and parses HTTP. ASGI is the interface it uses to call the application, an async callable taking <code>scope</code>, <code>receive</code> and <code>send</code>. Starlette is the toolkit on top that provides routing, middleware, request and response objects. FastAPI adds parameter extraction from type hints, Pydantic validation, dependency injection and generated OpenAPI docs. Follow-up: &ldquo;why does <code>python main.py</code> not serve anything?&rdquo; A FastAPI object is not a server; something must listen on a port.</p></div></details>
+  <details><summary>A client sends <code>limit=abc</code>. What happens, and how do you read the response?</summary>
+    <div class="ans"><p>FastAPI cannot convert it to the declared <code>int</code>, never calls the handler, and returns 422 with a body <code>{"detail": [...]}</code>. Each entry has <code>loc</code> (the source and field, such as <code>["query","limit"]</code>), a stable <code>type</code> (<code>int_parsing</code>), a human <code>msg</code> and the offending <code>input</code>. All errors are reported at once. Branch on <code>type</code>, not on <code>msg</code>. Follow-up: &ldquo;how do you change the shape?&rdquo; Register a handler for <code>RequestValidationError</code>.</p></div></details>
+  <details><summary>Why use <code>response_model</code> when the handler already returns the right dict?</summary>
+    <div class="ans"><p>It is an output filter and a second validation. FastAPI keeps only the declared fields, so stored internal data (a note, an email, a hash) cannot leak even if a developer returns the whole row; it also feeds the OpenAPI schema so docs match behaviour. Without it nothing errors and the leak is silent. I back it with a test that asserts the exact set of response keys. Follow-up: &ldquo;should the input and output model be the same class?&rdquo; No: the client could then set server-owned fields.</p></div></details>
+  <details><summary>Validation versus serialisation in Pydantic: which methods, and what is lax versus strict?</summary>
+    <div class="ans"><p>Validation turns untrusted input into a typed object: <code>model_validate</code> for a dict, <code>model_validate_json</code> for a JSON string, or calling the class. Serialisation turns the object back into plain data: <code>model_dump</code> (python types) and <code>model_dump(mode="json")</code> or <code>model_dump_json</code> (JSON-safe, dates as strings). Lax mode, the default, converts sensibly (<code>"5"</code> to 5, <code>"yes"</code> to True); strict mode refuses. Choose strict where a silent conversion would hide a client bug, and test the rejection.</p></div></details>
+  <details><summary>What is wrong with <code>reviewer: str | None</code> in a model?</summary>
+    <div class="ans"><p>Nothing is wrong, but it does not mean what people think: it allows the value <code>None</code> yet has no default, so the key is still required. For &ldquo;may be omitted and may be null&rdquo; write <code>str | None = None</code>. For PATCH endpoints, <code>model_dump(exclude_unset=True)</code> or <code>model_fields_set</code> distinguishes &ldquo;client sent null&rdquo; from &ldquo;client said nothing&rdquo;. Related trap: mutable defaults; use <code>Field(default_factory=list)</code>.</p></div></details>
+  <details><summary>When would you pick a Pydantic model over a dataclass?</summary>
+    <div class="ans"><p>At any trust boundary: HTTP bodies, config, files, queue messages, LLM output, because a model checks and converts types, enforces constraints, parses nested JSON and produces a schema. A dataclass does none of that at runtime, but it is cheaper and in the standard library, so it suits small internal value objects built from data you already validated. Follow-up: &ldquo;do type hints on a dataclass stop <code>days="abc"</code>?&rdquo; No; they are documentation until something enforces them.</p></div></details>
+  <details><summary>401 or 403 for a valid user without permission? And what if no key is sent?</summary>
+    <div class="ans"><p>No key, an invalid key or an expired token is 401, with a <code>WWW-Authenticate</code> header: I do not know who you are, and logging in can fix it. A known caller who lacks the role or scope is 403: I know who you are and the answer is no. Authentication runs first, so the role check depends on the identity check. For objects the caller should not know exist, return 404 instead of 403. Follow-up: &ldquo;order in code?&rdquo; <code>require_role</code> declares <code>Depends(current_user)</code>, so 401 is reached before 403.</p></div></details>
+  <details><summary>What does <code>Depends</code> give you, and how does <code>yield</code> change it?</summary>
+    <div class="ans"><p>A function declares what it needs and FastAPI supplies it: shared logic (paging, load-or-404, the current user) is written once, its own parameters are validated and documented, and tests replace it with <code>app.dependency_overrides[original] = fake</code>. A dependency that <code>yield</code>s is setup and teardown: code before the yield runs first, the handler runs, and the code in <code>finally</code> runs after, even if the handler raised. That is the shape of a database session per request. The override key is the original function object.</p></div></details>
+  <details><summary>What happens if you call <code>requests.get</code> inside an <code>async def</code> endpoint?</summary>
+    <div class="ans"><p>It blocks the event loop, so every other request on that worker waits for the call to finish; the server looks fine with one user and stalls under load. Options: make the endpoint a plain <code>def</code> (FastAPI runs it in a thread pool, 40 threads by default), use an async client such as <code>httpx.AsyncClient</code> with <code>await</code>, or call <code>asyncio.to_thread</code>. Follow-up: &ldquo;does async make a request faster?&rdquo; No; it lets one process hold many waiting requests.</p></div></details>
+  <details><summary>Why register a handler for Starlette&rsquo;s <code>HTTPException</code> rather than FastAPI&rsquo;s, and what is &ldquo;one consistent error shape&rdquo;?</summary>
+    <div class="ans"><p>FastAPI&rsquo;s class subclasses Starlette&rsquo;s. The router raises Starlette&rsquo;s own for unknown paths (404) and wrong methods (405), so a handler on the subclass misses them and those responses keep the framework default. Registering the parent covers both. One consistent shape means every failure (401, 403, 404, 409, 422, 500) returns the same JSON structure, such as <code>{"error": {"code", "message", "details"}}</code> with a stable machine code, so a client needs one parser, and the 500 hides internals.</p></div></details>
+  <details><summary>When is <code>BackgroundTasks</code> enough, and when do you need a queue?</summary>
+    <div class="ans"><p>Enough for small, quick, loss-tolerable follow-ups after the response, like a log line or a notification you could drop. It runs in the same process, so a crash or deploy loses it, there are no retries, no visibility and it shares the API&rsquo;s CPU. Anything that must happen (provisioning a badge, a payment, calling a flaky vendor) belongs on a real queue with retries and a dead-letter path, plus an idempotent consumer. The honest status code for queued work is 202.</p></div></details>
+  <details><summary>Is a JWT encrypted? How do you invalidate one? What would you not hand-write?</summary>
+    <div class="ans"><p>A normal JWT is signed, not encrypted: anyone can read the payload, but cannot change it without invalidating the signature, so never put secrets in it. A token already issued cannot be cancelled; keep access tokens short (minutes), use rotating refresh tokens, and keep a deny-list for emergencies. Pin the accepted algorithm on the server. I would not hand-write the signing and verification in production, nor the login system: use a maintained library and an identity provider, and verify with its public keys.</p></div></details>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="signoff">Sign-off</h2>
+<p class="sub">Tick a box only when you did it yourself, with the tools running, not when you read about it.</p>
+
+<div class="signoff">
+  <div class="sh"><span>Week 06</span><span>Sheet 25</span></div>
+  <label><input type="checkbox"><span>I ran a FastAPI app with <code>python -m uvicorn main:app --reload</code>, edited a route and watched it reload, and opened <code>/docs</code> and <code>/openapi.json</code> (or confirmed why the docs were blank offline).</span></label>
+  <label><input type="checkbox"><span>I can say, aloud and without notes, what uvicorn, ASGI, Starlette and FastAPI each do.</span></label>
+  <label><input type="checkbox"><span>I sent bad path and query values, read the 422 body, and named the failing field from <code>loc</code> and the cause from <code>type</code>.</span></label>
+  <label><input type="checkbox"><span>I wrote a Pydantic model with at least four constraints and a <code>model_validator</code>, and a test showing at least four invalid payloads rejected for the right reason.</span></label>
+  <label><input type="checkbox"><span>I ran the same input through lax and strict mode and can explain the difference in one sentence.</span></label>
+  <label><input type="checkbox"><span>My <code>POST</code> returns 201 and its <code>response_model</code> hides a field I stored; I removed the response model once and saw the leak.</span></label>
+  <label><input type="checkbox"><span>My API returns 401 for a missing key, 403 for the wrong role, 404 for an unknown id and 409 for a state conflict, all in one error shape, including unknown URLs.</span></label>
+  <label><input type="checkbox"><span>I wrote a <code>Depends</code> dependency, and a <code>yield</code> dependency, and replaced one with <code>dependency_overrides</code> in a test.</span></label>
+  <label><input type="checkbox"><span>I can explain why <code>requests.get</code> inside <code>async def</code> is a bug, and I proved the thread difference with the demo.</span></label>
+  <label><input type="checkbox"><span>I loaded settings from environment variables with pydantic-settings, saw it refuse to start without a required secret, and <code>.env</code> is in my <code>.gitignore</code>.</span></label>
+  <label><input type="checkbox"><span>All 43 tests in <code>python-lab/week06</code> pass, and I wrote every function body myself.</span></label>
+  <label><input type="checkbox"><span>I wrote down, in two sentences, what happens when a client retries <code>POST /requests</code> after a timeout, and why <code>BackgroundTasks</code> would not fix it.</span></label>
+</div>
+
+</div><!-- /sheetbody -->
+</main>
+
+<aside class="toc" aria-label="Contents"></aside>
+</div>
+
+<script src="assets/js/nav-data.js"></script>
+<script src="assets/js/sheet.js"></script>
+</body>
+</html>

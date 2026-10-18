@@ -1,0 +1,2 @@
+# Week 8 needs only pytest (uses the built-in sqlite3 module).
+pytest>=8

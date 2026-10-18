@@ -1,0 +1,11 @@
+# Week 6 only. Install inside the python-lab virtual environment:
+#   python -m pip install -r week06/requirements-week06.txt
+# Tested with fastapi 0.143.3, starlette 1.8.0, pydantic 2.14.1, pydantic-settings 2.16.0,
+# httpx2 2.13.1, uvicorn 0.54.0, pytest 9.1.1 on Python 3.14.7.
+# Starlette's TestClient now asks for httpx2. On an older starlette, install httpx instead.
+fastapi>=0.115
+uvicorn>=0.30
+pydantic>=2.7
+pydantic-settings>=2.3
+httpx2
+pytest>=8

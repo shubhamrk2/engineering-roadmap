@@ -1,0 +1,274 @@
+/* ============================================================================
+   GLASS THEME — opt-in. Loaded after sheet.css, active only on <body class="glass">.
+   Frosted translucent surfaces over a soft colour mesh. Semantic colour is kept:
+     brass = the thing you act on   cyan = data / flow   red = the trap   moss = done
+   Falls back to solid surfaces where backdrop-filter is unsupported or when the
+   user asks for reduced transparency.
+   ==========================================================================*/
+
+body.glass {
+  /* surfaces become translucent white over the mesh */
+  --ink:       #070b16;
+  --sheet:     rgba(255,255,255,.055);
+  --plate:     rgba(255,255,255,.085);
+  --plate-2:   rgba(255,255,255,.11);
+  --grid:      rgba(255,255,255,.07);
+  --rule:      rgba(255,255,255,.15);
+
+  --chalk:     #f2f6fb;
+  --graphite:  #b4c3d4;
+  --pencil:    #8497ab;
+
+  --brass:     #f2c14e;
+  --brass-dim: rgba(242,193,78,.45);
+  --cyan:      #6fd3e6;
+  --cyan-dim:  rgba(111,211,230,.42);
+  --redpencil: #ff7a5c;
+  --red-dim:   rgba(255,122,92,.45);
+  --moss:      #7fd6a0;
+
+  --glass-blur: 18px;
+  --glass-edge: rgba(255,255,255,.18);
+  --glass-hi:   inset 0 1px 0 rgba(255,255,255,.22);
+  --glass-shadow: 0 10px 34px rgba(0,0,0,.38);
+
+  background: #070b16;
+  min-height: 100vh;
+}
+
+/* ---- the colour mesh behind everything -------------------------------------- */
+body.glass::before {
+  content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(46vmax 46vmax at 8%  12%, rgba(111,211,230,.30), transparent 62%),
+    radial-gradient(52vmax 52vmax at 92% 8%,  rgba(142,108,255,.30), transparent 62%),
+    radial-gradient(48vmax 48vmax at 78% 92%, rgba(242,193,78,.20),  transparent 60%),
+    radial-gradient(44vmax 44vmax at 14% 88%, rgba(255,110,150,.18), transparent 62%),
+    linear-gradient(160deg, #0a1020 0%, #0b1226 55%, #0a0f1d 100%);
+  background-size: auto; opacity: 1; mask-image: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  body.glass::before { animation: mesh 38s ease-in-out infinite alternate; background-size: 140% 140%, 140% 140%, 140% 140%, 140% 140%, auto; }
+  @keyframes mesh {
+    from { background-position: 0% 0%, 100% 0%, 100% 100%, 0% 100%, 0 0; }
+    to   { background-position: 12% 8%, 88% 10%, 90% 88%, 10% 92%, 0 0; }
+  }
+}
+
+/* ---- shared frosted surface -------------------------------------------------- */
+.glass .rail, .glass .titleblock, .glass .specs, .glass .panel, .glass .card,
+.glass .dwg, .glass .code, .glass .tw, .glass .drill, .glass .res, .glass .signoff,
+.glass .notes, .glass .vs > div, .glass .next a, .glass .gl, .glass .day, .glass .wk,
+.glass .stat, .glass .skill, .glass .reviewbox, .glass .chip {
+  background: var(--sheet);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+          backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-hi), var(--glass-shadow);
+  border-radius: 14px;
+}
+
+/* ---- layout chrome ------------------------------------------------------------ */
+.glass .rail {
+  background: rgba(10,16,30,.55); border-radius: 0; border: 0;
+  border-right: 1px solid var(--glass-edge); box-shadow: none;
+}
+.glass main { border-right: 0; }
+.glass .sheetbody { border: 0; background: none; padding-bottom: 80px; }
+.glass .sheetbody::before { display: none; }
+.glass .zoner { display: none; }
+
+.glass .sheethead {
+  margin: 28px 0 8px; padding: 34px 34px 28px; border: 1px solid var(--glass-edge); border-radius: 22px;
+  background: linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
+  -webkit-backdrop-filter: blur(22px) saturate(160%); backdrop-filter: blur(22px) saturate(160%);
+  box-shadow: var(--glass-hi), 0 18px 50px rgba(0,0,0,.4);
+}
+.glass .sheethead h1 { text-transform: none; letter-spacing: -.025em; font-weight: 800;
+  background: linear-gradient(120deg, #ffffff 20%, var(--cyan) 70%, var(--brass));
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+.glass .sheethead h1 span { color: var(--brass); -webkit-text-fill-color: var(--brass); }
+.glass .specs { border-radius: 14px; overflow: hidden; }
+.glass .specs div + div, .glass .titleblock div + div { border-top-color: rgba(255,255,255,.09); }
+
+.glass h2 { text-transform: none; letter-spacing: -.01em; }
+.glass h2 + .sub { border-bottom-color: var(--glass-edge); }
+.glass h3::before { border-radius: 3px; border-color: var(--cyan); }
+
+.glass .rail a { border-radius: 0 10px 10px 0; margin-right: 10px; }
+.glass .rail a:hover, .glass .rail a.on { background: rgba(255,255,255,.09); }
+.glass .searchbox input { background: rgba(255,255,255,.07); border-radius: 10px; }
+.glass .titleblock { border-radius: 14px; overflow: hidden; }
+.glass .tb-bar { background: rgba(255,255,255,.1); }
+
+/* ---- content components --------------------------------------------------------- */
+.glass .panel { border-left-width: 3px; }
+.glass .panel--trap { background: rgba(255,122,92,.07); }
+.glass .panel--why  { background: rgba(111,211,230,.06); }
+.glass .panel--ask  { background: rgba(242,193,78,.06); }
+.glass .panel--real { background: rgba(127,214,160,.06); }
+
+.glass .code { background: rgba(5,8,18,.58); overflow: hidden; }
+.glass .code header, .glass .drill > .dh, .glass .res > .rh, .glass .signoff > .sh {
+  background: rgba(255,255,255,.06); border-bottom-color: var(--glass-edge);
+}
+.glass thead th { background: rgba(255,255,255,.08); }
+.glass .tw { overflow: auto; }
+.glass .drill summary:hover, .glass .drill details[open] summary,
+.glass .res a.r:hover, .glass .signoff label:hover { background: rgba(255,255,255,.07); }
+.glass .dwg { padding: 30px 26px 20px; }
+.glass .dwg .box   { fill: rgba(255,255,255,.07); }
+.glass .dwg .box-a { fill: rgba(242,193,78,.10); }
+.glass .dwg .box-c { fill: rgba(111,211,230,.10); }
+.glass .dwg .box-r { fill: rgba(255,122,92,.10); }
+.glass .dwg .bub   { fill: #0b1226; }
+.glass .notes { border-top: 1px solid var(--glass-edge); margin-top: 12px; overflow: hidden; }
+.glass .next a:hover { background: rgba(255,255,255,.09); border-color: var(--cyan-dim); }
+.glass .chip { border-radius: 999px; padding: 4px 12px; box-shadow: none; }
+.glass kbd, .glass code { border-radius: 6px; }
+.glass .signoff input { background: rgba(255,255,255,.08); border-radius: 5px; }
+
+/* ============================================================================
+   PLANNER (Sheet 21) — one glass card per day, grouped by week
+   ==========================================================================*/
+.glass .stats { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; margin: 22px 0; }
+@media (max-width: 1100px) { .glass .stats { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+.glass .stat { padding: 16px 18px; }
+.glass .stat .sk { font-family: var(--mono); font-size: 9.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--pencil); }
+.glass .stat .sv { font-family: var(--disp); font-size: 30px; font-weight: 800; line-height: 1.1; margin-top: 6px; }
+.glass .stat .ss { font-size: 12.5px; color: var(--graphite); margin-top: 4px; }
+.glass .stat.ok .sv { color: var(--moss); }
+.glass .stat.warn .sv { color: var(--brass); }
+.glass .stat.bad .sv { color: var(--redpencil); }
+
+.glass .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 8px 0 18px; }
+.glass .btn {
+  font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--chalk); background: rgba(255,255,255,.09); border: 1px solid var(--glass-edge);
+  border-radius: 999px; padding: 8px 15px; cursor: pointer; box-shadow: var(--glass-hi);
+}
+.glass .btn:hover { background: rgba(255,255,255,.16); border-color: var(--brass-dim); }
+.glass .btn.pri { background: rgba(242,193,78,.18); border-color: var(--brass-dim); color: var(--brass); }
+
+.glass .wk { margin: 18px 0; padding: 0; overflow: hidden; }
+.glass .wk > summary {
+  list-style: none; cursor: pointer; padding: 16px 20px; display: grid;
+  grid-template-columns: auto 1fr auto; gap: 16px; align-items: center;
+}
+.glass .wk > summary::-webkit-details-marker { display: none; }
+.glass .wk > summary:hover { background: rgba(255,255,255,.05); }
+.glass .wk .wn { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; color: var(--brass); white-space: nowrap; }
+.glass .wk .wt { font-family: var(--disp); font-size: 17px; font-weight: 700; }
+.glass .wk .wd { display: block; font-family: var(--mono); font-size: 10.5px; color: var(--pencil); letter-spacing: .06em; margin-top: 2px; font-weight: 400; }
+.glass .wk .wp { font-family: var(--mono); font-size: 11px; color: var(--graphite); text-align: right; min-width: 108px; }
+.glass .wk .wp i { display: block; height: 5px; margin-top: 6px; border-radius: 4px; background: rgba(255,255,255,.12); overflow: hidden; }
+.glass .wk .wp i b { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--cyan), var(--moss)); transition: width .35s ease; }
+.glass .wk[data-gate] > summary { background: linear-gradient(90deg, rgba(242,193,78,.12), transparent 60%); }
+.glass .wgoal { padding: 0 20px 6px; color: var(--graphite); font-size: 14.5px; max-width: none; margin: 0; }
+.glass .wgate { margin: 8px 20px 4px; padding: 10px 14px; border-radius: 10px; font-size: 14px; color: var(--chalk);
+  background: rgba(242,193,78,.10); border: 1px solid var(--brass-dim); max-width: none; }
+.glass .wgate b { color: var(--brass); font-family: var(--mono); font-size: 10px; letter-spacing: .18em; text-transform: uppercase; margin-right: 8px; }
+
+.glass .days { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 14px; padding: 14px 16px 18px; }
+.glass .day { padding: 15px 16px 14px; box-shadow: var(--glass-hi); position: relative; display: flex; flex-direction: column; gap: 8px; }
+.glass .day.today { border-color: var(--brass); box-shadow: var(--glass-hi), 0 0 0 1px var(--brass-dim), 0 0 32px rgba(242,193,78,.22); }
+.glass .day.past-open { border-color: var(--red-dim); }
+.glass .day.done { opacity: .62; }
+.glass .day.done h4 { text-decoration: line-through; text-decoration-color: var(--pencil); }
+.glass .day.check { background: rgba(111,211,230,.07); }
+.glass .dh2 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.glass .dd { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--cyan); }
+.glass .dn { font-family: var(--mono); font-size: 10px; color: var(--pencil); letter-spacing: .1em; }
+.glass .day h4 { margin: 0; font-size: 15.5px; letter-spacing: 0; text-transform: none; color: var(--chalk); line-height: 1.3; }
+.glass .day h4::before { display: none; }
+.glass .day .dl { font-family: var(--mono); font-size: 9.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--brass); margin: 4px 0 2px; }
+.glass .day ul { margin: 0; padding-left: 17px; font-size: 13.5px; color: var(--graphite); }
+.glass .day li { margin: 3px 0; }
+.glass .day .dw { font-size: 13px; color: var(--chalk); padding: 8px 10px; border-radius: 10px; background: rgba(127,214,160,.08); border: 1px solid rgba(127,214,160,.28); }
+.glass .day .dw b { color: var(--moss); font-family: var(--mono); font-size: 9.5px; letter-spacing: .16em; text-transform: uppercase; margin-right: 6px; }
+.glass .day .refs { display: flex; flex-wrap: wrap; gap: 6px; }
+.glass .day .refs a { font-size: 11.5px; padding: 2px 9px; border: 1px solid var(--cyan-dim); border-radius: 999px; color: var(--cyan); background: rgba(111,211,230,.06); }
+.glass .day .refs a:hover { background: rgba(111,211,230,.16); color: var(--chalk); }
+.glass .dfoot { display: flex; flex-direction: column; gap: 8px; margin-top: auto; padding-top: 6px; }
+.glass .dchk { display: flex; align-items: center; gap: 9px; cursor: pointer; font-size: 13px; color: var(--graphite); }
+.glass .dchk input { appearance: none; width: 18px; height: 18px; border: 1px solid var(--glass-edge); border-radius: 6px; background: rgba(255,255,255,.08); cursor: pointer; flex: none; }
+.glass .dchk input:checked { background: var(--moss); border-color: var(--moss); box-shadow: inset 0 0 0 3px #0b1226; }
+.glass .dnote { width: 100%; resize: vertical; min-height: 34px; font: inherit; font-size: 12.5px; color: var(--chalk);
+  background: rgba(0,0,0,.22); border: 1px solid var(--glass-edge); border-radius: 10px; padding: 7px 10px; }
+.glass .dnote::placeholder { color: var(--pencil); }
+.glass .hrs { display: flex; gap: 6px; flex-wrap: wrap; }
+.glass .hrs span { font-family: var(--mono); font-size: 10px; letter-spacing: .06em; color: var(--graphite);
+  padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.07); }
+
+/* ============================================================================
+   SKILLS TRACKER (Sheet 22)
+   ==========================================================================*/
+.glass .skills { display: grid; gap: 14px; margin: 18px 0; }
+.glass .skill { padding: 16px 18px; display: grid; grid-template-columns: minmax(0,1.1fr) minmax(0,2fr); gap: 18px; }
+@media (max-width: 1000px) { .glass .skill { grid-template-columns: 1fr; } }
+.glass .skill h4 { margin: 0 0 4px; font-size: 16px; text-transform: none; letter-spacing: 0; color: var(--chalk); }
+.glass .skill h4::before { display: none; }
+.glass .skill .gate { font-size: 13px; color: var(--graphite); max-width: none; margin: 0; }
+.glass .skill .gate b { color: var(--cyan); font-family: var(--mono); font-size: 9.5px; letter-spacing: .16em; text-transform: uppercase; }
+.glass .lv { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 6px; }
+.glass .lv label { cursor: pointer; text-align: center; padding: 7px 4px; border-radius: 10px; font-size: 11px; line-height: 1.25;
+  color: var(--graphite); background: rgba(255,255,255,.06); border: 1px solid var(--glass-edge); }
+.glass .lv label b { display: block; font-family: var(--mono); font-size: 13px; color: var(--chalk); }
+.glass .lv input { position: absolute; opacity: 0; pointer-events: none; }
+.glass .lv label:hover { background: rgba(255,255,255,.12); }
+.glass .lv input:checked + b, .glass .lv label.sel b { color: var(--brass); }
+.glass .lv label.sel { border-color: var(--brass); background: rgba(242,193,78,.14); color: var(--chalk); }
+.glass .lv label.locked { opacity: .35; cursor: not-allowed; }
+.glass .evid { width: 100%; margin-top: 8px; font: inherit; font-size: 13px; color: var(--chalk); min-height: 38px; resize: vertical;
+  background: rgba(0,0,0,.22); border: 1px solid var(--glass-edge); border-radius: 10px; padding: 8px 11px; }
+.glass .evid.need { border-color: var(--redpencil); }
+.glass .evnote { font-size: 12px; color: var(--pencil); margin: 4px 0 0; max-width: none; }
+.glass .evnote.need { color: var(--redpencil); }
+
+.glass .reviewbox { padding: 18px 20px; margin: 18px 0; display: grid; gap: 12px; }
+.glass .reviewbox label { display: grid; gap: 5px; font-size: 12.5px; color: var(--graphite); }
+.glass .reviewbox label span { font-family: var(--mono); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--brass); }
+.glass .reviewbox textarea, .glass .reviewbox select {
+  font: inherit; font-size: 14px; color: var(--chalk); background: rgba(0,0,0,.24);
+  border: 1px solid var(--glass-edge); border-radius: 10px; padding: 8px 11px; min-height: 40px;
+}
+.glass .reviewbox select option { color: #000; }
+
+/* ---- fallbacks ------------------------------------------------------------------ */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  body.glass { --sheet: #121b2c; --plate: #18243a; --plate-2: #1d2b45; }
+  .glass .rail { background: #0c1424; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  body.glass { --sheet: #121b2c; --plate: #18243a; --plate-2: #1d2b45; }
+  .glass .rail { background: #0c1424; }
+  .glass .rail, .glass .panel, .glass .card, .glass .dwg, .glass .code, .glass .day, .glass .wk, .glass .sheethead {
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+}
+@media print { body.glass::before { display: none; } body.glass { background: #fff; color: #000; } }
+
+/* week headings sit inside <summary>; keep them compact and drop the diamond */
+.glass .wk h3 { margin: 0; font-size: 17px; line-height: 1.25; }
+.glass .wk h3::before { display: none; }
+.glass .wk summary { scroll-margin-top: 90px; }
+
+/* diagrams render at ~0.7x in the main column; lift the type so it stays readable */
+.glass .dwg text   { font-size: 14px; }
+.glass .dwg .t     { font-size: 16px; }
+.glass .dwg .m     { font-size: 13px; }
+.glass .dwg .mm    { font-size: 11.5px; }
+.glass .dwg .bubt  { font-size: 12px; }
+
+/* planner resource chips: Read (cyan) and Watch (brass with a play mark) */
+.glass .day .refs a { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
+.glass .day .refs a.vid { color: var(--brass); border-color: var(--brass-dim); background: rgba(242,193,78,.07); }
+.glass .day .refs a.vid::before { content: '\25B6\00a0'; font-size: .8em; }
+.glass .day .refs a.vid:hover { background: rgba(242,193,78,.18); color: var(--chalk); }
+.glass .day .refs.dsa { margin-top: -2px; }
+
+/* per-week "Read / Lab" line */
+.glass .wlinks { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 20px 6px; max-width: none; font-size: 13px; }
+.glass .wlinks span { font-family: var(--mono); font-size: 9.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--brass); margin-right: 2px; }
+.glass .wlinks a { padding: 2px 10px; border: 1px solid var(--cyan-dim); border-radius: 999px; background: rgba(111,211,230,.06); }
+.glass .wlinks code { padding: 2px 9px; }

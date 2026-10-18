@@ -1,0 +1,88 @@
+{
+  "days": {
+    "61": {
+      "text": [
+        { "t": "unittest.mock: where to patch", "u": "https://docs.python.org/3/library/unittest.mock.html#where-to-patch", "why": "Why a patch silently does nothing; the rule to follow." },
+        { "t": "HTTPX: Transports (MockTransport)", "u": "https://www.python-httpx.org/advanced/transports/", "why": "Fake any status, timeout or bad body without a network." },
+        { "t": "Martin Fowler: Test Double", "u": "https://martinfowler.com/bliki/TestDouble.html", "why": "Dummy, stub, fake, spy, mock: the vocabulary for today." }
+      ],
+      "video": [
+        { "t": "Edwin Jung - Mocking and Patching Pitfalls - PyCon 2019", "u": "https://www.youtube.com/watch?v=Ldlz4V-UCFw", "by": "PyCon 2019", "why": "Long, concrete: how mocks mislead and how to avoid it." },
+        { "t": "Stubs vs Mocks vs Fake | In a nutshell", "u": "https://www.youtube.com/watch?v=4AxXWjBSIdY", "by": "Keploy", "why": "Three-minute orientation on which double to write." }
+      ]
+    },
+    "62": {
+      "text": [
+        { "t": "pytest: How to use fixtures", "u": "https://docs.pytest.org/en/stable/how-to/fixtures.html", "why": "Fixtures for the fake vendor, audit table and teardown." },
+        { "t": "FastAPI: Testing dependencies with overrides", "u": "https://fastapi.tiangolo.com/advanced/testing-dependencies/", "why": "Swap the real vendor for your fake in endpoint tests." },
+        { "t": "pytest: How to parametrize fixtures and test functions", "u": "https://docs.pytest.org/en/stable/how-to/parametrize.html", "why": "One test body across success, timeout and permanent failure." }
+      ],
+      "video": [
+        { "t": "Please Learn How To Write Tests in Python… • Pytest Tutorial", "u": "https://www.youtube.com/watch?v=EgpLj86ZHFQ", "by": "Tech With Tim", "why": "One sitting from first assert to fixtures and parametrize." },
+        { "t": "Professional Python Testing with Mocks", "u": "https://www.youtube.com/watch?v=-F6wVOlsEAM", "by": "NeuralNine", "why": "Mocking an external dependency in a small pytest project." }
+      ]
+    },
+    "76": {
+      "text": [
+        { "t": "Wikipedia: Evaluation measures (information retrieval)", "u": "https://en.wikipedia.org/wiki/Evaluation_measures_(information_retrieval)", "why": "Check your recall@k and MRR definitions against this." },
+        { "t": "Hamel Husain: Your AI Product Needs Evals", "u": "https://hamel.dev/blog/posts/evals/", "why": "Why to measure before tuning, and how to start small." },
+        { "t": "pytest: How to parametrize fixtures and test functions", "u": "https://docs.pytest.org/en/stable/how-to/parametrize.html", "why": "Test your metric functions on a table of hand cases." }
+      ],
+      "video": [
+        { "t": "RAG #10: RAG Retrieval Evaluation Metrics Explained: Recall@K, Precision@K, MRR, MAP, NDCG #rag", "u": "https://www.youtube.com/watch?v=-dIm4EyUrrM", "by": "Praveen Reddy Learnings", "why": "Worked examples of recall@k, precision@k and MRR." }
+      ]
+    },
+    "81": {
+      "text": [
+        { "t": "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena", "u": "https://arxiv.org/abs/2306.05685", "why": "Names position, verbosity and self-preference bias; read the abstract." },
+        { "t": "Hamel Husain: A Field Guide to Rapidly Improving AI Products", "u": "https://hamel.dev/blog/posts/field-guide/", "why": "Read failures first; build checks for what you actually see." },
+        { "t": "OWASP Top 10 for LLM applications", "u": "https://owasp.org/www-project-top-10-for-large-language-model-applications/", "why": "Risk list your eval cases (injection, leakage) should cover." }
+      ],
+      "video": [
+        { "t": "Can You Trust an AI to Judge Fairly? Exploring LLM Biases", "u": "https://www.youtube.com/watch?v=dAE7OFm9oek", "by": "IBM Technology", "why": "Short tour of why a model judge needs checking." },
+        { "t": "RAG Evaluation: Precision, Recall, Faithfulness, RAGAS Explained Clearly", "u": "https://www.youtube.com/watch?v=7_LTU0LA374", "by": "Logical Lenses", "why": "Faithfulness versus retrieval metrics; skim the RAGAS part." }
+      ]
+    },
+    "83": {
+      "text": [
+        { "t": "pytest: Good Integration Practices", "u": "https://docs.pytest.org/en/stable/explanation/goodpractices.html", "why": "Layout, discovery and naming for your tests folder." },
+        { "t": "pytest: import mechanisms and sys.path/PYTHONPATH", "u": "https://docs.pytest.org/en/stable/explanation/pythonpath.html", "why": "Why imports break between app/ and tests/, and the fix." },
+        { "t": "pytest: How to use fixtures", "u": "https://docs.pytest.org/en/stable/how-to/fixtures.html", "why": "Put FakeLLM and the in-memory store in conftest.py." }
+      ],
+      "video": [
+        { "t": "pytest: everything you need to know about fixtures (intermediate) anthony explains #487", "u": "https://www.youtube.com/watch?v=ScEQRKwUePI", "by": "anthonywritescode", "why": "Scopes, autouse and factories for a clean test layout." },
+        { "t": "PyTest Tutorial #6 - How to use Conftest.py in PyTest", "u": "https://www.youtube.com/watch?v=PIwyrzCLTCI", "by": "Software Testing Mentor", "why": "Where conftest.py lives and what it shares." }
+      ]
+    },
+    "121": {
+      "text": [
+        { "t": "OWASP Logging Cheat Sheet", "u": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html", "why": "The list of data that must be excluded or masked." },
+        { "t": "Python Logging Cookbook", "u": "https://docs.python.org/3/howto/logging-cookbook.html", "why": "Filters and formatters: where a redaction step belongs." },
+        { "t": "Python contextvars", "u": "https://docs.python.org/3/library/contextvars.html", "why": "Carry a correlation id through a request without arguments." }
+      ],
+      "video": [
+        { "t": "12 Logging BEST Practices in 12 minutes", "u": "https://www.youtube.com/watch?v=I2mWnh66Bkg", "by": "Better Stack", "why": "Levels, structure and what to keep out of logs." },
+        { "t": "Why Most Python Logging Setups Fail in Production", "u": "https://www.youtube.com/watch?v=pxuXaaT1u3k", "by": "ArjanCodes", "why": "Practical Python logging set-up mistakes to avoid." }
+      ]
+    },
+    "122": {
+      "text": [
+        { "t": "Pydantic: Models", "u": "https://docs.pydantic.dev/latest/concepts/models/", "why": "Declare the recommendation schema; validation errors come free." },
+        { "t": "Pydantic: Validation errors", "u": "https://docs.pydantic.dev/latest/errors/validation_errors/", "why": "Read the error list to test every rejected output." },
+        { "t": "pytest: How to parametrize fixtures and test functions", "u": "https://docs.pytest.org/en/stable/how-to/parametrize.html", "why": "One test body over many malformed model outputs." }
+      ],
+      "video": [
+        { "t": "Pydantic Tutorial • Solving Python's Biggest Problem", "u": "https://www.youtube.com/watch?v=XIdQ6gO3Anc", "by": "pixegami", "why": "Short orientation to models and validation in Python." }
+      ]
+    },
+    "123": {
+      "text": [
+        { "t": "Hamel Husain: A Field Guide to Rapidly Improving AI Products", "u": "https://hamel.dev/blog/posts/field-guide/", "why": "Error analysis before metrics; record failures honestly." },
+        { "t": "Wikipedia: Binomial proportion confidence interval", "u": "https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval", "why": "Why 17 of 20 is a wide range, not 85%." }
+      ],
+      "video": [
+        { "t": "How to Evaluate LLM Applications: The Complete Workflow | CampusX", "u": "https://www.youtube.com/watch?v=Pv4mkG2K_s8", "by": "CampusX", "why": "Dataset, metrics and workflow for an application eval." }
+      ]
+    }
+  }
+}

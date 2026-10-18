@@ -1,0 +1,205 @@
+{
+ "days": {
+  "36": {
+   "text": [
+    {
+     "t": "FastAPI: First steps",
+     "u": "https://fastapi.tiangolo.com/tutorial/first-steps/",
+     "why": "Today's whole build: app, route, uvicorn, /docs"
+    },
+    {
+     "t": "FastAPI: Concurrency and async / await",
+     "u": "https://fastapi.tiangolo.com/async/",
+     "why": "Read only the in-a-hurry box: when def is fine"
+    },
+    {
+     "t": "Uvicorn",
+     "u": "https://www.uvicorn.dev/",
+     "why": "What the server does, and what --reload does"
+    }
+   ],
+   "video": [
+    {
+     "t": "Python FastAPI Tutorial (Part 1): Getting Started - Web App + REST API",
+     "u": "https://www.youtube.com/watch?v=7AMjmCTumuo",
+     "by": "Corey Schafer",
+     "why": "Install, first routes, uvicorn, auto docs"
+    },
+    {
+     "t": "FastAPI in 15 Minutes: The Ultimate Crash Course for Beginners",
+     "u": "https://www.youtube.com/watch?v=BPRKBQwEHe0",
+     "by": "The Data and AI Guy",
+     "why": "Fast second view of the same first steps"
+    }
+   ]
+  },
+  "37": {
+   "text": [
+    {
+     "t": "FastAPI: Path parameters",
+     "u": "https://fastapi.tiangolo.com/tutorial/path-params/",
+     "why": "Typed path params and the automatic 422"
+    },
+    {
+     "t": "FastAPI: Query parameters",
+     "u": "https://fastapi.tiangolo.com/tutorial/query-params/",
+     "why": "Defaults, optional and required query params"
+    },
+    {
+     "t": "FastAPI: Query parameters and string validations",
+     "u": "https://fastapi.tiangolo.com/tutorial/query-params-str-validations/",
+     "why": "Query(ge, le) limits like limit=10"
+    }
+   ],
+   "video": [
+    {
+     "t": "Python FastAPI Tutorial (Part 3): Path Parameters - Validation and Error Handling",
+     "u": "https://www.youtube.com/watch?v=WRjXIA5pMtk",
+     "by": "Corey Schafer",
+     "why": "Path params, validation, reading error bodies"
+    }
+   ]
+  },
+  "38": {
+   "text": [
+    {
+     "t": "Pydantic: Models",
+     "u": "https://pydantic.dev/docs/validation/latest/concepts/models/",
+     "why": "BaseModel, model_validate, model_dump"
+    },
+    {
+     "t": "Pydantic: Fields",
+     "u": "https://pydantic.dev/docs/validation/latest/concepts/fields/",
+     "why": "Field constraints: ge, le, min_length, pattern"
+    },
+    {
+     "t": "Pydantic: Validators",
+     "u": "https://pydantic.dev/docs/validation/latest/concepts/validators/",
+     "why": "field_validator and model_validator for date rules"
+    },
+    {
+     "t": "Pydantic: Strict mode",
+     "u": "https://pydantic.dev/docs/validation/latest/concepts/strict_mode/",
+     "why": "Lax versus strict coercion, with examples"
+    }
+   ],
+   "video": [
+    {
+     "t": "Pydantic (V2) - In-depth Starter Guide",
+     "u": "https://www.youtube.com/watch?v=ok8bF8M7gjk",
+     "by": "MathByte Academy",
+     "why": "V2 models, default factories, custom validators"
+    }
+   ]
+  },
+  "39": {
+   "text": [
+    {
+     "t": "FastAPI: Request body",
+     "u": "https://fastapi.tiangolo.com/tutorial/body/",
+     "why": "POST with a Pydantic body model"
+    },
+    {
+     "t": "FastAPI: Response model - return type",
+     "u": "https://fastapi.tiangolo.com/tutorial/response-model/",
+     "why": "How response_model hides internal fields"
+    },
+    {
+     "t": "FastAPI: Response status code",
+     "u": "https://fastapi.tiangolo.com/tutorial/response-status-code/",
+     "why": "Pick 201 and 204 correctly"
+    }
+   ],
+   "video": [
+    {
+     "t": "FastAPI Response Model & Status Codes Explained",
+     "u": "https://www.youtube.com/watch?v=Y3OV9b1ZU74",
+     "by": "Coding for All",
+     "why": "response_model and status codes together"
+    }
+   ]
+  },
+  "40": {
+   "text": [
+    {
+     "t": "FastAPI: Handling errors",
+     "u": "https://fastapi.tiangolo.com/tutorial/handling-errors/",
+     "why": "HTTPException and custom exception handlers"
+    },
+    {
+     "t": "FastAPI: Dependencies",
+     "u": "https://fastapi.tiangolo.com/tutorial/dependencies/",
+     "why": "Depends for shared logic like an API key check"
+    },
+    {
+     "t": "FastAPI: Security - first steps",
+     "u": "https://fastapi.tiangolo.com/tutorial/security/first-steps/",
+     "why": "OAuth2 bearer concept, read before building auth"
+    }
+   ],
+   "video": [
+    {
+     "t": "Dependency Injection with Depends - FastAPI for Developers",
+     "u": "https://www.youtube.com/watch?v=xqYJjxITbxA",
+     "by": "The Software Mentor",
+     "why": "Depends, step by step"
+    }
+   ]
+  },
+  "41": {
+   "text": [
+    {
+     "t": "FastAPI: Testing",
+     "u": "https://fastapi.tiangolo.com/tutorial/testing/",
+     "why": "TestClient and your first route tests"
+    },
+    {
+     "t": "FastAPI: Testing dependencies with overrides",
+     "u": "https://fastapi.tiangolo.com/advanced/testing-dependencies/",
+     "why": "Swap the API key check or store in tests"
+    }
+   ],
+   "video": [
+    {
+     "t": "Python FastAPI Tutorial (Part 17): Testing the API - Pytest, Fixtures, and Mocking External Services",
+     "u": "https://www.youtube.com/watch?v=SO7m7nod0ts",
+     "by": "Corey Schafer",
+     "why": "pytest fixtures and TestClient on a real app"
+    }
+   ]
+  },
+  "42": {
+   "text": [
+    {
+     "t": "FastAPI: Bigger applications - multiple files",
+     "u": "https://fastapi.tiangolo.com/tutorial/bigger-applications/",
+     "why": "Routers: the layout your projects will use"
+    },
+    {
+     "t": "FastAPI: Settings and environment variables",
+     "u": "https://fastapi.tiangolo.com/advanced/settings/",
+     "why": "pydantic-settings, secrets out of code"
+    },
+    {
+     "t": "FastAPI: Background tasks",
+     "u": "https://fastapi.tiangolo.com/tutorial/background-tasks/",
+     "why": "Answer the retry and idempotency question properly"
+    }
+   ],
+   "video": [
+    {
+     "t": "Python FastAPI Tutorial (Part 7): Sync vs Async - Converting Your App to Asynchronous",
+     "u": "https://www.youtube.com/watch?v=2JPDt-Jp6fM",
+     "by": "Corey Schafer",
+     "why": "When async def helps and when it does not"
+    },
+    {
+     "t": "Python FastAPI Tutorial (Part 8): Routers - Organizing Routes into Modules with APIRouter",
+     "u": "https://www.youtube.com/watch?v=NkgIHa6KtHg",
+     "by": "Corey Schafer",
+     "why": "Splitting main.py into routers"
+    }
+   ]
+  }
+ }
+}

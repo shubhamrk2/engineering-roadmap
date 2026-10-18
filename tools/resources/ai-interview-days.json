@@ -1,0 +1,121 @@
+{ "days": {
+ "127": {
+  "text": [
+   {"t":"Python collections module","u":"https://docs.python.org/3/library/collections.html","why":"Counter, defaultdict, deque, OrderedDict: the interview toolbox."},
+   {"t":"Python TimeComplexity wiki","u":"https://wiki.python.org/moin/TimeComplexity","why":"State list, dict and set costs correctly while coding."}
+  ],
+  "video": [
+   {"t":"How To Think Out Loud: A Guide for Coding Interviews","u":"https://www.youtube.com/watch?v=c1gjL47uH3w","by":"CodeLucky","why":"Short guide to narrating while you code."},
+   {"t":"Python for Coding Interviews - Everything you need to Know","u":"https://www.youtube.com/watch?v=0K_eZGS5NsU","by":"NeetCode","why":"Python idioms that make live coding faster."}
+  ]},
+ "128": {
+  "text": [
+   {"t":"SQLite window functions","u":"https://www.sqlite.org/windowfunctions.html","why":"ROW_NUMBER, RANK, SUM OVER, runnable in the practice database."},
+   {"t":"SQLBolt","u":"https://sqlbolt.com/","why":"Free interactive drills for joins and aggregates."}
+  ],
+  "video": [
+   {"t":"SQL Window Functions | Clearly Explained | PARTITION BY, ORDER BY, ROW_NUMBER, RANK, DENSE_RANK","u":"https://www.youtube.com/watch?v=rIcB4zMYMas","by":"Maven Analytics","why":"Seven minutes on the window-function question."},
+   {"t":"SQL Joins - Beginner to PRO Masterclass with 10 Examples","u":"https://www.youtube.com/watch?v=xkYpNfpmbGY","by":"Chandoo","why":"Join practice including anti-joins."}
+  ]},
+ "129": {
+  "text": [
+   {"t":"Stripe API: idempotent requests","u":"https://docs.stripe.com/api/idempotent_requests","why":"A real vendor's idempotency-key contract."},
+   {"t":"MDN: Idempotent","u":"https://developer.mozilla.org/en-US/docs/Glossary/Idempotent","why":"The precise definition interviewers expect."},
+   {"t":"OWASP API Security Top 10","u":"https://owasp.org/API-Security/","why":"Auth and rate-limit failures named properly."}
+  ],
+  "video": [
+   {"t":"Designing Idempotent API Endpoints for Payments at Stripe","u":"https://www.youtube.com/watch?v=J2IcD9FZvZU","by":"Arpit Bhayani","why":"Idempotency keys explained with the retry problem."},
+   {"t":"API Pagination: Making Billions of Products Scrolling Possible","u":"https://www.youtube.com/watch?v=14K_a2kKTxU","by":"ByteByteGo","why":"Offset versus cursor pagination in three minutes."}
+  ]},
+ "130": {
+  "text": [
+   {"t":"pdb: the Python debugger","u":"https://docs.python.org/3/library/pdb.html","why":"Step through a failure instead of guessing."},
+   {"t":"pytest: how to handle failures","u":"https://docs.pytest.org/en/stable/how-to/failures.html","why":"Read failures and drop into the debugger."}
+  ],
+  "video": [
+   {"t":"10 ways to debug Python code","u":"https://www.youtube.com/watch?v=cokP4XAhcwo","by":"PyCon DE","why":"Debugging methods to narrate in a debugging round."}
+  ]},
+ "131": {
+  "text": [
+   {"t":"The System Design Primer","u":"https://github.com/donnemartin/system-design-primer","why":"Free reference for components and trade-offs."},
+   {"t":"OWASP Top 10 for LLM applications","u":"https://owasp.org/www-project-top-10-for-large-language-model-applications/","why":"Security section of the RAG design answer."}
+  ],
+  "video": [
+   {"t":"How to Build a Scalable RAG System for AI Apps (Full Architecture)","u":"https://www.youtube.com/watch?v=4KiiKQ9RVvA","by":"ByteMonk","why":"A full RAG architecture to compare with your drawing."},
+   {"t":"How to Approach ANY System Design Interview Question (6-Step Framework)","u":"https://www.youtube.com/watch?v=7h-MeIZyVZA","by":"Bits of Code by Anand","why":"A framework for ordering a design answer."}
+  ]},
+ "132": {
+  "text": [
+   {"t":"Anthropic: Building effective agents","u":"https://www.anthropic.com/engineering/building-effective-agents","why":"When a workflow beats an agent; simple patterns first."},
+   {"t":"Model Context Protocol","u":"https://modelcontextprotocol.io/","why":"Ground your MCP answers in the specification."}
+  ],
+  "video": [
+   {"t":"20 Agentic AI System Design Interview Questions & Solutions","u":"https://www.youtube.com/watch?v=I4sGn8Z1vpI","by":"Keerti Purswani","why":"Question bank to practise agent-design answers aloud."}
+  ]},
+ "133": {
+  "text": [
+   {"t":"Tech Interview Handbook: software engineering interview guide","u":"https://www.techinterviewhandbook.org/software-engineering-interview-guide/","why":"Free overview of typical interview stages."},
+   {"t":"Tech Interview Handbook: coding interview preparation","u":"https://www.techinterviewhandbook.org/coding-interview-prep/","why":"Plan the week's weak topics from evidence."}
+  ],
+  "video": [
+   {"t":"I gave 15 Forward Deployed Engineer Interviews. Here's what they ask.","u":"https://www.youtube.com/watch?v=VnIDWlOzb6s","by":"Anu Sharma","why":"One interviewer's view of FDE rounds; verify per company."},
+   {"t":"How to ACE the Take Home Interview Project","u":"https://www.youtube.com/watch?v=DU0LAeq0Uc8","by":"AlgosWithMichael","why":"Treat a take-home as a small, finished project."}
+  ]},
+ "134": {
+  "text": [
+   {"t":"Tech Interview Handbook: behavioral interview","u":"https://www.techinterviewhandbook.org/behavioral-interview/","why":"Structure for project and experience questions."},
+   {"t":"The System Design Primer","u":"https://github.com/donnemartin/system-design-primer","why":"Vocabulary for the what-would-change-at-100x question."}
+  ],
+  "video": [
+   {"t":"How To Explain Your Project During An Interview: Tell Me About Your Project Experience !! 11 Tips","u":"https://www.youtube.com/watch?v=pPPbLeIX_f0","by":"Technical Suneja","why":"Eleven tips for the three-minute project explanation."}
+  ]},
+ "135": {
+  "text": [
+   {"t":"Anthropic: Building effective agents","u":"https://www.anthropic.com/engineering/building-effective-agents","why":"Vocabulary to justify an agent design choice honestly."},
+   {"t":"OWASP Top 10 for LLM applications","u":"https://owasp.org/www-project-top-10-for-large-language-model-applications/","why":"Name the risks your Project 2 mitigates."}
+  ],
+  "video": [
+   {"t":"How to Explain Your Project in Interview | Impress Your Interviewer","u":"https://www.youtube.com/watch?v=rtUz6s-It7k","by":"Ashish Kumar","why":"Project explanation structure; adapt, do not recite."}
+  ]},
+ "136": {
+  "text": [
+   {"t":"Tech Interview Handbook: behavioral interview","u":"https://www.techinterviewhandbook.org/behavioral-interview/","why":"Ownership and learning stories for honest framing."},
+   {"t":"Tech Interview Handbook: resume","u":"https://www.techinterviewhandbook.org/resume/","why":"Write truthful, specific, checkable bullet points."}
+  ],
+  "video": [
+   {"t":"AI Coding Interview w/ Meta Staff Engineer","u":"https://www.youtube.com/watch?v=A1kX8fJx53c","by":"Hello Interview","why":"Watch how AI-assisted work is judged and explained live."}
+  ]},
+ "137": {
+  "text": [
+   {"t":"Tech Interview Handbook: behavioral interview","u":"https://www.techinterviewhandbook.org/behavioral-interview/","why":"Question list and STAR guidance."},
+   {"t":"The Muse: STAR interview method","u":"https://www.themuse.com/advice/star-interview-method","why":"A plain STAR walkthrough with examples."}
+  ],
+  "video": [
+   {"t":"STAR INTERVIEW QUESTIONS & ANSWERS! (The STAR TECHNIQUE for Behavioural Interview Questions!)","u":"https://www.youtube.com/watch?v=uQEuo7woEEk","by":"CareerVidz","why":"STAR structure with sample answers."},
+   {"t":"Tell Me About a Time You Failed (Sample Answer included)","u":"https://www.youtube.com/watch?v=yidXECtZCOg","by":"Jeff Su","why":"A failure story that stays honest and ends in learning."}
+  ]},
+ "138": {
+  "text": [
+   {"t":"Tech Interview Handbook: coding interview preparation","u":"https://www.techinterviewhandbook.org/coding-interview-prep/","why":"Mock-interview checklist for the coding segment."},
+   {"t":"Tech Interview Handbook: software engineering interview guide","u":"https://www.techinterviewhandbook.org/software-engineering-interview-guide/","why":"Compare your 60-minute loop with a typical one."}
+  ],
+  "video": [
+   {"t":"Software Engineering Job Interview - Full Mock Interview","u":"https://www.youtube.com/watch?v=1qw5ITr3k9E","by":"freeCodeCamp.org","why":"Watch a full mock, then score it with the rubric."}
+  ]},
+ "139": {
+  "text": [
+   {"t":"Tech Interview Handbook: coding interview preparation","u":"https://www.techinterviewhandbook.org/coding-interview-prep/","why":"Fix the top three feedback items from mock one."}
+  ],
+  "video": [
+   {"t":"Top 5 Coding Interview MISTAKES (from a Google Engineer)","u":"https://www.youtube.com/watch?v=rMj6KnxZu5M","by":"NeetCode","why":"Check your mock-one feedback against common mistakes."},
+   {"t":"Mock Coding Interview with a SWE Intern","u":"https://www.youtube.com/watch?v=aeVmQGY7xZc","by":"Ricky Palaguachi","why":"A second full mock to score against the rubric."}
+  ]},
+ "140": {
+  "text": [
+   {"t":"Tech Interview Handbook: negotiation","u":"https://www.techinterviewhandbook.org/negotiation/","why":"Negotiation scripts; verify numbers against real postings."},
+   {"t":"Tech Interview Handbook: resume","u":"https://www.techinterviewhandbook.org/resume/","why":"Update the resume before the next application batch."}
+  ],
+  "video": [
+   {"t":"Ex-Google Recruiter Explains: How to Answer 'What Are Your Salary Expectations?' AND How Comp Works","u":"https://www.youtube.com/watch?v=x37O-PUBvw0","by":"Farah Sharghi","why":"How to answer the salary question; treat it as one view."}
+  ]}
+}}

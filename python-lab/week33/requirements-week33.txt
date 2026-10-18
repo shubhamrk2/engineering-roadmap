@@ -1,0 +1,4 @@
+# the lab tests need only pytest
+pytest>=8
+# the sheet (ai-mcp.html) code blocks additionally need, in their own virtual environment:
+#   mcp>=2,<3   (tested with mcp 2.3.0)

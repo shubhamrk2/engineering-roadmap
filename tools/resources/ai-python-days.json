@@ -1,0 +1,792 @@
+{
+  "days": {
+    "1": {
+      "text": [
+        {
+          "t": "Python tutorial: using the interpreter",
+          "u": "https://docs.python.org/3/tutorial/interpreter.html",
+          "why": "How to start Python and run code from a terminal"
+        },
+        {
+          "t": "Python tutorial: syntax errors",
+          "u": "https://docs.python.org/3/tutorial/errors.html#syntax-errors",
+          "why": "Read your first SyntaxError message"
+        },
+        {
+          "t": "Python Tutor",
+          "u": "https://pythontutor.com/visualize.html",
+          "why": "Step through lesson1.py and watch variables appear"
+        }
+      ],
+      "video": [
+        {
+          "t": "Install and Setup",
+          "u": "https://www.youtube.com/watch?v=YYXdXT2l-Gg",
+          "by": "Corey Schafer",
+          "why": "Installing Python and running a first script"
+        },
+        {
+          "t": "Tracebacks",
+          "u": "https://www.youtube.com/watch?v=Qmj5UQRkL4s",
+          "by": "Python Morsels",
+          "why": "Read tracebacks bottom up, as today requires"
+        }
+      ]
+    },
+    "2": {
+      "text": [
+        {
+          "t": "Tutorial: numbers",
+          "u": "https://docs.python.org/3/tutorial/introduction.html#numbers",
+          "why": "//, /, ** and % with worked examples"
+        },
+        {
+          "t": "Tutorial: text (strings)",
+          "u": "https://docs.python.org/3/tutorial/introduction.html#text",
+          "why": "Indexing, slicing, concatenation versus repetition"
+        },
+        {
+          "t": "Tutorial: formatted string literals",
+          "u": "https://docs.python.org/3/tutorial/inputoutput.html#formatted-string-literals",
+          "why": "f-string syntax straight from the docs"
+        }
+      ],
+      "video": [
+        {
+          "t": "Integers and Floats",
+          "u": "https://www.youtube.com/watch?v=khKv-8q7YmY",
+          "by": "Corey Schafer",
+          "why": "Numeric types and arithmetic operators"
+        },
+        {
+          "t": "Strings",
+          "u": "https://www.youtube.com/watch?v=k9TUPpGqYTo",
+          "by": "Corey Schafer",
+          "why": "Indexing, slicing, methods and f-strings"
+        }
+      ]
+    },
+    "3": {
+      "text": [
+        {
+          "t": "Tutorial: if statements",
+          "u": "https://docs.python.org/3/tutorial/controlflow.html#if-statements",
+          "why": "if, elif, else and the colon-indent rule"
+        },
+        {
+          "t": "Library: truth value testing",
+          "u": "https://docs.python.org/3/library/stdtypes.html#truth-value-testing",
+          "why": "Exactly which values count as False"
+        }
+      ],
+      "video": [
+        {
+          "t": "Conditionals and Booleans",
+          "u": "https://www.youtube.com/watch?v=DZwmZ8Usvnk",
+          "by": "Corey Schafer",
+          "why": "if/elif/else, and/or/not, falsy values"
+        }
+      ]
+    },
+    "4": {
+      "text": [
+        {
+          "t": "Tutorial: for statements",
+          "u": "https://docs.python.org/3/tutorial/controlflow.html#for-statements",
+          "why": "for over iterables, break and continue"
+        },
+        {
+          "t": "Tutorial: range()",
+          "u": "https://docs.python.org/3/tutorial/controlflow.html#the-range-function",
+          "why": "start, stop (exclusive) and step explained"
+        },
+        {
+          "t": "Python Tutor",
+          "u": "https://pythontutor.com/visualize.html",
+          "why": "Trace sum_to(3) one step at a time"
+        }
+      ],
+      "video": [
+        {
+          "t": "Loops and Iterations",
+          "u": "https://www.youtube.com/watch?v=6iF8Xb7Z3wQ",
+          "by": "Corey Schafer",
+          "why": "for, while, break, continue and range"
+        }
+      ]
+    },
+    "5": {
+      "text": [
+        {
+          "t": "Tutorial: defining functions",
+          "u": "https://docs.python.org/3/tutorial/controlflow.html#defining-functions",
+          "why": "def, return, None and local scope"
+        },
+        {
+          "t": "Tutorial: more on defining functions",
+          "u": "https://docs.python.org/3/tutorial/controlflow.html#more-on-defining-functions",
+          "why": "Default and keyword arguments"
+        }
+      ],
+      "video": [
+        {
+          "t": "Functions",
+          "u": "https://www.youtube.com/watch?v=9Os0o3wzS_I",
+          "by": "Corey Schafer",
+          "why": "Parameters, return, defaults, keyword arguments"
+        }
+      ]
+    },
+    "6": {
+      "text": [
+        {
+          "t": "pytest: getting started",
+          "u": "https://docs.pytest.org/en/stable/getting-started.html",
+          "why": "Run pytest and read failing assertion output"
+        },
+        {
+          "t": "pytest: assertions",
+          "u": "https://docs.pytest.org/en/stable/how-to/assert.html",
+          "why": "How pytest shows expected versus actual values"
+        }
+      ],
+      "video": [
+        {
+          "t": "Traceback (most recent call last): Python's tracebacks explained",
+          "u": "https://www.youtube.com/watch?v=Qmj5UQRkL4s",
+          "by": "Python Morsels",
+          "why": "Reading the failure output when a test goes red"
+        },
+        {
+          "t": "Unit Testing in Python with pytest | Getting Started (Part-1)",
+          "u": "https://www.youtube.com/watch?v=L6N3BgZh2AA",
+          "by": "Indian Pythonista",
+          "why": "First pytest run and assert, matches today's lab"
+        }
+      ]
+    },
+    "7": {
+      "text": [
+        {
+          "t": "Python Tutor",
+          "u": "https://pythontutor.com/visualize.html",
+          "why": "Trace your retyped functions to confirm they behave"
+        },
+        {
+          "t": "Tutorial: errors and exceptions",
+          "u": "https://docs.python.org/3/tutorial/errors.html",
+          "why": "Revise error names from the week"
+        }
+      ],
+      "video": [
+        {
+          "t": "Demo of visualizing Python code execution using pythontutor.com",
+          "u": "https://www.youtube.com/watch?v=5thzxt1iZew",
+          "by": "Chris Research",
+          "why": "Step-through demo for tracing your retyped functions"
+        },
+        {
+          "t": "Traceback (most recent call last): Python's tracebacks explained",
+          "u": "https://www.youtube.com/watch?v=Qmj5UQRkL4s",
+          "by": "Python Morsels",
+          "why": "Revision: read the bottom line first"
+        }
+      ]
+    },
+    "8": {
+      "text": [
+        {
+          "t": "Tutorial: more on lists",
+          "u": "https://docs.python.org/3/tutorial/datastructures.html#more-on-lists",
+          "why": "append, pop, insert and slicing methods"
+        },
+        {
+          "t": "Tutorial: tuples and sequences",
+          "u": "https://docs.python.org/3/tutorial/datastructures.html#tuples-and-sequences",
+          "why": "Tuples as fixed records"
+        },
+        {
+          "t": "Python Tutor",
+          "u": "https://pythontutor.com/visualize.html",
+          "why": "See a and b point at one list"
+        }
+      ],
+      "video": [
+        {
+          "t": "Lists, Tuples, and Sets",
+          "u": "https://www.youtube.com/watch?v=W8KRzm-HUcc",
+          "by": "Corey Schafer",
+          "why": "Core list and tuple operations"
+        },
+        {
+          "t": "Mutable vs Immutable",
+          "u": "https://www.youtube.com/watch?v=2pCxRTu5SHc",
+          "by": "Tech With Tim",
+          "why": "Why changing b also changes a"
+        }
+      ]
+    },
+    "9": {
+      "text": [
+        {
+          "t": "Tutorial: sets",
+          "u": "https://docs.python.org/3/tutorial/datastructures.html#sets",
+          "why": "Uniqueness and fast membership tests"
+        },
+        {
+          "t": "Tutorial: dictionaries",
+          "u": "https://docs.python.org/3/tutorial/datastructures.html#dictionaries",
+          "why": "Add, read and delete keys"
+        },
+        {
+          "t": "Library: dict.get",
+          "u": "https://docs.python.org/3/library/stdtypes.html#dict.get",
+          "why": "Default value avoids KeyError"
+        }
+      ],
+      "video": [
+        {
+          "t": "Dictionaries",
+          "u": "https://www.youtube.com/watch?v=daefaLgNkw0",
+          "by": "Corey Schafer",
+          "why": "Key-value pairs, get(), items()"
+        },
+        {
+          "t": "Counting Things with Dictionaries",
+          "u": "https://www.youtube.com/watch?v=iePxQYajviU",
+          "by": "MathByte Academy",
+          "why": "The get-add-store counting pattern"
+        }
+      ]
+    },
+    "10": {
+      "text": [
+        {
+          "t": "Tutorial: looping techniques",
+          "u": "https://docs.python.org/3/tutorial/datastructures.html#looping-techniques",
+          "why": "Iterating dict items while building results"
+        },
+        {
+          "t": "collections.defaultdict",
+          "u": "https://docs.python.org/3/library/collections.html#collections.defaultdict",
+          "why": "Dict of lists without key checks"
+        }
+      ],
+      "video": [
+        {
+          "t": "defaultdict",
+          "u": "https://www.youtube.com/watch?v=fzdVyP9SQFw",
+          "by": "Pybites",
+          "why": "Group items into a dict of lists"
+        }
+      ]
+    },
+    "11": {
+      "text": [
+        {
+          "t": "Tutorial: list comprehensions",
+          "u": "https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions",
+          "why": "Comprehension syntax with conditions"
+        },
+        {
+          "t": "Sorting HOWTO",
+          "u": "https://docs.python.org/3/howto/sorting.html",
+          "why": "sorted, key=, reverse and stability"
+        }
+      ],
+      "video": [
+        {
+          "t": "Comprehensions",
+          "u": "https://www.youtube.com/watch?v=3dt4OGnU5sM",
+          "by": "Corey Schafer",
+          "why": "List, dict and set comprehensions side by side"
+        },
+        {
+          "t": "Sorting Lists, Tuples, and Objects",
+          "u": "https://www.youtube.com/watch?v=D3JvDWO-BY4",
+          "by": "Corey Schafer",
+          "why": "sorted() and key functions"
+        }
+      ]
+    },
+    "12": {
+      "text": [
+        {
+          "t": "Library: string methods",
+          "u": "https://docs.python.org/3/library/stdtypes.html#string-methods",
+          "why": "split, strip, join, startswith, partition reference"
+        },
+        {
+          "t": "Tutorial: tuples and sequences (unpacking)",
+          "u": "https://docs.python.org/3/tutorial/datastructures.html#tuples-and-sequences",
+          "why": "Sequence unpacking for parsing fields"
+        }
+      ],
+      "video": [
+        {
+          "t": "Python Tutorial for Beginners 2: Strings - Working with Textual Data",
+          "u": "https://www.youtube.com/watch?v=k9TUPpGqYTo",
+          "by": "Corey Schafer",
+          "why": "Covers strip, split, join on strings"
+        },
+        {
+          "t": "Python Tutorial #27: Splitting and Joining Strings",
+          "u": "https://www.youtube.com/watch?v=T-8V1dMDFiQ",
+          "by": "Professor Hank Stalica",
+          "why": "Split and join on a line of text"
+        }
+      ]
+    },
+    "13": {
+      "text": [
+        {
+          "t": "Tutorial: data structures",
+          "u": "https://docs.python.org/3/tutorial/datastructures.html",
+          "why": "Dict counting patterns for the log problem"
+        },
+        {
+          "t": "pytest: getting started",
+          "u": "https://docs.pytest.org/en/stable/getting-started.html",
+          "why": "Run week 2 tests and read failures"
+        }
+      ],
+      "video": [
+        {
+          "t": "Idiomatic Python: Counting Things with Dictionaries",
+          "u": "https://www.youtube.com/watch?v=iePxQYajviU",
+          "by": "MathByte Academy",
+          "why": "The same count pattern count_errors needs"
+        },
+        {
+          "t": "Python Tutorial for Beginners 5: Dictionaries - Working with Key-Value Pairs",
+          "u": "https://www.youtube.com/watch?v=daefaLgNkw0",
+          "by": "Corey Schafer",
+          "why": "Revise get(), items() and key lookups"
+        }
+      ]
+    },
+    "14": {
+      "text": [
+        {
+          "t": "Tutorial: errors and exceptions",
+          "u": "https://docs.python.org/3/tutorial/errors.html",
+          "why": "Revise tracebacks from this week"
+        },
+        {
+          "t": "Python Tutor",
+          "u": "https://pythontutor.com/visualize.html",
+          "why": "Trace count_errors on a tiny input"
+        }
+      ],
+      "video": [
+        {
+          "t": "Mutable vs Immutable - Python",
+          "u": "https://www.youtube.com/watch?v=2pCxRTu5SHc",
+          "by": "Tech With Tim",
+          "why": "Revision: aliasing and mutation from week 2"
+        },
+        {
+          "t": "Idiomatic Python: Counting Things with Dictionaries",
+          "u": "https://www.youtube.com/watch?v=iePxQYajviU",
+          "by": "MathByte Academy",
+          "why": "Redo count_errors from memory afterwards"
+        }
+      ]
+    },
+    "15": {
+      "text": [
+        {
+          "t": "Tutorial: handling exceptions",
+          "u": "https://docs.python.org/3/tutorial/errors.html#handling-exceptions",
+          "why": "try, except, else, finally in order"
+        },
+        {
+          "t": "Library: built-in exceptions",
+          "u": "https://docs.python.org/3/library/exceptions.html",
+          "why": "Which exception each bad input raises"
+        },
+        {
+          "t": "Tutorial: user-defined exceptions",
+          "u": "https://docs.python.org/3/tutorial/errors.html#user-defined-exceptions",
+          "why": "Custom exception classes"
+        }
+      ],
+      "video": [
+        {
+          "t": "Using Try/Except Blocks",
+          "u": "https://www.youtube.com/watch?v=NIWwJbo-9_8",
+          "by": "Corey Schafer",
+          "why": "Specific exceptions, else and finally"
+        }
+      ]
+    },
+    "16": {
+      "text": [
+        {
+          "t": "Tutorial: reading and writing files",
+          "u": "https://docs.python.org/3/tutorial/inputoutput.html#reading-and-writing-files",
+          "why": "with open() and encoding"
+        },
+        {
+          "t": "Library: pathlib",
+          "u": "https://docs.python.org/3/library/pathlib.html",
+          "why": "Path objects replace string paths"
+        }
+      ],
+      "video": [
+        {
+          "t": "File Objects",
+          "u": "https://www.youtube.com/watch?v=Uh2ebFW8OYM",
+          "by": "Corey Schafer",
+          "why": "Reading and writing with with-blocks"
+        },
+        {
+          "t": "pathlib explained",
+          "u": "https://www.youtube.com/watch?v=P_aO97BLjyI",
+          "by": "Koolac",
+          "why": "Path basics for beginners"
+        }
+      ]
+    },
+    "17": {
+      "text": [
+        {
+          "t": "Library: json module",
+          "u": "https://docs.python.org/3/library/json.html",
+          "why": "load, dump, loads, dumps and JSONDecodeError"
+        },
+        {
+          "t": "Tutorial: saving structured data with json",
+          "u": "https://docs.python.org/3/tutorial/inputoutput.html#saving-structured-data-with-json",
+          "why": "The short official example"
+        }
+      ],
+      "video": [
+        {
+          "t": "Working with JSON Data",
+          "u": "https://www.youtube.com/watch?v=9N6a-VLBa2I",
+          "by": "Corey Schafer",
+          "why": "load/dump and indent, sort_keys"
+        }
+      ]
+    },
+    "18": {
+      "text": [
+        {
+          "t": "Tutorial: modules",
+          "u": "https://docs.python.org/3/tutorial/modules.html",
+          "why": "import, from-import and __name__ check"
+        },
+        {
+          "t": "Tutorial: virtual environments and packages",
+          "u": "https://docs.python.org/3/tutorial/venv.html",
+          "why": "Create, activate and freeze a venv"
+        }
+      ],
+      "video": [
+        {
+          "t": "Import Modules",
+          "u": "https://www.youtube.com/watch?v=CqvZ3vGoGs0",
+          "by": "Corey Schafer",
+          "why": "Import your own modules and built-in ones"
+        },
+        {
+          "t": "VENV (Windows)",
+          "u": "https://www.youtube.com/watch?v=APOPm01BVrk",
+          "by": "Corey Schafer",
+          "why": "Create and activate a venv on Windows"
+        }
+      ]
+    },
+    "19": {
+      "text": [
+        {
+          "t": "Logging HOWTO",
+          "u": "https://docs.python.org/3/howto/logging.html",
+          "why": "Levels, basicConfig, getLogger(__name__)"
+        },
+        {
+          "t": "Logging cookbook",
+          "u": "https://docs.python.org/3/howto/logging-cookbook.html",
+          "why": "Patterns for files and handlers"
+        }
+      ],
+      "video": [
+        {
+          "t": "Logging Basics",
+          "u": "https://www.youtube.com/watch?v=-ARI4Cz-awo",
+          "by": "Corey Schafer",
+          "why": "Replace print with levelled logging"
+        }
+      ]
+    },
+    "20": {
+      "text": [
+        {
+          "t": "pytest: tmp_path",
+          "u": "https://docs.pytest.org/en/stable/how-to/tmp_path.html",
+          "why": "Temporary folders for file-based tests"
+        },
+        {
+          "t": "Library: json errors",
+          "u": "https://docs.python.org/3/library/json.html#json.JSONDecodeError",
+          "why": "Handle invalid JSON deliberately"
+        }
+      ],
+      "video": [
+        {
+          "t": "Python Tutorial: File Objects - Reading and Writing to Files",
+          "u": "https://www.youtube.com/watch?v=Uh2ebFW8OYM",
+          "by": "Corey Schafer",
+          "why": "Read the input file safely, part of analyze_file"
+        },
+        {
+          "t": "Python Tutorial: Working with JSON Data using the json Module",
+          "u": "https://www.youtube.com/watch?v=9N6a-VLBa2I",
+          "by": "Corey Schafer",
+          "why": "Write the JSON report, part of analyze_file"
+        }
+      ]
+    },
+    "21": {
+      "text": [
+        {
+          "t": "Tutorial: errors and exceptions",
+          "u": "https://docs.python.org/3/tutorial/errors.html",
+          "why": "Revise error handling for the weekly review"
+        },
+        {
+          "t": "Logging levels",
+          "u": "https://docs.python.org/3/howto/logging.html#logging-levels",
+          "why": "Revise when to use each level"
+        }
+      ],
+      "video": [
+        {
+          "t": "Python Tutorial: Using Try/Except Blocks for Error Handling",
+          "u": "https://www.youtube.com/watch?v=NIWwJbo-9_8",
+          "by": "Corey Schafer",
+          "why": "Revise which exception each bad input raises"
+        },
+        {
+          "t": "python: traceback basics + raise from (beginner - intermediate) anthony explains #283",
+          "u": "https://www.youtube.com/watch?v=wc6W-RaMJ7k",
+          "by": "anthonywritescode",
+          "why": "Revise tracebacks and re-raising for the week review"
+        }
+      ]
+    },
+    "22": {
+      "text": [
+        {
+          "t": "Tutorial: classes",
+          "u": "https://docs.python.org/3/tutorial/classes.html",
+          "why": "class, __init__, self, instance versus class data"
+        },
+        {
+          "t": "Data model: basic customization",
+          "u": "https://docs.python.org/3/reference/datamodel.html#basic-customization",
+          "why": "__repr__ and __eq__ reference"
+        }
+      ],
+      "video": [
+        {
+          "t": "OOP 1: Classes and Instances",
+          "u": "https://www.youtube.com/watch?v=ZDa-Z5JzLYM",
+          "by": "Corey Schafer",
+          "why": "self, __init__ and methods"
+        },
+        {
+          "t": "OOP 5: Dunder Methods",
+          "u": "https://www.youtube.com/watch?v=3ohzBxoFHAY",
+          "by": "Corey Schafer",
+          "why": "__repr__ and __eq__ explained"
+        }
+      ]
+    },
+    "23": {
+      "text": [
+        {
+          "t": "Library: dataclasses",
+          "u": "https://docs.python.org/3/library/dataclasses.html",
+          "why": "@dataclass, field and __post_init__"
+        },
+        {
+          "t": "Library: enum",
+          "u": "https://docs.python.org/3/library/enum.html",
+          "why": "Enum for fixed status values"
+        }
+      ],
+      "video": [
+        {
+          "t": "Python dataclasses will save you HOURS, also featuring attrs",
+          "u": "https://www.youtube.com/watch?v=vBH6GRJ1REM",
+          "by": "mCoding",
+          "why": "Dataclass features; field() and post_init (faster pace)"
+        },
+        {
+          "t": "If You're Not Using Python DATA CLASSES Yet, You Should",
+          "u": "https://www.youtube.com/watch?v=vRVVyl9uaZc",
+          "by": "ArjanCodes",
+          "why": "Defaults, frozen, comparison in a worked example"
+        },
+        {
+          "t": "Python Tutorial: Clarifying the Issues with Mutable Default Arguments",
+          "u": "https://www.youtube.com/watch?v=_JGmemuINww",
+          "by": "Corey Schafer",
+          "why": "Why a mutable default list is a bug"
+        }
+      ]
+    },
+    "24": {
+      "text": [
+        {
+          "t": "Library: typing",
+          "u": "https://docs.python.org/3/library/typing.html",
+          "why": "list[str], X | None and friends"
+        },
+        {
+          "t": "mypy cheat sheet",
+          "u": "https://mypy.readthedocs.io/en/stable/cheat_sheet_py3.html",
+          "why": "Hint syntax examples to copy"
+        }
+      ],
+      "video": [
+        {
+          "t": "Python 101 - Type Hinting in Python",
+          "u": "https://www.youtube.com/watch?v=fmCQ5XM4igA",
+          "by": "Mouse Vs Python",
+          "why": "Annotations, Optional and what hints do not enforce"
+        }
+      ]
+    },
+    "25": {
+      "text": [
+        {
+          "t": "pytest: getting started",
+          "u": "https://docs.pytest.org/en/stable/getting-started.html",
+          "why": "assert and test discovery"
+        },
+        {
+          "t": "pytest: parametrize",
+          "u": "https://docs.pytest.org/en/stable/how-to/parametrize.html",
+          "why": "One test, many inputs"
+        },
+        {
+          "t": "pytest: fixtures",
+          "u": "https://docs.pytest.org/en/stable/how-to/fixtures.html",
+          "why": "Reusable setup such as tmp_path"
+        }
+      ],
+      "video": [
+        {
+          "t": "Unit Testing in Python with pytest | Getting Started (Part-1)",
+          "u": "https://www.youtube.com/watch?v=L6N3BgZh2AA",
+          "by": "Indian Pythonista",
+          "why": "assert, discovery and naming from scratch"
+        },
+        {
+          "t": "Unit Testing in Python with pytest | Parametrizing Fixtures (Part-8)",
+          "u": "https://www.youtube.com/watch?v=YmSYW-Ha78M",
+          "by": "Indian Pythonista",
+          "why": "Parametrize and fixtures, as in today's plan"
+        }
+      ]
+    },
+    "26": {
+      "text": [
+        {
+          "t": "Pro Git: what is Git",
+          "u": "https://git-scm.com/book/en/v2/Getting-Started-What-is-Git%3F",
+          "why": "Snapshots model before the commands"
+        },
+        {
+          "t": "Pro Git: recording changes",
+          "u": "https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository",
+          "why": "add, status, diff, commit loop"
+        },
+        {
+          "t": "Library: pdb",
+          "u": "https://docs.python.org/3/library/pdb.html",
+          "why": "Step commands for breakpoint()"
+        }
+      ],
+      "video": [
+        {
+          "t": "Git Tutorial for Beginners: Command-Line Fundamentals",
+          "u": "https://www.youtube.com/watch?v=HVsySz-h9r4",
+          "by": "Corey Schafer",
+          "why": "init, add, commit, status, diff, log"
+        },
+        {
+          "t": "Git & GitHub Crash Course for Beginners [2026]",
+          "u": "https://www.youtube.com/watch?v=mAFoROnOfHs",
+          "by": "freeCodeCamp.org",
+          "why": "Branching, merging and pushing to GitHub"
+        },
+        {
+          "t": "python debugger crash course: pdb / breakpoint (beginner - intermediate) anthony explains #097",
+          "u": "https://www.youtube.com/watch?v=0LPuG825eAk",
+          "by": "anthonywritescode",
+          "why": "Step through count_errors with pdb"
+        }
+      ]
+    },
+    "27": {
+      "text": [
+        {
+          "t": "Argparse tutorial (HOWTO)",
+          "u": "https://docs.python.org/3/howto/argparse.html",
+          "why": "Positional and optional arguments step by step"
+        },
+        {
+          "t": "Library: argparse",
+          "u": "https://docs.python.org/3/library/argparse.html",
+          "why": "Reference for --top N and type=int"
+        }
+      ],
+      "video": [
+        {
+          "t": "Argument Parsing with argparse in Python",
+          "u": "https://www.youtube.com/watch?v=88pl8TuuKz0",
+          "by": "NeuralNine",
+          "why": "Build the loganalyzer --top N option"
+        },
+        {
+          "t": "Argparse for CLI - Intermediate Python Programming p.3",
+          "u": "https://www.youtube.com/watch?v=0twL6MXCLdQ",
+          "by": "sentdex",
+          "why": "Second walkthrough of arguments and flags"
+        }
+      ]
+    },
+    "28": {
+      "text": [
+        {
+          "t": "pytest: how-to guides",
+          "u": "https://docs.pytest.org/en/stable/how-to/index.html",
+          "why": "Revision for the Gate 1 tests"
+        },
+        {
+          "t": "Library: pdb",
+          "u": "https://docs.python.org/3/library/pdb.html",
+          "why": "Revise stepping commands"
+        }
+      ],
+      "video": [
+        {
+          "t": "Python Quick Tip: Debugger and breakpoint()",
+          "u": "https://www.youtube.com/watch?v=aZJnGOwzHtU",
+          "by": "Patrick Loeber",
+          "why": "Revise breakpoint() before Gate 1"
+        },
+        {
+          "t": "python debugger crash course: pdb / breakpoint (beginner - intermediate) anthony explains #097",
+          "u": "https://www.youtube.com/watch?v=0LPuG825eAk",
+          "by": "anthonywritescode",
+          "why": "Revise pdb commands"
+        }
+      ]
+    }
+  }
+}

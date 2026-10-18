@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheet 20 — The Plan — Applied AI Roadmap</title>
+<link rel="stylesheet" href="assets/css/sheet.css">
+<link rel="stylesheet" href="assets/css/glass.css">
+</head>
+<body data-sheet="20" class="glass">
+<a class="skip" href="#main">Skip to sheet</a>
+<div class="wrap">
+<nav class="rail" aria-label="Sheet index"></nav>
+
+<main id="main">
+
+<header class="sheethead">
+  <div>
+    <div class="no">Sheet 20 &middot; Applied AI track &middot; 1 Nov 2026 &ndash; 31 Mar 2027</div>
+    <h1>The Plan<span>.</span></h1>
+    <p class="lede">151 days, five phases, four gates. The route from <b>enterprise integration with AI assistance</b> to
+    <b>an engineer who can build, debug, test and explain applied-AI systems</b>. It is built to be adjusted: if you
+    fall behind, the plan drops lower-value work, it never crams.</p>
+  </div>
+  <div class="specs">
+    <div><span>Start</span><span>Sun 1 Nov 2026</span></div>
+    <div><span>Deadline</span><span>Wed 31 Mar 2027</span></div>
+    <div><span>Days</span><span>151</span></div>
+    <div><span>Daily load</span><span>5 h</span></div>
+    <div><span>Cost</span><span>&#8377;0</span></div>
+  </div>
+</header>
+
+<div class="sheetbody">
+
+<!-- ===================================================================== -->
+<h2 id="shape">The shape of the five months</h2>
+<p class="sub">Five phases, in dependency order. Each one is a prerequisite for the next, which is why Python comes
+before FastAPI and FastAPI before RAG.</p>
+
+<figure class="dwg dwg--hero">
+<svg viewBox="0 0 1200 300" role="img" aria-label="A timeline from 1 November 2026 to 31 March 2027. Five phases: Python from zero, backend, LLM and RAG, agents and MCP, interviews. Four gates sit at the ends of weeks 4, 9, 13 and 16. Applications begin around day 90. A red bracket shows the four to eight weeks hiring usually takes from the first application.">
+  <defs>
+    <marker id="s20-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5fc4d8"/></marker>
+    <marker id="s20-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e8b33c"/></marker>
+    <marker id="s20-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea5f42"/></marker>
+  </defs>
+
+  <!-- month ticks (x = 60 + (day-1) * 7.152) -->
+  <line class="ln" x1="60" y1="46" x2="60" y2="56"/><text class="mm" x="60" y="40">1 NOV</text>
+  <line class="ln" x1="275" y1="46" x2="275" y2="56"/><text class="mm" x="275" y="40">1 DEC</text>
+  <line class="ln" x1="496" y1="46" x2="496" y2="56"/><text class="mm" x="496" y="40">1 JAN</text>
+  <line class="ln" x1="718" y1="46" x2="718" y2="56"/><text class="mm" x="718" y="40">1 FEB</text>
+  <line class="ln" x1="918" y1="46" x2="918" y2="56"/><text class="mm" x="918" y="40">1 MAR</text>
+  <line class="ln" x1="1140" y1="46" x2="1140" y2="56"/><text class="mm end" x="1140" y="40">31 MAR</text>
+
+  <!-- phases -->
+  <rect class="box-c" x="60"  y="100" width="200" height="64" rx="3"/>
+  <text class="t" x="70" y="126">Python from zero</text><text class="mm" x="70" y="148">W1&ndash;4</text>
+  <rect class="box-c" x="261" y="100" width="250" height="64" rx="3"/>
+  <text class="t" x="271" y="126">Backend and data</text><text class="mm" x="271" y="148">W5&ndash;9</text>
+  <rect class="box-a" x="512" y="100" width="199" height="64" rx="3"/>
+  <text class="t b" x="522" y="126">LLM and RAG</text><text class="mm" x="522" y="148">W10&ndash;13</text>
+  <rect class="box-a" x="712" y="100" width="249" height="64" rx="3"/>
+  <text class="t b" x="722" y="126">Agents and MCP</text><text class="mm" x="722" y="148">W14&ndash;18</text>
+  <rect class="box" x="962" y="100" width="178" height="64" rx="3"/>
+  <text class="t" x="972" y="126">Interviews</text><text class="mm" x="972" y="148">W19&ndash;22</text>
+
+  <!-- gates -->
+  <line class="ln dash" x1="260" y1="82" x2="260" y2="180"/>
+  <line class="ln dash" x1="511" y1="82" x2="511" y2="180"/>
+  <line class="ln dash" x1="711" y1="82" x2="711" y2="180"/>
+  <line class="ln dash" x1="861" y1="82" x2="861" y2="180"/>
+  <circle class="bub" cx="260" cy="72" r="13"/><text class="bubt" x="260" y="76">1</text>
+  <circle class="bub" cx="511" cy="72" r="13"/><text class="bubt" x="511" y="76">2</text>
+  <circle class="bub" cx="711" cy="72" r="13"/><text class="bubt" x="711" y="76">3</text>
+  <circle class="bub" cx="861" cy="72" r="13"/><text class="bubt" x="861" y="76">4</text>
+
+  <!-- applications + hiring window -->
+  <path class="flow-b" d="M704,214 H1100" marker-end="url(#s20-ab)"/>
+  <text class="mm b" x="704" y="232">APPLICATIONS FROM DAY 90 (29 JAN)</text>
+  <path class="flow-r dash" d="M897,260 H1104" marker-end="url(#s20-ar)"/>
+  <line class="ln" x1="897" y1="254" x2="897" y2="266"/>
+  <text class="mm r end" x="1104" y="282">4&ndash;8 WEEKS TO AN OFFER, AT BEST</text>
+
+  <circle class="bub" cx="1142" cy="262" r="13"/><text class="bubt" x="1142" y="266">5</text>
+</svg>
+<figcaption>Drawing 20-A &mdash; the five-month route. <b>Cyan</b> = foundations. <b>Brass</b> = the AI build and the application
+window. <b>Red</b> = the hiring clock, which does not care how ready you feel.</figcaption>
+</figure>
+
+<div class="notes">
+  <div class="n"><b>1</b><div><b>Gate 1, Saturday 28 Nov.</b> Solve the original log diagnostic cold in 30 minutes: no AI, no search. This is the one gate that
+  matters most. If it fails, you repeat a Python week rather than carry on, because every later phase assumes you can write Python.</div></div>
+  <div class="n"><b>2</b><div><b>Gate 2, Saturday 2 Jan.</b> A mock vendor integration that survives timeouts, duplicates and bad signatures, and an explanation of
+  why it is safe to retry. This is the enterprise-integration strength you already have, made provable and explainable.</div></div>
+  <div class="n"><b>3</b><div><b>Gate 3, Saturday 30 Jan.</b> Project 1 is public with README, tests and architecture notes, and the first five applications are out.
+  Applications start here because hiring takes weeks and Project 2 is not required to be credible.</div></div>
+  <div class="n"><b>4</b><div><b>Gate 4, Saturday 20 Feb.</b> You can build, test and secure a small MCP server and explain it without hand-waving. This is where your
+  existing MCP exposure turns into depth you can defend.</div></div>
+  <div class="n"><b>5</b><div><b>The hiring clock.</b> If the first application goes out on 29 January and the process takes four to eight weeks, an offer lands between
+  late February and late March at best. Applying later than February makes a 31 March offer unlikely however well the study goes.
+  That is a property of hiring, not of your ability.</div></div>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="honest">What is realistic</h2>
+<p class="sub">An honest reading of the deadline, so you can decide how to use the plan, not so you can feel good about it.</p>
+
+<div class="panel panel--trap">
+  <span class="ph">Red pencil &mdash; the assumptions this plan depends on</span>
+  <p>It assumes about five focused hours a day, every day, for 151 days, alongside your job. That is roughly 750 hours. Most people cannot
+  sustain that without breaks. If you consistently manage three to four hours on workdays, the plan still works, but the end state moves:
+  Project 2 shrinks first, then the interview phase compresses. Decide that deliberately; do not let it happen by default.</p>
+</div>
+
+<div class="tw"><table>
+<thead><tr><th>Outcome by 31 Mar 2027</th><th>What has to be true</th><th>My honest view</th></tr></thead>
+<tbody>
+<tr><td>Offer in hand at &#8377;15 LPA or above</td><td>Gate 1 passed on time, Project 1 public by late January, a steady stream of applications, and live-coding performance that holds under pressure</td><td>Possible, not likely enough to plan around. It is a jump of more than double your current compensation.</td></tr>
+<tr><td>Interviews in progress, offers likely in April&ndash;May</td><td>Gates 1 to 3 passed; applications since late January</td><td>The most likely good outcome if you follow the plan.</td></tr>
+<tr><td>Strong skills, no offer yet</td><td>Plan followed, but the market or timing did not cooperate</td><td>A delay, not a failure. The skills are portable.</td></tr>
+<tr><td>Behind schedule</td><td>Gate 1 not passed by mid-December</td><td>Reset the dates. The deadline is a target, the gates are the real plan.</td></tr>
+</tbody></table></div>
+
+<p>I have not checked live job listings, so the compensation figures above are an assessment of your situation, not market data.
+Every Saturday you save five real postings; by late January that gives you actual requirements and any disclosed salary ranges
+to plan against instead of my estimate. Treat advertised ranges and estimated ranges as different things and write down which is which.</p>
+
+<div class="panel panel--why">
+  <span class="ph">Why gates instead of a checklist</span>
+  <p>A checklist can be completed without learning anything. A gate cannot: it asks you to do something you could not do before, under
+  conditions that make copying impossible. When a gate fails you learn precisely which skill to revisit, which is more useful than a
+  week of ticked boxes.</p>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="rhythm">The daily rhythm</h2>
+<p class="sub">Five hours, split the same way every day within a phase so that you never spend energy deciding what to do.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Phase</th><th>Learn</th><th>Build / practice</th><th>DSA</th><th>Review</th></tr></thead>
+<tbody>
+<tr><td>1 &middot; Python (W1&ndash;4)</td><td>2 h</td><td>2.5 h</td><td>&mdash;</td><td>0.5 h</td></tr>
+<tr><td>2 to 4 &middot; Backend, RAG, agents (W5&ndash;18)</td><td>1.5 h</td><td>2.25 h</td><td>0.75 h</td><td>0.5 h</td></tr>
+<tr><td>5 &middot; Interviews (W19&ndash;22)</td><td colspan="2">Practice and mocks 2.5 h</td><td>0.75 h</td><td>Applications and review 1.75 h</td></tr>
+<tr><td>Every Saturday</td><td colspan="4">Checkpoint 2 h &middot; catch-up 2 h &middot; job-market log 1 h</td></tr>
+</tbody></table></div>
+
+<div class="grid g3">
+  <div class="card"><span class="cm">Rule 01</span><b class="ct">Learn, then do</b>
+    <p>Reading is the smaller half. Every learning block ends with something you type and run that day.</p></div>
+  <div class="card"><span class="cm">Rule 02</span><b class="ct">Saturday absorbs slippage</b>
+    <p>Anything unfinished from the week goes into Saturday&rsquo;s catch-up. If Saturday is already full, that week is behind and you decide what to drop.</p></div>
+  <div class="card"><span class="cm">Rule 03</span><b class="ct">If behind, drop in this order</b>
+    <p>First DSA volume, then reading of the optional resources, then Project 2 scope. Never drop the lab tests, the gates or the weekly review.</p></div>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="weeks">Week by week</h2>
+<p class="sub">Twenty-two weeks. The last is four days long. Open <a href="ai-daily.html">Sheet 21</a> for the day-level detail.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Week</th><th>Dates</th><th>Theme</th><th>Friday&rsquo;s &ldquo;done when&rdquo;</th></tr></thead>
+<tbody id="weektable"></tbody>
+</table></div>
+
+<!-- ===================================================================== -->
+<h2 id="prestart">Before 1 November</h2>
+<p class="sub">Ten days of preparation so that day 1 starts with code, not with installing things.</p>
+
+<div class="panel panel--real">
+  <span class="ph">Personal laptop only</span>
+  <p>Everything on this track runs on your <b>personal</b> laptop and a personal GitHub account. This site&rsquo;s files currently sit in an
+  employer-managed OneDrive folder; copy the repository to your personal machine (for example by pushing it to a private personal
+  repository) before you start, and do not put portfolio work, job-search notes, or compensation research on employer systems.
+  Your tracker ticks live in the browser you use, so use the same browser each time or export them from Sheet 21.</p>
+</div>
+
+<div class="code" data-lang="powershell">
+<header><b>day-zero checks, personal laptop, any terminal</b></header>
+<pre><code>python --version            # 3.10 or newer
+git --version
+cd engineering-roadmap
+python -m http.server 8899  # then open http://localhost:8899/ai-plan.html
+
+# in a second terminal, once, for the Python lab
+cd engineering-roadmap\python-lab
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+pytest week01 -q            # every test should FAIL right now: that is the starting line
+</code></pre>
+</div>
+
+<div class="signoff">
+  <div class="sh"><span>Pre-start</span><span>Sheet 20</span></div>
+  <label><input type="checkbox"><span>This repository is on my personal laptop and opens in my personal browser.</span></label>
+  <label><input type="checkbox"><span>Python 3.10 or newer, Git and VS Code are installed, and <code>python --version</code> works in a terminal.</span></label>
+  <label><input type="checkbox"><span>I have a personal GitHub account and have not used any employer email or credentials on it.</span></label>
+  <label><input type="checkbox"><span>I created the python-lab virtual environment and <code>pytest week01</code> runs (and fails, as it should).</span></label>
+  <label><input type="checkbox"><span>I wrote down my laptop&rsquo;s RAM, CPU and GPU so local-model choices in week 10 are realistic.</span></label>
+  <label><input type="checkbox"><span>I blocked five hours a day in my calendar and told one person what I am doing so someone asks how it is going.</span></label>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="rules">Rules that keep this honest</h2>
+<p class="sub">Constraints you set at the start, written down so they survive a tired week.</p>
+
+<div class="grid g2">
+  <div class="card"><span class="cm">Budget</span><b class="ct">Spend nothing</b>
+    <p>Official documentation, open-source libraries, local development, synthetic data and mock services. Anywhere a paid LLM API would be the obvious choice, the plan
+    builds behind an interface so a local model or a mock works instead. A service&rsquo;s free tier can change, so I check the provider&rsquo;s current terms before depending on one
+    and I say so when I have not.</p></div>
+  <div class="card"><span class="cm">Confidentiality</span><b class="ct">Nothing from work, ever</b>
+    <p>No employer or client code, data, credentials, internal names or architecture in any repository, note or demo. Describe past work at the level of what you
+    personally did and learned, never the confidential detail.</p></div>
+  <div class="card"><span class="cm">Ownership</span><b class="ct">Tell the truth about AI help</b>
+    <p>For every project, keep a note of what you wrote, what an assistant generated, and how you checked it. In interviews you will be asked; the honest answer
+    with a clear validation story is stronger than an inflated one.</p></div>
+  <div class="card"><span class="cm">AI use</span><b class="ct">Explain, do not write</b>
+    <p>Use an assistant to explain concepts and tracebacks and to review your code. Do not use it to write the exercise you are being tested on. Every week one task
+    is done with no assistance at all.</p></div>
+</div>
+
+<h3 id="notdoing">Deliberately not on the plan</h3>
+<div class="chips">
+  <span class="chip">Training or fine-tuning models</span>
+  <span class="chip">Deep learning mathematics</span>
+  <span class="chip">Kubernetes</span>
+  <span class="chip">Multiple cloud providers</span>
+  <span class="chip">Five agent frameworks</span>
+  <span class="chip">Certifications</span>
+  <span class="chip">Courses watched without building</span>
+</div>
+<p>If a posting you really want requires one of these, add it then, with evidence from the posting. Not before.</p>
+
+<!-- ===================================================================== -->
+<h2 id="connect">How the sheets connect</h2>
+<p class="sub">Sheets 20 to 22 run the schedule; sheets 23 to 37 teach each topic, in the order the plan reaches it. Each week on the daily planner links the
+sheets to read and the lab folder to run.</p>
+
+<div class="grid g2">
+  <div class="card"><span class="cm">Every morning</span><b class="ct"><a href="ai-daily.html">Sheet 21 &mdash; Daily planner</a></b>
+    <p>Today&rsquo;s topics, today&rsquo;s exercise, and the &ldquo;done when&rdquo; test. Tick the day only when you could repeat it without help.</p></div>
+  <div class="card"><span class="cm">While learning</span><b class="ct">Sheets 23 to 37</b>
+    <p><a href="ai-python.html">Python</a>, <a href="ai-http.html">HTTP</a>, <a href="ai-fastapi.html">FastAPI</a>, <a href="ai-sql.html">SQL</a>,
+    <a href="ai-docker.html">Docker</a>, <a href="ai-reliability.html">Reliability</a>, <a href="ai-testing.html">Testing</a>, <a href="ai-llm.html">LLMs</a>,
+    <a href="ai-rag.html">RAG</a>, <a href="ai-agents.html">Agents</a>, <a href="ai-mcp.html">MCP</a>, <a href="ai-projects.html">Projects</a>,
+    <a href="ai-dsa.html">DSA</a>, <a href="ai-interview.html">Interviews</a>, <a href="ai-jobsearch.html">Job search</a>. Each has a tested lab.</p></div>
+  <div class="card"><span class="cm">Every Saturday</span><b class="ct"><a href="ai-tracker.html">Sheet 22 &mdash; Skills tracker</a></b>
+    <p>Rate yourself honestly, attach evidence, and fill the weekly review. Levels 4 and 5 are locked until you write the evidence.</p></div>
+  <div class="card"><span class="cm">As reference</span><b class="ct">Sheets 00 to 15 &mdash; BadgeDesk</b>
+    <p>The earlier general full-stack drawing set is still here. Treat it as optional background, not as part of this schedule.</p></div>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="drill">Drill book</h2>
+<p class="sub">Questions about your own plan that an interviewer, or you in six weeks, will ask.</p>
+
+<div class="drill">
+  <div class="dh">Drill &mdash; the plan</div>
+  <details><summary>Why does the plan start applying in late January instead of waiting until you feel ready?</summary>
+    <div class="ans"><p>Hiring takes four to eight weeks from application to offer, and feeling ready is not a measurable condition. Credible evidence is: Project 1 public with tests and a README, and Gates 1 to 3 passed. Waiting for Project 2 would push offers past the deadline. Applying earlier also gives real interview feedback to improve the later weeks.</p></div></details>
+  <details><summary>What do you do if you fail Gate 1?</summary>
+    <div class="ans"><p>Repeat a Python week targeting the exact failing skill, then retake the gate. Do not start FastAPI. Every later phase assumes independent Python, and a live-coding round will expose the gap far more expensively than a delayed week does.</p></div></details>
+  <details><summary>Why no Kubernetes or fine-tuning?</summary>
+    <div class="ans"><p>Target roles centre on building and integrating applied-AI systems: Python, APIs, databases, retrieval, tool calling, evaluation and reliability. Kubernetes and fine-tuning are deep specialities that rarely decide those interviews and cost weeks. If a specific posting requires one, it gets added with that evidence.</p></div></details>
+  <details><summary>How will you show which parts of your portfolio you wrote?</summary>
+    <div class="ans"><p>Commit history showing incremental work, a short ownership note per project (written by me, generated with assistance, how I validated it), tests I wrote myself, and the ability to explain and modify any line live. The honesty is the point: it makes the validation story credible.</p></div></details>
+</div>
+
+<!-- ===================================================================== -->
+<h2 id="signoff">Sign-off</h2>
+<p class="sub">Plan-level checks. The weekly and daily boxes live on the other sheets.</p>
+
+<div class="signoff">
+  <div class="sh"><span>Planning</span><span>Sheet 20</span></div>
+  <label><input type="checkbox"><span>I can name the five phases and the four gates without looking.</span></label>
+  <label><input type="checkbox"><span>I know the one skill (independent Python) that every later phase depends on, and the gate that tests it.</span></label>
+  <label><input type="checkbox"><span>I have written down what I will drop first if I fall behind.</span></label>
+  <label><input type="checkbox"><span>I understand why applications start in late January and why a 31 March offer is a stretch, not a promise.</span></label>
+  <label><input type="checkbox"><span>I have agreed with myself what personal, free resources I use and what I never put on employer systems.</span></label>
+</div>
+
+</div><!-- /sheetbody -->
+</main>
+
+<aside class="toc" aria-label="Contents"></aside>
+</div>
+
+<script src="assets/js/nav-data.js"></script>
+<script src="assets/js/daily-plan.js"></script>
+<script src="assets/js/planner.js"></script>
+<script src="assets/js/sheet.js"></script>
+</body>
+</html>

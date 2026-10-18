@@ -318,3 +318,112 @@ alternative is. Detailed instructions live on `setup.html`; link to it rather th
 - All `<` `>` `&` inside `<code>` are escaped.
 - No unclosed tags. Open the file and read it back.
 - The sheet links to at least two other sheets by filename (`<a href="databases.html">Sheet 06</a>`).
+
+---
+
+## 9. The Applied AI track (sheets 20 and up)
+
+- Content sheets use `<body class="glass">` and link `assets/css/glass.css` after `sheet.css`. Everything in sections 2 to 8 still applies.
+- Interactive pages (the daily planner and the skills tracker) set `data-kind="app"` on `<body>`. `check.mjs` skips only the content-sheet
+  rules for them (code blocks, drills, sign-off, diagram count); duplicate ids, tag balance, dead links and emoji are still checked.
+- These sheets do not use the BadgeDesk product as the running example. Examples are synthetic log lines, tickets and access requests.
+- Python code blocks should run. Execute them before committing: extract each `data-lang="python"` block and run it.
+- Diagram text is bumped up by `glass.css` because the column renders a 1200-wide viewBox at about 0.7x. Keep labels short enough to fit a box
+  at 13px monospace (about 7.8px per character in viewBox units).
+
+
+---
+
+## 10. Rules for writing sheets 24 and up (Applied AI track)
+
+These sheets are the learner's only teacher for their topic, and the learner is rebuilding the habit of **not trusting
+code or links they have not seen work**. Hold the sheet to the same standard.
+
+### 10.1 Your deliverables, and what you must not touch
+
+You own: your sheet file(s); your lab folder `python-lab/weekNN/` if one is assigned; your resource file
+`tools/resources/<sheet-file-without-ext>.json`. **Do not edit** any shared file: `nav-data.js`, `sheet.js`, `sheet.css`,
+`glass.css`, `planner.js`, `tracker.js`, `daily-plan.js`, `check.mjs`, `README.md`, `AUTHORING.md`, `python-lab/requirements.txt`,
+`python-lab/pytest.ini`, `python-lab/conftest.py`. If you need a change there, say so in your report. Other authors are
+working in parallel; a collision silently loses someone's work.
+
+### 10.2 Structure
+
+Copy the skeleton in section 2 and follow section 3 and section 9. `<body data-sheet="NN" class="glass">`, link `sheet.css` then
+`glass.css`. Reference implementation: `ai-python.html` (read it first: match its density, voice and components). Marker ids are
+prefixed with the sheet number (`s26-ac`). Every sheet has: hero drawing + numbered notes, one `<h2>` per subtopic with a `<p class="sub">`,
+runnable code, traps (`panel--trap`), interview panels (`panel--ask`), a resource list per subtopic, a comparison table where two things
+are confused, `id="connect"`, `id="drill"` (8 to 12 real questions with answers), and `id="signoff"` (10 to 14 verifiable boxes).
+Link at least two other sheets by filename. Diagram labels must fit their boxes at 13px monospace (about 7.8 viewBox units per character).
+
+### 10.3 How to teach
+
+- **Concept before framework.** Show the mechanism written by hand first, then the library, then say when the library is the wrong choice.
+- **Predict, then reveal.** For the key ideas, ask a question in a `<details><summary>` block and put the answer inside it.
+- **Say what to be able to defend.** Where a part of the code is interview material, label it ("You must be able to explain this line").
+- **Say what breaks.** The trap panels are the most valuable content. Failure modes, not only happy paths.
+- **The learner has C++ basics and ~4 years of enterprise integration (Power Platform, Dataverse, Zendesk/Azure Blob, MCP with an AI
+  assistant) but weak independent Python.** Explain Python idioms when first used. Use C++ comparisons where they genuinely help.
+- Never tell the learner a thing is production-ready because it ran once. Never claim a library behaves a way you did not check.
+
+### 10.4 Code truthfulness (not optional)
+
+1. Run every Python block: `python tools/run-python-blocks.py yourfile.html --python <venv python>`. Fix until it passes.
+2. A block that cannot run here (needs PostgreSQL, Docker, a network service, a GPU or a model) must carry `data-run="no" data-why="..."`
+   **and** the sheet must say in visible text next to it that it was not executed in the authoring environment, and what it was checked
+   against instead (the library's documentation, with the version and page).
+3. SQL that is portable should be `data-run="sqlite"` and executed. PostgreSQL-only SQL is `data-run="no"` with the reason.
+4. Create a virtual environment in your own scratchpad, install the libraries, and record the exact versions. Put a visible
+   line near the top of the sheet: `Tested with: python X.Y, fastapi A.B, ...  on <date>`.
+5. Library APIs change (FastAPI, Pydantic v2, LangGraph, the MCP SDK, sentence-transformers, pgvector clients). Read the current
+   documentation and run the installed version. If it disagrees with your memory, the installed version wins.
+6. If you could not install or run something, say so on the sheet and in your report. Do not paper over it.
+
+### 10.5 Resources: verified, relevant, free
+
+Every link on the sheet and in your JSON must pass `node tools/verify-resources.mjs <file>`; then **read the printed titles** and
+confirm each one teaches what you say it does. A link that loads but is the wrong topic is a failure.
+
+- Prefer official documentation, deep-linked to the right page. Then free, reputable YouTube channels.
+- A video link must be `https://www.youtube.com/watch?v=<id>` (optionally `&t=<seconds>`). Verify it with the tool (YouTube oEmbed),
+  which prints the real title and channel. **Never invent an id. Never guess one from memory.** Find videos with a web search, then verify.
+- No channel pages, playlists or search-result URLs standing in for a specific video.
+- Free only. Avoid paywalled articles and anything that needs a paid plan. If a free tier might change, say "check current terms" rather than
+  asserting it is free. Note the video length if you can establish it; do not guess a length.
+- Prefer content that is not stale. If a video predates a breaking API change, say so in its note.
+
+### 10.6 Per-day resource file
+
+`tools/resources/<name>.json`, for the day numbers assigned to you (day 1 = Sun 1 Nov 2026; the dates and content for each day are in
+`assets/js/daily-plan.js`). Read the day's theme, learn, do and done-when text so each resource fits that day.
+
+```json
+{ "days": {
+    "29": {
+      "text":  [ { "t": "Page title", "u": "https://...", "why": "what this gives today, 12 words max" } ],
+      "video": [ { "t": "Video title", "u": "https://www.youtube.com/watch?v=ID", "by": "Channel", "why": "..." } ]
+    } } }
+```
+
+Aim for at least one text and one video per day, including Saturdays and gate days. If no sound free video exists for a day,
+leave `video` empty and explain in your report rather than padding with a weak one.
+
+### 10.7 Labs (only if assigned)
+
+`python-lab/weekNN/` with a stub file (every function `raise NotImplementedError`, with a docstring that is the specification) and a
+test file. Write a reference solution in **your scratchpad** (never in the repo), then prove: (a) every test fails on the stubs, (b) every test
+passes on the reference, (c) at least five deliberate mutations of the reference are each caught. Tests use fakes, never the network, a
+paid API or a real model. List dependencies in `python-lab/weekNN/requirements-weekNN.txt`. Module names are unique across weeks
+(`w05_...`) because `conftest.py` puts every week folder on the import path.
+
+### 10.8 Constraints
+
+Free tools only. Synthetic data only. No employer or client information anywhere. No emoji. British spelling. HTML entities
+(`&mdash;`, `&middot;`). Say what the learner must do on a **personal** laptop versus anything needing admin rights. Adapt model-size
+advice to unknown hardware instead of assuming a GPU.
+
+### 10.9 Before you report
+
+`node check.mjs` (your files must be clean; 32 failures in other, older sheets are pre-existing and not yours),
+`python tools/run-python-blocks.py`, `node tools/verify-resources.mjs tools/resources/<name>.json`. Report: files created; versions
+tested; blocks skipped and why; links dropped and why; anything you could not verify; any shared-file change you need.
