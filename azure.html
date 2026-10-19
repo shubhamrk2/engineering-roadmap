@@ -1367,7 +1367,7 @@ node pools and the CNI default. Say exactly that in an interview.</p>
 <p>This is the week's build. Every command below is real; run it on the personal laptop where Docker works.
 On the corporate laptop, <code>az acr build</code> is the escape hatch &mdash; it builds the image
 <i>in Azure</i>, so you need no local Docker daemon at all, which also gets you past a blocked Docker Hub.
-See <a href="index.html">Sheet 00</a> for the two-machine rule and Sheet 01 for the proxy setup.</p>
+See <a href="badgedesk.html">Sheet 00</a> for the two-machine rule and Sheet 01 for the proxy setup.</p>
 
 <div class="code" data-lang="bash">
 <header><b>terminal &mdash; ACR build and first deploy of badgedesk-core to Container Apps</b></header>
@@ -1472,7 +1472,7 @@ pricing unit has no analogue.</p>
 
 <h3 id="d-postgres">PostgreSQL Flexible Server versus RDS</h3>
 <p>Same Postgres, same <code>psql</code>, same extensions list including <code>pgvector</code> for
-<a href="index.html">Sheet 12</a>'s policy index. The operational model differs in three ways worth knowing.</p>
+<a href="badgedesk.html">Sheet 12</a>'s policy index. The operational model differs in three ways worth knowing.</p>
 
 <div class="tw">
 <table>
@@ -1719,7 +1719,7 @@ print(events.client_connection.last_response_headers["x-ms-request-charge"])
 </div>
 
 <h3 id="d-redis">Azure Cache for Redis</h3>
-<p>The same Redis you used on <a href="index.html">Sheet 06</a> for the session cache, the
+<p>The same Redis you used on <a href="badgedesk.html">Sheet 06</a> for the session cache, the
 <code>site_id &rarr; policy</code> cache, rate-limit counters, idempotency keys and the distributed lock.
 The only thing to get right is the tier, because the tier names hide capabilities that ElastiCache exposes as
 configuration.</p>
@@ -2406,7 +2406,7 @@ type, and every new Azure feature is available on day one. <code>az deployment g
 it directly.</p>
 
 <p><b>Terraform with the <code>azurerm</code> provider</b> is what you already know from
-<a href="index.html">Sheet 10</a>. Same HCL, same state file, same plan/apply loop, different resource names.
+<a href="badgedesk.html">Sheet 10</a>. Same HCL, same state file, same plan/apply loop, different resource names.
 If your team is already on Terraform for AWS, use Terraform for Azure &mdash; one tool, one state discipline,
 one review process is worth more than Bicep's marginal ergonomic advantage. Use Bicep when the shop is
 Microsoft-only, or when you need a feature the provider has not shipped yet.</p>

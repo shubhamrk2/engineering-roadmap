@@ -57,7 +57,7 @@ fifteen unrelated tutorials.
 
 ## Open it
 
-Double-click `index.html`. That is all it needs — no build step, no dependencies, no internet connection
+Double-click `index.html` (it redirects to `ai-plan.html`; the older BadgeDesk set starts at `badgedesk.html`). That is all it needs — no build step, no dependencies, no internet connection
 except for the web fonts and the resource links.
 
 To serve it properly (so relative links and `localStorage` behave consistently):
@@ -72,7 +72,7 @@ python -m http.server 8899
 
 | # | Sheet | File | Week |
 |---|---|---|---|
-| 00 | The Plan | `index.html` | 00 |
+| 00 | The Plan | `badgedesk.html` | 00 |
 | 01 | Machine Setup | `setup.html` | 00 |
 | 02 | Languages | `programming.html` | 01–02 |
 | 03 | Frontend | `frontend.html` | 03–04 |
@@ -121,7 +121,8 @@ deliberate: tick a box only on the machine where you actually did the work.
 
 ```
 engineering-roadmap/
-├── index.html              Sheet 00 and the entry point
+├── index.html              redirects to ai-plan.html (the entry point)
+├── badgedesk.html          Sheet 00 of the older BadgeDesk set
 ├── *.html                  one file per sheet
 ├── assets/
 │   ├── css/sheet.css       the whole design system

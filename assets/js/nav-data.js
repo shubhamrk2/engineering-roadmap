@@ -22,7 +22,7 @@ window.SHEETS = [
   { g: 'Projects and interviews', no: '35', t: 'Interview Prep', f: 'ai-interview.html',   w: 'W19–20', kw: 'interview system design behavioural star honest framing live coding sql rag agents' },
   { g: 'Projects and interviews', no: '36', t: 'Job Search Method', f: 'ai-jobsearch.html', w: 'W21–22', kw: 'job search resume linkedin referral offer negotiation remote india verify posting' },
  
-  { g: 'Preflight', no: '00', t: 'The Plan',          f: 'index.html',       w: 'W00',     kw: 'roadmap schedule 12 week plan how to use progress' },
+  { g: 'Preflight', no: '00', t: 'The Plan',          f: 'badgedesk.html',   w: 'W00',     kw: 'roadmap schedule 12 week plan how to use progress' },
   { g: 'Preflight', no: '01', t: 'Machine Setup',     f: 'setup.html',       w: 'W00',     kw: 'install wsl node python java docker vscode corporate laptop proxy no admin' },
  
   { g: 'Build the product', no: '02', t: 'Languages',   f: 'programming.html', w: 'W01–02', kw: 'python javascript typescript java oop async types generics' },

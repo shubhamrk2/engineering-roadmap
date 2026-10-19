@@ -1,6 +1,6 @@
 # Authoring contract — BadgeDesk engineering drawing set
 
-Read this in full before writing a sheet. `index.html` (Sheet 00) and `programming.html` (Sheet 02) are
+Read this in full before writing a sheet. `badgedesk.html` (Sheet 00) and `programming.html` (Sheet 02) are
 the reference implementations. Match their density, tone and structure exactly.
 
 ---
